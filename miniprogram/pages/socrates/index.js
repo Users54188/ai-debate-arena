@@ -40,6 +40,34 @@ Page({
     roundLimitReached: false,
   },
 
+  onLoad() {
+    this.checkQuota();
+  },
+
+  onShow() {
+    // 从其他页返回时刷新配额状态
+    if (!this.data.streaming) {
+      this.checkQuota();
+    }
+  },
+
+  async checkQuota() {
+    try {
+      const res = await wx.cloud.callFunction({
+        name: config.cloudFunctions.getQuota,
+        data: { mode: "L1" },
+      });
+      const q = (res.result && res.result.data) || {};
+      const exhausted = !q.available && q.used >= q.limit;
+      if (exhausted !== this.data.quotaExhausted) {
+        this.setData({ quotaExhausted: exhausted });
+      }
+    } catch (e) {
+      console.error("[socrates] quota check failed:", e);
+      // 查询失败不阻塞使用
+    }
+  },
+
   onInput(e) {
     this.setData({ inputText: e.detail.value });
   },
@@ -47,6 +75,11 @@ Page({
   async sendMessage() {
     const text = this.data.inputText.trim();
     if (!text || this.data.streaming) return;
+
+    // 配额检查（fail-open：查询失败时放行）
+    if (this.data.quotaExhausted) return;
+    await this.checkQuota();
+    if (this.data.quotaExhausted) return;
 
     // 输入安全检查（fail-close：审核服务异常时拒绝发送）
     const checkResult = await msgSecCheck(text, 1);
