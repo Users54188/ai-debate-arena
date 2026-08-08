@@ -1,0 +1,29 @@
+<view class="container">
+  <view class="hero">
+    <text class="hero-title">AI 思辨场</text>
+    <text class="hero-subtitle">与 AI 对话，训练你的思辨力</text>
+  </view>
+
+  <view class="mode-list">
+    <view class="mode-card" bindtap="goSocrates">
+      <view class="mode-badge badge-l1">入门</view>
+      <text class="mode-title">L1 苏格拉底追问</text>
+      <text class="mode-desc">AI 用提问帮你检验信念，不直接给答案</text>
+      <text class="mode-quota">今日剩余 {{l1Quota}} 次</text>
+    </view>
+
+    <view class="mode-card mode-locked" bindtap="goDual">
+      <view class="mode-badge badge-l2">进阶</view>
+      <text class="mode-title">L2 双人共修</text>
+      <text class="mode-desc">专家讲解 + 苏格拉底追问，交替进行</text>
+      <text class="mode-lock-tip">完成一场 L1 后解锁</text>
+    </view>
+
+    <view class="mode-card mode-locked" bindtap="goDebate">
+      <view class="mode-badge badge-l3">高阶</view>
+      <text class="mode-title">L3 辩论场</text>
+      <text class="mode-desc">正反方+裁判三方辩论，围观投票</text>
+      <text class="mode-lock-tip">完成一场 L2 后解锁</text>
+    </view>
+  </view>
+</view>
