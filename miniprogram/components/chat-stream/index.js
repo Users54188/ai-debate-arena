@@ -5,73 +5,84 @@
  * Properties:
  *   messages: Array<{ role: 'user'|'socrates'|'expert'|'affirmative'|'negative'|'judge', content: string }>
  *   streaming: boolean — 是否处于流式接收中
- *   showSensitive: boolean — 触发敏感词撤回后展示兜底文案
+ *   waitingFirstChunk: boolean — 首帧未到达时显示"思考中"占位
+ *   showAiLabel: boolean — 是否显示 AI 生成标识
  *
- * Events:
- *   onStreamEnd: { usage }
+ * 修复记录（W1 验收）：
+ * - WXML 不支持调用组件方法：roleText/bubbleCls 在 observers 中预计算为 renderMessages
  */
+
+const ROLE_LABELS = {
+  user: "我",
+  socrates: "苏格拉底",
+  expert: "专家",
+  affirmative: "正方",
+  negative: "反方",
+  judge: "裁判",
+};
+
+const BUBBLE_CLASSES = {
+  user: "bubble-user",
+  socrates: "bubble-socrates",
+  expert: "bubble-expert",
+  affirmative: "bubble-affirmative",
+  negative: "bubble-negative",
+  judge: "bubble-judge",
+};
 
 Component({
   properties: {
     messages: { type: Array, value: [] },
     streaming: { type: Boolean, value: false },
-    showAiLabel: { type: Boolean, value: true }, // AI 生成标识
+    waitingFirstChunk: { type: Boolean, value: false },
+    showAiLabel: { type: Boolean, value: true },
   },
 
   data: {
+    renderMessages: [],
     scrollTop: 0,
   },
 
   observers: {
-    "messages, streaming"() {
-      // 新消息时自动滚底
+    messages(list) {
+      this.buildRenderMessages(list);
+      this.scrollToBottom();
+    },
+    "streaming, waitingFirstChunk"() {
       this.scrollToBottom();
     },
   },
 
   methods: {
+    buildRenderMessages(list) {
+      const renderMessages = (list || []).map((m) => ({
+        role: m.role,
+        content: m.content,
+        isUser: m.role === "user",
+        roleText: ROLE_LABELS[m.role] || m.role,
+        bubbleCls: BUBBLE_CLASSES[m.role] || "bubble-default",
+      }));
+      this.setData({ renderMessages });
+    },
+
     scrollToBottom() {
-      wx.createSelectorQuery()
-        .in(this)
-        .select("#chat-scroll-view")
-        .boundingClientRect()
-        .select("#chat-bottom-anchor")
-        .boundingClientRect()
-        .exec((res) => {
-          if (res[0] && res[1]) {
-            const scrollHeight = res[0].height;
-            const anchorTop = res[1].top;
-            this.setData({
-              scrollTop: this.data.scrollTop + anchorTop - scrollHeight,
-            });
-          }
-        });
-    },
-
-    /** 角色标签文案 */
-    roleLabel(role) {
-      const map = {
-        user: "我",
-        socrates: "苏格拉底",
-        expert: "专家",
-        affirmative: "正方",
-        negative: "反方",
-        judge: "裁判",
-      };
-      return map[role] || role;
-    },
-
-    /** 角色气泡色类 */
-    bubbleClass(role) {
-      if (role === "user") return "bubble-user";
-      const map = {
-        socrates: "bubble-socrates",
-        expert: "bubble-expert",
-        affirmative: "bubble-affirmative",
-        negative: "bubble-negative",
-        judge: "bubble-judge",
-      };
-      return map[role] || "bubble-default";
+      wx.nextTick(() => {
+        wx.createSelectorQuery()
+          .in(this)
+          .select("#chat-scroll-view")
+          .boundingClientRect()
+          .select("#chat-bottom-anchor")
+          .boundingClientRect()
+          .exec((res) => {
+            if (res[0] && res[1]) {
+              const scrollHeight = res[0].height;
+              const anchorTop = res[1].top;
+              this.setData({
+                scrollTop: this.data.scrollTop + anchorTop - scrollHeight,
+              });
+            }
+          });
+      });
     },
   },
 });

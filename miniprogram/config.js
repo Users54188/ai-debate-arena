@@ -33,6 +33,9 @@ module.exports = {
     maxDelayMs: 5000,
   },
 
+  // eventStream 读取超时防护（ms）：usage/note 提取不阻塞对话主流程
+  streamEventTimeoutMs: 3000,
+
   // 云函数名
   cloudFunctions: {
     sessionStore: "sessionStore",

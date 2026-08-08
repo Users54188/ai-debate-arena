@@ -3,8 +3,8 @@
   <chat-stream
     messages="{{messages}}"
     streaming="{{streaming}}"
+    waitingFirstChunk="{{waitingFirstChunk}}"
     showAiLabel="{{true}}"
-    bind:onStreamEnd="onStreamEnd"
   />
 
   <!-- 底部输入区 -->

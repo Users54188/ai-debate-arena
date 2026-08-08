@@ -5,17 +5,17 @@
   scroll-with-animation
   class="chat-container"
 >
-  <view wx:for="{{messages}}" wx:key="index" class="message-row {{item.role === 'user' ? 'msg-right' : 'msg-left'}}">
+  <view wx:for="{{renderMessages}}" wx:key="index" class="message-row {{item.isUser ? 'msg-right' : 'msg-left'}}">
     <!-- 角色标签 -->
-    <text wx:if="{{item.role !== 'user'}}" class="role-label">{{roleLabel(item.role)}}</text>
+    <text wx:if="{{!item.isUser}}" class="role-label">{{item.roleText}}</text>
     <!-- 气泡 -->
-    <view class="bubble {{bubbleClass(item.role)}}">
+    <view class="bubble {{item.bubbleCls}}">
       <text class="bubble-text">{{item.content}}</text>
     </view>
   </view>
 
-  <!-- 流式输入中占位态 -->
-  <view wx:if="{{streaming}}" class="message-row msg-left">
+  <!-- 首帧未到达时的占位态 -->
+  <view wx:if="{{streaming && waitingFirstChunk}}" class="message-row msg-left">
     <text class="role-label">思考中</text>
     <view class="bubble bubble-streaming">
       <view class="typing-dots">
@@ -27,7 +27,7 @@
   </view>
 
   <!-- AI 生成标识 -->
-  <view wx:if="{{showAiLabel && messages.length > 0}}" class="ai-label">
+  <view wx:if="{{showAiLabel && renderMessages.length > 0}}" class="ai-label">
     <text>以上内容为AI生成，仅供参考</text>
   </view>
 

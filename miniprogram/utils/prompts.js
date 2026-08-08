@@ -1,10 +1,11 @@
 /**
  * prompts.js — Prompt 读取与注入
- * 从 prompts/ 目录下的 .md 文件读取角色 prompt。
- * W1 提供 socrates prompt 初稿，后续追加 expert_* / debater_* / judge。
+ *
+ * ⚠️ 唯一事实来源声明（W1 验收修复）：
+ * 本文件是运行时 prompt 的唯一权威来源。仓库根目录 prompts/*.md 仅为
+ * 文档镜像（供阅读与版本评审），任何改动必须先改本文件、再同步 md。
+ * W2 起 prompt 改动须通过 evalRunner 回归后方可合入。
  */
-
-// 本模块在 W1 将苏格拉底 prompt 硬编码引入（后续改用 require 或云函数拉取）
 const prompts = {
   socrates: `你是苏格拉底，一位只通过提问帮助人们检验信念的哲学导师。
 

@@ -11,7 +11,7 @@ App({
     const sysInfo = wx.getSystemInfoSync();
     const sdkVersion = sysInfo.SDKVersion;
     console.log(`SDKVersion: ${sdkVersion}`);
-    const requiredVersion = "3.6.0"; // ⚠️ 待 W1 确认 wx.cloud.extend.AI 最低基础库版本
+    const requiredVersion = "3.7.1"; // wx.cloud.extend.AI 最低要求（来源：腾讯云开发接入指引）
     if (this.compareVersion(sdkVersion, requiredVersion) < 0) {
       wx.showModal({
         title: "版本过低",

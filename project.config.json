@@ -41,7 +41,7 @@
     "ignoreUploadUnusedFiles": true
   },
   "compileType": "miniprogram",
-  "libVersion": "3.6.0",
+  "libVersion": "3.7.1",
   "appid": "",
   "projectname": "ai-debate-arena",
   "miniprogramRoot": "miniprogram/",

@@ -38,32 +38,30 @@ tech-roadmap-v2.md 1.1 节「端侧推理分流」标注 ⚠️ 待 W1 真机验
 
 查阅微信开放文档组件库，搜索对话/聊天相关组件。
 
-### 验证结论：存在 `ai-chat-view` 组件（基础库 3.8.0+）
+### 验证结论：`ai-chat-view` **未获官方文档证实**，维持自建 chat-stream
 
 | 维度 | 结果 |
 |---|---|
-| 组件名 | `ai-chat-view` |
-| 基础库要求 | ≥ 3.8.0 |
-| 文档位置 | 微信开放文档 → 组件 → AI → ai-chat-view |
-| 功能覆盖 | 消息列表渲染、流式文本追加、多角色区分、打字机效果 |
-| 与 chat-stream 自建组件关系 | `ai-chat-view` 可替代自建 chat-stream，但需要基础库 ≥3.8.0 |
+| 组件名 `ai-chat-view` | 仅见于单一自媒体来源（向明科技 2026-07-29），**官方开放文档中未检索到对应组件/API 页面** |
+| 官方实际存在的对话组件 | CloudBase「Agent UI 小程序组件」（docs.cloudbase.net/ai/agent-ui/agent-ui-mp），需下载源码组件并绑定 CloudBase 模型/Agent |
+| 结论 | "ChatUI Kit（ai-chat-view）"按不可信处理；W1 自建 `chat-stream` 的决策维持不变 |
 
-### 建议
+### 决策
 
-- **W1 保持自建 `chat-stream` 组件**，确保低版本兼容性（当前 `libVersion` 设为 3.6.0）
-- 在 `app.js` 中增加基础库版本检测，≥3.8.0 时可在后续版本可选迁移到 `ai-chat-view`
-- tech-roadmap-v2.md 1.1 节 ChatUI Kit ⚠️ 标注更新为"存在（基础库 3.8.0+，当前先用自建 chat-stream 保证兼容性）"
+- **继续使用自建 `chat-stream` 组件**（可控性、多角色扩展性都更符合 L2/L3 需求）。
+- 删除仓库中空的 `components/ai-chat-view/` 目录。
+- 如后续在开发者工具中实测 `<ai-chat-view>` 标签被识别，再重新评估。
+- tech-roadmap-v2.md 1.1 节 ChatUI Kit ⚠️ 标注更新为："官方对话组件为 CloudBase Agent UI（可选替代），当前采用自建 chat-stream"。
 
 ### ⚠️ 待更新
 
-tech-roadmap-v2.md 1.1 节 ChatUI Kit ⚠️ 标注需更新为上述结论。
+tech-roadmap-v2.md 1.1 节按上述结论修订。
 
 ---
 
 ## 基础库版本记录
 
-| 项目 | 要求 |
-|---|---|
-| `wx.cloud.extend.AI` | 需 ≥ 3.6.0（以官方文档为准，W1 需在真机上通过 `wx.getSystemInfoSync().SDKVersion` 确认实际可用最低版本） |
-| `ai-chat-view` 组件 | ≥ 3.8.0 |
-| `wx.createInferenceSession` | 待真机确认 |
+| 项目 | 要求 | 依据 |
+|---|---|---|
+| `wx.cloud.extend.AI` | **≥ 3.7.1**（已写入 project.config.json 与 app.js 版本门槛） | 腾讯云开发接入指引（cloud.tencent.com/document/product/876/116226）；真机仍建议实测确认 |
+| `wx.createInferenceSession` | 待真机确认 | 官方教程标注 Beta，开发者工具不支持 |
