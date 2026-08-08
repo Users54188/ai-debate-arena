@@ -1,0 +1,54 @@
+/**
+ * 思辨场 — 全局配置
+ * 所有模型、环境、配额常量统一在此维护，禁止散落硬编码。
+ */
+
+module.exports = {
+  // 云开发环境 ID（部署时替换）
+  envId: "<云开发环境ID>",
+
+  // 模型配置
+  model: {
+    chat: "hy3-preview", // 实时对话流式调用
+    report: "hy3",       // 报告生成 / 评测裁判
+  },
+
+  // 每日配额（单用户、跨模式独立计数）
+  dailyQuota: {
+    L1: 3, // 单人苏格拉底每日最大会话数
+    L2: 2, // 双人共修
+    L3: 1, // 三方辩论
+  },
+
+  // 单会话轮次上限
+  maxRounds: 10,
+
+  // 流式渲染节流 (ms)
+  streamThrottle: 120,
+
+  // 流式调用超时配置
+  streamTimeout: {
+    maxRetries: 2,
+    baseDelayMs: 1000,
+    maxDelayMs: 5000,
+  },
+
+  // 云函数名
+  cloudFunctions: {
+    sessionStore: "sessionStore",
+    securityCheck: "securityCheck",
+    userProfile: "userProfile",
+  },
+
+  // 数据库集合名
+  collections: {
+    sessions: "sessions",
+    reports: "reports",
+    users: "users",
+    userQuota: "user_quota",
+    topics: "topics_v1",
+    tokenUsage: "token_usage",
+    votes: "votes",
+    evalRuns: "eval_runs",
+  },
+};
