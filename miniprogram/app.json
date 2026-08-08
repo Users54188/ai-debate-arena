@@ -1,0 +1,19 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/socrates/index",
+    "pages/dual/index",
+    "pages/debate/index",
+    "pages/report/index",
+    "pages/ranking/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#4F46E5",
+    "navigationBarTitleText": "思辨场",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#F5F3FF"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}
