@@ -1,0 +1,13 @@
+{
+  "name": "ai-debate-arena",
+  "version": "0.1.0",
+  "description": "AI思辨场 — 2026微信小程序开发大赛参赛作品",
+  "main": "miniprogram/app.js",
+  "dependencies": {
+    "weui-miniprogram": "^1.3.0"
+  },
+  "devDependencies": {},
+  "scripts": {},
+  "author": "",
+  "license": "MIT"
+}
