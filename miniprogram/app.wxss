@@ -1,0 +1,41 @@
+/* 思辨场 — Global Design Tokens */
+page {
+  --primary: #4F46E5;
+  --primary-light: #818CF8;
+  --bg-page: #F5F3FF;
+  --bg-card: #FFFFFF;
+  --text-primary: #1E1B4B;
+  --text-secondary: #6B7280;
+  --border: #E0E7FF;
+  --l1-socrates: #4F46E5;
+  --l2-expert: #0D9488;
+  --l3-affirmative: #7C3AED;
+  --l3-negative: #F97316;
+  --l3-judge: #6366F1;
+  --user-bubble: #EEF2FF;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  background-color: var(--bg-page);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+  font-size: 15px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* Typography */
+.h1 { font-size: 20px; font-weight: 600; }
+.h2 { font-size: 17px; font-weight: 600; }
+.body { font-size: 15px; font-weight: 400; }
+.caption { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+.label { font-size: 11px; font-weight: 500; color: var(--text-secondary); }
+
+/* Utility */
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-col { display: flex; flex-direction: column; }
+.safe-bottom { padding-bottom: constant(safe-area-inset-bottom); padding-bottom: env(safe-area-inset-bottom); }
