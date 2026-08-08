@@ -1,0 +1,123 @@
+.chat-container {
+  height: 100%;
+  padding: 16px 12px;
+  box-sizing: border-box;
+}
+
+.message-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+  max-width: 80%;
+}
+
+.msg-left {
+  align-items: flex-start;
+}
+
+.msg-right {
+  align-items: flex-end;
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+.role-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  padding-left: 4px;
+}
+
+/* 气泡通用 */
+.bubble {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  line-height: 1.6;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.bubble-text {
+  white-space: pre-wrap;
+}
+
+/* 用户气泡 — 右对齐、左下角直角 */
+.bubble-user {
+  background: var(--user-bubble);
+  border-bottom-right-radius: 4px;
+}
+
+/* AI 角色气泡 — 左对齐、右下角直角，左侧色条 */
+.bubble-socrates {
+  background: #F5F3FF;
+  border-left: 3px solid var(--l1-socrates);
+  border-bottom-left-radius: 4px;
+}
+
+.bubble-expert {
+  background: #F0FDFA;
+  border-left: 3px solid var(--l2-expert);
+  border-bottom-left-radius: 4px;
+}
+
+.bubble-affirmative {
+  background: #FAF5FF;
+  border-left: 3px solid var(--l3-affirmative);
+  border-bottom-left-radius: 4px;
+}
+
+.bubble-negative {
+  background: #FFF7ED;
+  border-left: 3px solid var(--l3-negative);
+  border-bottom-left-radius: 4px;
+}
+
+.bubble-judge {
+  background: #EEF2FF;
+  border-left: 3px solid var(--l3-judge);
+  border-bottom-left-radius: 4px;
+}
+
+.bubble-default {
+  background: var(--bg-card);
+  border-left: 3px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+/* 流式打字中占位 */
+.bubble-streaming {
+  padding: 14px 18px;
+  background: var(--user-bubble);
+}
+
+.typing-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--l1-socrates);
+  animation: typing-bounce 1.4s infinite ease-in-out both;
+}
+
+.dot:nth-child(1) { animation-delay: 0s; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-bounce {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* AI 生成标识 */
+.ai-label {
+  text-align: center;
+  padding: 12px 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}

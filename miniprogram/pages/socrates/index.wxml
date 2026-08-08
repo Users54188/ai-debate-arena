@@ -1,0 +1,42 @@
+<view class="socrates-page">
+  <!-- chat-stream 对话区 -->
+  <chat-stream
+    messages="{{messages}}"
+    streaming="{{streaming}}"
+    showAiLabel="{{true}}"
+    bind:onStreamEnd="onStreamEnd"
+  />
+
+  <!-- 底部输入区 -->
+  <view class="input-bar safe-bottom">
+    <input
+      class="msg-input"
+      value="{{inputText}}"
+      bindinput="onInput"
+      bindconfirm="sendMessage"
+      placeholder="说出你的观点，苏格拉底会追问你..."
+      confirm-type="send"
+      disabled="{{streaming || quotaExhausted}}"
+      adjust-position="{{true}}"
+      cursor-spacing="{{12}}"
+    />
+    <button
+      class="send-btn"
+      bindtap="sendMessage"
+      disabled="{{!inputText.trim() || streaming || quotaExhausted}}"
+      size="mini"
+    >
+      发送
+    </button>
+  </view>
+
+  <!-- 配额用尽提示 -->
+  <view wx:if="{{quotaExhausted}}" class="quota-notice">
+    <text>今日 L1 会话次数已用完，明天再来思辨吧</text>
+  </view>
+
+  <!-- 轮次上限提示 -->
+  <view wx:if="{{roundLimitReached}}" class="round-limit-notice">
+    <text>本轮思辨已达 10 轮上限，即将生成报告（W3 实现）</text>
+  </view>
+</view>

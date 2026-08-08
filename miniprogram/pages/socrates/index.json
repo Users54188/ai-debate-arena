@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "chat-stream": "/components/chat-stream/index"
+  },
+  "navigationBarTitleText": "苏格拉底追问"
+}
