@@ -226,10 +226,11 @@ async function* streamRoleReply({ role, sessionId, userMessage }) {
 
 ```
 sessions 表
+├── openid: string     # 云函数写入时显式注入（_openid 系统字段不会自动注入）；getQuota 按此统计每日配额
 ├── recent: array      # 最近 8 轮原文（环形，写入时裁剪，保证苏格拉底可引用原话）
 ├── summary: string    # 第 9 轮起触发滚动摘要（1 次 LLM 调用 ≈800 Token，已计入测算）
 ├── round: number
-├── mode / topic / status / createdAt / updatedAt
+├── mode / topic / status / createdAt(serverDate) / updatedAt
 ```
 
 - v1.0 中"存摘要"的文字与 `push` 全文代码的矛盾已消除：recent 存原文但硬裁剪，summary 只覆盖更早内容。

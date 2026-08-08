@@ -99,14 +99,16 @@ for await (const event of res.eventStream) {
    - `prompts/evals/rubric.md`：评分标准——是否泄露答案（一票否决）/追问是否命中输入中的真实假设/是否复读上一轮问题/语气是否克制。
    - `evalRunner` 云函数：读取 cases，逐条以苏格拉底 prompt 调用模型（hy3-preview），再用 hy3 做一次裁判调用按 rubric 打分，结果写 `eval_runs` 表（含整体通过率）。**注意：一次全量评测约消耗 10 万 Token，每天最多跑一次。**
 3. **对话状态机**（`pages/socrates/`）
-   - 流程：进入页面 → 校验当日配额（user_quota）→ 用户输入 → msgSecCheck → 组装上下文（system + summary + recent 8 轮 + 用户消息）→ 流式调用 → 回复完成 → sessionStore 落库 → 等待下一轮。
+   - 流程：进入页面 → 校验当日配额（getQuota，已实现）→ 用户输入 → msgSecCheck → 组装上下文（system + summary + recent 8 轮 + 用户消息）→ 流式调用 → 回复完成 → sessionStore 落库 → 等待下一轮。
    - 轮次达到 10 轮：停止追问，提示进入报告环节（报告页 W3 实现，本周先占位跳转）。
    - 配额用尽：友好提示 + 引导查看历史报告。
 4. **sessionStore 云函数完整实现**
    - `get`：返回 recent + summary + round。
    - `append`：追加本轮 user/assistant 消息到 recent；recent 超过 8 轮时裁剪最旧轮次；第 9 轮起触发滚动摘要（一次 hy3 调用，把被裁剪的轮次并入 summary，≤300 字），摘要异步执行。
+   - **配额统计契约（必须遵守）**：会话文档创建时显式写入 `openid`（`cloud.getWXContext().OPENID`）与 `createdAt: db.serverDate()`。getQuota 按 `openid` 字段统计（`_openid` 系统字段在云函数写入时不会自动注入，禁止依赖）。`mode` 字段取 L1/L2/L3。
 5. **配额与监控**
-   - `utils/quota.js` + user_quota 表：按 openid+日期记录 l1Used/l2Used/l3Used，跨日自动重置。
+   - 配额已按 getQuota + sessions 集合统计实现（W1 提交 0b24870 + 时区修复），本周任务是让统计生效：sessionStore 写入链路打通后，验证配额真实拦截。
+   - getQuota 的今日区间已按北京时间显式计算，禁止改回依赖云函数时区的写法。
    - token_usage 落库确认覆盖全部调用路径。
 
 ### 验收标准
@@ -115,6 +117,7 @@ for await (const event of res.eventStream) {
 - [ ] 第 9 轮后滚动摘要生效，上下文未无限增长（打印本轮调用的 prompt_tokens 观察）
 - [ ] evalRunner 全量跑通，输出通过率报告；苏格拉底 prompt 迭代至**通过率 ≥80%**
 - [ ] 配额用尽后无法发起新会话
+- [ ] **配额链路实测**：同一账号连续发起第 4 次 L1 会话必须被拦截（证明 sessions 写入 → getQuota 统计 → 页面拦截全链路生效）；跨日边界（北京时间 00:00 前后各测一次）计数正确
 - [ ] **Token 实测**：统计 L1 单会话真实消耗（10 轮+摘要），把 tech-roadmap-v2.md 1.3 节的估算值替换为实测值（标注样本数）
 
 ---
