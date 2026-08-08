@@ -89,6 +89,10 @@ async function streamText(opts) {
 
       // 从 eventStream 提取 usage / note / finish_reason
       // 超时防护：即使 eventStream 挂起或不可读，也不阻塞 onStreamEnd
+      // ⚠️ event.data 是 SSE 原始 payload 字符串（JSON 字符串或 "[DONE]"），
+      //    不是结构化对象。usage/finish_reason/note 在 JSON.parse(event.data) 之后。
+      //    来源：微信开放文档 extend.AI 类型声明
+      //    https://developers.weixin.qq.com/miniprogram/dev/wxcloudservice/wxcloud/reference-sdk-api/extend/ai.html
       let usage = null;
       let note = "";
       let finishReason = "";
@@ -96,13 +100,16 @@ async function streamText(opts) {
         const consume = (async () => {
           for await (const event of res.eventStream) {
             if (event.data === "[DONE]") break;
-            if (event.usage) usage = event.usage;
-            if (event.note) note = event.note;
-            const fr =
-              event.finish_reason ||
-              event.finishReason ||
-              (event.choices && event.choices[0] && event.choices[0].finish_reason);
-            if (fr) finishReason = fr;
+            // 解析 JSON payload 提取结构化字段
+            try {
+              const parsed = JSON.parse(event.data);
+              if (parsed.usage) usage = parsed.usage;
+              if (parsed.note) note = parsed.note;
+              const fr = parsed.choices && parsed.choices[0] && parsed.choices[0].finish_reason;
+              if (fr) finishReason = fr;
+            } catch {
+              // 非 JSON 的事件数据，跳过
+            }
           }
         })();
         await Promise.race([consume, sleep(config.streamEventTimeoutMs || 3000)]);
