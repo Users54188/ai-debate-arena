@@ -1,7 +1,6 @@
 const cloud = require("wx-server-sdk");
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
-const _ = db.command;
 
 /**
  * sessionStore — 会话持久化 + 滚动摘要 + 用量记录（W2 完整实现）
@@ -156,8 +155,8 @@ exports.main = async (event) => {
           evicted.push(...newRecent.splice(0, 2));
         }
 
-        // 更新 round 取两者较大值（幂等，防止并发覆盖）
-        const nextRound = Math.max(s.round || 0, Number(round) || 0);
+        // 更新 round 取两者较大值（幂等，防止并发覆盖；最小为 1）
+        const nextRound = Math.max(s.round || 0, Number(round) || 1, 1);
 
         let summary = s.summary || "";
         if (evicted.length > 0) {

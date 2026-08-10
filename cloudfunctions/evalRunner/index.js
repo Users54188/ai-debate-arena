@@ -60,8 +60,8 @@ const JUDGE_PROMPT = `你是一个严格的 prompt 评测裁判。你将收到�
 - pass = 无否决项 且 total >= 70`;
 
 const MAX_CASES_PER_RUN = 60;
-const MODEL_COUNT = "hy3-preview"; // 苏格拉底生成
-const MODEL_JUDGE = "hy3"; // 裁判打分
+const MODEL_SOCRATES = "hy3-preview"; // 苏格拉底生成
+const MODEL_JUDGE = "hy3";          // 裁判打分
 
 // 北京时间（UTC+8）今日字符串 yyyy-MM-dd，用于"每天最多一次全量"防刷
 function todayStr() {
@@ -94,7 +94,7 @@ async function runSocrates(prompt, messages) {
   const ai = cloud.ai();
   const model = ai.createModel("cloudbase");
   const apiMessages = [{ role: "system", content: prompt }, ...messages];
-  const res = await model.streamText({ model: MODEL_COUNT, messages: apiMessages });
+  const res = await model.streamText({ model: MODEL_SOCRATES, messages: apiMessages });
 
   let fullText = "";
   for await (const text of res.textStream) {
@@ -232,7 +232,7 @@ exports.main = async (event = {}) => {
             .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }))
         : [];
       const socratesOut = await runSocrates(prompt, [...history, { role: "user", content: caseItem.input }]);
-      await recordUsage("eval_L1", MODEL_COUNT, socratesOut.usage);
+      await recordUsage("eval_L1", MODEL_SOCRATES, socratesOut.usage);
 
       // 裁判打分
       const judgeOut = await judgeReply({ caseItem, reply: socratesOut.text });
