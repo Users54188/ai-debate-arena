@@ -182,16 +182,23 @@ Page({
     }
   },
 
-  /** 落库单条消息（user 在流式前、assistant 在流式后） */
+  /** 落库单条消息（user 在流式前、assistant 在流式后；入参 role 为 API 角色） */
   async persistMessage(role, content, round) {
     try {
-      await wx.cloud.callFunction({
+      const res = await wx.cloud.callFunction({
         name: config.cloudFunctions.sessionStore,
         data: { action: "append", sessionId: this.sessionId, role, content, round },
       });
+      // 云函数以 { code, msg } 返回业务结果，抛异常只是兜底，必须检查 code
+      if (!res.result || res.result.code !== 0) {
+        console.error(
+          "[socrates] persist rejected:",
+          (res.result && res.result.msg) || "unknown error"
+        );
+      }
     } catch (e) {
       console.error("[socrates] persist failed:", e);
-      // 落库失败不阻断当轮对话（下一轮 append 幂等合并）
+      // 落库失败不阻断当轮对话；append 只追加不合并，缺失消息不会自动补齐
     }
   },
 
@@ -222,8 +229,8 @@ Page({
           waitingFirstChunk: false,
         });
 
-        // 苏格拉底回复落库
-        await self.persistMessage("socrates", finalText, newRound);
+        // 苏格拉底回复落库（API 角色 assistant；sessionStore append 只接受 user|assistant）
+        await self.persistMessage("assistant", finalText, newRound);
 
         if (newRound >= config.maxRounds) {
           self.setData({ roundLimitReached: true });

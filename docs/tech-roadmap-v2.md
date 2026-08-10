@@ -68,7 +68,7 @@
 > 约 +3.5~4.5k Token。**实测校准流程**：真机走满 10 轮 L1 会话，取 3 个以上样本，
 > 汇总 token_usage 表按 sessionId/mode 关联的实际 prompt_tokens + completion_tokens，
 > 用实测均值替换本节估算值并标注样本数（提报材料引用实测值）。
-> evalRunner 云函数全量跑评测（42 条用例 × 2 次调用 ≈ 10 万 Token）同样计入 AI 资源包
+> evalRunner 云函数全量跑评测（50 条用例 × 2 次调用 ≈ 10 万 Token）同样计入 AI 资源包
 > 消耗，已按"每天最多一次全量"防刷（cloudfunctions/evalRunner）。
 
 **分模式测算**（上下文随轮次滚动，取均值估算；⚠️ 含 system prompt 上修前的旧口径）：

@@ -2,7 +2,7 @@
   "version": "1.0",
   "updatedAt": "2026-08-10",
   "targetPassRate": 0.8,
-  "note": "W2 评测基线 48 条。结构：{ id, input, category, context?, red_lines, focus }。context 为可选上文对话，测试'不复读已问问题'时使用。⚠️ cloudfunctions/evalRunner/cases.json 为本文件部署副本（云函数打包需自带 cases），改动须双向同步。",
+  "note": "W2 评测基线 50 条。结构：{ id, input, category, context?, red_lines, focus }。context 为可选上文对话，测试'不复读已问问题'时使用。⚠️ cloudfunctions/evalRunner/cases.json 为本文件部署副本（云函数打包需自带 cases），改动须双向同步。",
   "cases": [
     {
       "id": "n01",
@@ -344,6 +344,34 @@
       "input": "嗯，有了钱生活就好了。",
       "red_lines": ["再次追问'成功'定义", "复读上轮已问问题", "总结上文"],
       "focus": "不得复读'成功指什么'（已澄清），应向'钱多=生活好'这个新链条提问"
+    },
+    {
+      "id": "r02",
+      "category": "repeat",
+      "context": [
+        { "role": "user", "content": "早睡早起对健康有好处。" },
+        { "role": "assistant", "content": "你说的'好处'具体指哪些方面？" },
+        { "role": "user", "content": "就是精神好、皮肤好、不容易生病。" },
+        { "role": "assistant", "content": "精神好、皮肤好这些，都只属于早睡早起能带来的吗？" },
+        { "role": "user", "content": "那倒也不一定，有的人熬夜也精神好。" }
+      ],
+      "input": "但还是觉得早睡早起更踏实。",
+      "red_lines": ["复读'好处指哪些方面'", "复读'是否专属早睡早起'", "复读'熬夜特例'"],
+      "focus": "'好处'与'是否专属'均已澄清，不得复读，应就'更踏实'这个新说法提问"
+    },
+    {
+      "id": "r03",
+      "category": "repeat",
+      "context": [
+        { "role": "user", "content": "读书越多越好，这是毫无疑问的。" },
+        { "role": "assistant", "content": "你所说的'好'，用什么来衡量？" },
+        { "role": "user", "content": "眼界更宽、机会更多、内心更充实吧。" },
+        { "role": "assistant", "content": "如果读了很多书，上述三点却都没有发生，'多'还成立吗？" },
+        { "role": "user", "content": "那只能说明他读的书不对路。" }
+      ],
+      "input": "对了，我最近也在想，读书和健身哪个更值得坚持。",
+      "red_lines": ["复读'好的衡量标准'", "复读'边界条件'", "顺着闲聊转移话题"],
+      "focus": "上文两个问题均已澄清或回应，不得复读；应就'读书vs健身哪个更值得坚持'中的判断标准发起新追问"
     }
   ]
 }
