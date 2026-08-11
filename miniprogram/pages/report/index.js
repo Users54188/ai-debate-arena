@@ -1,1 +1,236 @@
-Page({});
+/**
+ * report 页 — L1 思辨报告（W3）
+ *
+ * 流程：onLoad 取 sessionId → 调 generateReport（幂等，重复进入不重复生成）
+ *       → 归属校验通过后拉取 transcript（sessionStore.get withTranscript）
+ *       → 渲染评分环/策略条/谬误列表/逻辑链/报告正文/对话回溯
+ *
+ * 降级与容错：
+ * - generateReport code:-1 → 显示错误态 + 重试按钮，不白屏
+ * - 报告 degraded=true → 轻提示"本次分析部分降级"
+ * - sessionId 为空 → 显示"会话不存在"
+ *
+ * 分享：onShareAppMessage 标题带动态分数；海报按钮占位（W6 实现）
+ */
+
+const config = require("../../config");
+
+const STRATEGIES = [
+  { key: "预设", label: "预设前提" },
+  { key: "证据", label: "证据追问" },
+  { key: "边界", label: "边界探索" },
+  { key: "后果", label: "后果追问" },
+  { key: "定义", label: "定义澄清" },
+];
+
+Page({
+  data: {
+    sessionId: "",
+    loading: true,
+    loadError: "",
+    notFound: false,
+    report: null,
+    transcript: [],
+    scrollTarget: "",
+    highlightIndex: -1,
+    strategyRows: [],
+    fallacyItems: [],
+    shareTitle: "",
+  },
+
+  onLoad(options) {
+    const sessionId = (options && options.sessionId) || "";
+    this.setData({ sessionId });
+    if (!sessionId) {
+      this.setData({ loading: false, notFound: true, loadError: "会话不存在" });
+      return;
+    }
+    this.loadReport();
+  },
+
+  /** 拉取报告（幂等）+ 对话回溯原文 */
+  async loadReport() {
+    const { sessionId } = this.data;
+    if (!sessionId) return;
+    this.setData({ loading: true, loadError: "" });
+
+    try {
+      const res = await wx.cloud.callFunction({
+        name: config.cloudFunctions.generateReport,
+        data: { sessionId },
+      });
+      const result = res.result || {};
+      if (result.code !== 0) {
+        // 云函数业务失败 → 显示错误 + 重试（不白屏）；归属校验失败（他人 sessionId）重试无益但无害
+        this.setData({ loading: false, loadError: result.msg || "报告生成失败" });
+        return;
+      }
+
+      const report = (result.data && result.data.report) || null;
+      if (!report) {
+        this.setData({ loading: false, loadError: "报告数据为空" });
+        return;
+      }
+
+      // 归属已由 generateReport 校验，随后拉取对话回溯原文
+      const transcript = await this.fetchTranscript(sessionId);
+      const roundCount = transcript.reduce(
+        (max, m) => Math.max(max, m.round || 0),
+        0
+      );
+
+      this.setData({
+        report,
+        transcript,
+        loading: false,
+        strategyRows: this.buildStrategyRows(report),
+        fallacyItems: this.buildFallacyItems(report, transcript),
+        shareTitle: this.buildShareTitle(report, roundCount),
+      });
+
+      // 渲染完成后绘制评分环
+      this.nextTick(() => this.drawScoreRing(report.score || 0));
+    } catch (e) {
+      console.error("[report] load failed:", e);
+      this.setData({ loading: false, loadError: "网络异常，请稍后重试" });
+    }
+  },
+
+  /** 获取对话回溯原文（sessionStore.get withTranscript） */
+  async fetchTranscript(sessionId) {
+    try {
+      const res = await wx.cloud.callFunction({
+        name: config.cloudFunctions.sessionStore,
+        data: { action: "get", sessionId, withTranscript: true },
+      });
+      const session = (res.result && res.result.data && res.result.data.session) || {};
+      return Array.isArray(session.transcript) ? session.transcript : [];
+    } catch (e) {
+      console.error("[report] fetch transcript failed:", e);
+      return [];
+    }
+  },
+
+  /** 深度分 → 5 条策略条形图数据 */
+  buildStrategyRows(report) {
+    const tags = Array.isArray(report.strategyTags) ? report.strategyTags : [];
+    const covered = new Set(tags.map((t) => t && t.type));
+    return STRATEGIES.map((s) => ({
+      ...s,
+      covered: covered.has(s.key),
+      pct: covered.has(s.key) ? 100 : 0,
+    }));
+  },
+
+  /** 谬误列表（附加可定位到对话回溯的索引） */
+  buildFallacyItems(report, transcript) {
+    const fallacies = Array.isArray(report.fallacies) ? report.fallacies : [];
+    return fallacies.map((f) => {
+      // 找到对应轮次的用户原话索引（用于点击定位）
+      const round = f.round || 0;
+      const idx = transcript.findIndex(
+        (m) => m.role === "user" && m.round === round
+      );
+      return { ...f, transcriptIndex: idx >= 0 ? idx : -1 };
+    });
+  },
+
+  buildShareTitle(report, roundCount) {
+    const score = (report && report.score) || 0;
+    const rounds = roundCount || 10;
+    return `我和苏格拉底辩了 ${rounds} 轮，拿到 ${score} 分`;
+  },
+
+  /** 评分环（Canvas 2D 自绘：底环 + 进度弧 + 分数文字） */
+  drawScoreRing(score) {
+    const query = wx.createSelectorQuery();
+    query
+      .select("#scoreRing")
+      .fields({ node: true, size: true })
+      .exec((res) => {
+        if (!res || !res[0] || !res[0].node) return;
+        const canvas = res[0].node;
+        const ctx = canvas.getContext("2d");
+        const dpr = wx.getSystemInfoSync().pixelRatio;
+        const width = res[0].width;
+        const height = res[0].height;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.scale(dpr, dpr);
+
+        const cx = width / 2;
+        const cy = height / 2;
+        const radius = Math.min(width, height) / 2 - 8;
+        const lineWidth = 10;
+        const start = -Math.PI / 2;
+        const ratio = Math.max(0, Math.min(1, (score || 0) / 100));
+        const end = start + ratio * Math.PI * 2;
+
+        // 底环
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = "#E5E7EB";
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+
+        // 进度弧
+        if (ratio > 0) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, start, end);
+          ctx.strokeStyle = "#4F46E5";
+          ctx.lineWidth = lineWidth;
+          ctx.lineCap = "round";
+          ctx.stroke();
+        }
+
+        // 分数
+        ctx.fillStyle = "#1F2937";
+        ctx.font = "bold 28px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(Math.round(score || 0)), cx, cy);
+      });
+  },
+
+  /** 点击谬误条目 → 对话回溯区滚动定位并高亮原话 */
+  onFallacyTap(e) {
+    const idx = e.currentTarget.dataset.index;
+    const item = this.data.fallacyItems[idx];
+    if (!item || item.transcriptIndex < 0) return;
+
+    this.setData({
+      scrollTarget: `msg-${item.transcriptIndex}`,
+      highlightIndex: item.transcriptIndex,
+    });
+    // 1.6s 后清除高亮（避免遮挡后续阅读）
+    setTimeout(() => {
+      if (this.data.highlightIndex === item.transcriptIndex) {
+        this.setData({ highlightIndex: -1 });
+      }
+    }, 1600);
+  },
+
+  /** 重试 */
+  onRetry() {
+    this.setData({ loadError: "" });
+    this.loadReport();
+  },
+
+  /** 海报占位（W6 实现） */
+  onPoster() {
+    wx.showToast({ title: "即将上线", icon: "none", duration: 1500 });
+  },
+
+  /** 分享（标题动态分数；转发后进入报告页，可生成或查看报告） */
+  onShareAppMessage() {
+    return {
+      title: this.data.shareTitle || "我的思辨报告",
+      // 缩略图：项目暂无本地图片素材，用微信默认页面截图（W6 海报时补本地素材）
+      path: `/pages/report/index?sessionId=${this.data.sessionId || ""}`,
+    };
+  },
+
+  nextTick(fn) {
+    setTimeout(fn, 50);
+  },
+});

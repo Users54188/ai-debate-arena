@@ -1,1 +1,96 @@
-<view class="placeholder"><text>思辨报告 — W3 实现</text></view>
+<view class="report-page">
+  <!-- AI 生成标识（合规常驻角标） -->
+  <view class="ai-badge">AI 生成</view>
+
+  <!-- 加载态 -->
+  <view wx:if="{{loading}}" class="loading-box">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">报告生成中…</text>
+  </view>
+
+  <!-- 错误/不存在 -->
+  <view wx:elif="{{loadError}}" class="error-box">
+    <text class="error-text">{{loadError}}</text>
+    <button wx:if="{{!notFound}}" class="retry-btn" bindtap="onRetry">重试</button>
+  </view>
+
+  <!-- 报告内容 -->
+  <block wx:else>
+    <view class="card score-card">
+      <canvas type="2d" id="scoreRing" class="score-ring"></canvas>
+      <view class="score-sub">
+        <view class="sub-item"><text class="sub-label">基础分</text><text class="sub-value">{{report.baseScore}}</text></view>
+        <view class="sub-item"><text class="sub-label">深度分</text><text class="sub-value">{{report.depthScore}}</text></view>
+        <view class="sub-item"><text class="sub-label">修正分</text><text class="sub-value">{{report.fixScore}}</text></view>
+      </view>
+    </view>
+
+    <!-- 深度分：五类策略条形图 -->
+    <view class="card" wx:if="{{strategyRows.length}}">
+      <view class="card-title">追问策略覆盖</view>
+      <view class="strategy-row" wx:for="{{strategyRows}}" wx:key="key">
+        <text class="strategy-label">{{item.label}}</text>
+        <view class="strategy-track">
+          <view class="strategy-bar {{item.covered ? 'on' : 'off'}}" style="width: {{item.pct}}%"></view>
+        </view>
+        <text class="strategy-mark {{item.covered ? 'on' : 'off'}}">{{item.covered ? '✓' : '○'}}</text>
+      </view>
+    </view>
+
+    <!-- 谬误列表 -->
+    <view class="card" wx:if="{{fallacyItems.length}}">
+      <view class="card-title">论证谬误（点击定位原话）</view>
+      <view
+        class="fallacy-item"
+        wx:for="{{fallacyItems}}"
+        wx:key="index"
+        data-index="{{index}}"
+        bindtap="onFallacyTap"
+      >
+        <text class="fallacy-type">{{item.type}}</text>
+        <text class="fallacy-quote">「{{item.quote}}」</text>
+        <text class="fallacy-round">第 {{item.round}} 轮</text>
+      </view>
+    </view>
+
+    <!-- 逻辑链 -->
+    <view class="card" wx:if="{{report.logicChain}}">
+      <view class="card-title">论证链条</view>
+      <logic-chain chain="{{report.logicChain}}" />
+    </view>
+
+    <!-- 高光原话 -->
+    <view class="card" wx:if="{{report.highlights.length}}">
+      <view class="card-title">你的精彩原话</view>
+      <view class="highlight-item" wx:for="{{report.highlights}}" wx:key="index">
+        <text>「{{item}}」</text>
+      </view>
+    </view>
+
+    <!-- 自然语言报告 -->
+    <view class="card">
+      <view class="card-title">思辨报告</view>
+      <view wx:if="{{report.degraded}}" class="degraded-tip">本次分析部分降级，评分仅为基础分</view>
+      <text class="report-text" user-select>{{report.reportText}}</text>
+    </view>
+
+    <!-- 对话回溯 -->
+    <view class="card" wx:if="{{transcript.length}}">
+      <view class="card-title">对话回溯</view>
+      <scroll-view scroll-y class="transcript-scroll" scroll-into-view="{{scrollTarget}}">
+        <view
+          wx:for="{{transcript}}"
+          wx:key="index"
+          id="msg-{{index}}"
+          class="msg {{item.role === 'user' ? 'user' : 'socrates'}} {{highlightIndex === index ? 'highlight' : ''}}"
+        >
+          <text class="msg-role">{{item.role === 'user' ? '我' : '苏格拉底'}}</text>
+          <text class="msg-content">{{item.content}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 海报占位 -->
+    <button class="poster-btn" bindtap="onPoster">生成海报 · 即将上线</button>
+  </block>
+</view>

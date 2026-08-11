@@ -10,8 +10,13 @@ const db = cloud.database();
  *   create:     { mode: "L1"|"L2"|"L3", topic? } → { sessionId }
  *   get:        { sessionId } → { session: { recent, summary, round, status } }
  *   append:     { sessionId, role: "user"|"assistant", content, round }
- *               → 追加消息；recent 超 8 轮（16 条）裁剪最旧轮次并入滚动摘要
+ *               → 追加消息；recent 超 8 轮（16 条）裁剪最旧轮次并入滚动摘要；
+ *                 transcript 同步追加同一条消息（只增不裁，供报告生成引用原话）
  *   trackUsage: { mode, model, prompt_tokens, completion_tokens }
+ *
+ * transcript（W3 新增）：
+ * - 与 recent 同源的消息数组，但永不裁剪、不压缩，保存全量原文（≤8KB/会话）
+ * - get 默认不返回，需显式传 withTranscript: true（避免普通对话读取带全量记录）
  *
  * 配额统计契约（必须遵守，配合 getQuota）：
  * - 会话文档创建时显式写入 openid（cloud.getWXContext().OPENID）与 createdAt: db.serverDate()
@@ -86,6 +91,7 @@ async function ensureSessionDoc(event) {
       mode,
       topic: event.topic || "",
       recent: [],
+      transcript: [],
       summary: "",
       round: 0,
       status: "active",
@@ -125,6 +131,8 @@ exports.main = async (event) => {
               round: s.round || 0,
               status: s.status || "active",
               mode: s.mode || "",
+              // W3: 仅报告等需要全量原文的场景显式要求时返回
+              ...(event.withTranscript ? { transcript: s.transcript || [] } : {}),
             },
           },
         };
@@ -149,6 +157,10 @@ exports.main = async (event) => {
         const recent = Array.isArray(s.recent) ? s.recent : [];
         const newRecent = [...recent, msg];
 
+        // W3: transcript 只增不裁，保留全量原文（供报告 fallacies.quote 逐字引用）
+        const transcript = Array.isArray(s.transcript) ? s.transcript : [];
+        const newTranscript = [...transcript, msg];
+
         // 裁剪超 8 轮的旧轮次（成对弹出最旧的 user/assistant）
         let evicted = [];
         while (newRecent.length > MAX_RECENT_MESSAGES) {
@@ -171,6 +183,7 @@ exports.main = async (event) => {
         await ref.update({
           data: {
             recent: newRecent,
+            transcript: newTranscript,
             round: nextRound,
             summary,
             status: nextRound >= 10 ? "finished" : "active",

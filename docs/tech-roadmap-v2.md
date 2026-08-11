@@ -237,6 +237,7 @@ async function* streamRoleReply({ role, sessionId, userMessage }) {
 sessions 表
 ├── openid: string     # 云函数写入时显式注入（_openid 系统字段不会自动注入）；getQuota 按此统计每日配额
 ├── recent: array      # 最近 8 轮原文（环形，写入时裁剪，保证苏格拉底可引用原话）
+├── transcript: array  # W3 新增：全量原文（只增不裁，≤8KB/会话），供 generateReport 的 fallacies.quote 逐字引用；get 默认不返回，需 withTranscript: true
 ├── summary: string    # 第 9 轮起触发滚动摘要（1 次 LLM 调用 ≈800 Token，已计入测算）
 ├── round: number
 ├── mode / topic / status / createdAt(serverDate) / updatedAt
