@@ -5,7 +5,7 @@
 
 module.exports = {
   // 云开发环境 ID（部署时替换）
-  envId: "<云开发环境ID>",
+  envId: "cloudbase-d3gvaqczs2298c253",
 
   // 模型配置
   model: {
