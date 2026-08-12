@@ -35,6 +35,7 @@ Component({
     messages: { type: Array, value: [] },
     streaming: { type: Boolean, value: false },
     waitingFirstChunk: { type: Boolean, value: false },
+    waitingText: { type: String, value: "思考中" },
     showAiLabel: { type: Boolean, value: true },
   },
 
