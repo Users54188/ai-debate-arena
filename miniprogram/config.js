@@ -42,6 +42,7 @@ module.exports = {
     securityCheck: "securityCheck",
     userProfile: "userProfile",
     getQuota: "getQuota",
+    generateReport: "generateReport",
   },
 
   // 数据库集合名

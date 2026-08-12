@@ -37,6 +37,6 @@
 
   <!-- 轮次上限提示 -->
   <view wx:if="{{roundLimitReached}}" class="round-limit-notice">
-    <text>本轮思辨已达 10 轮上限，即将生成报告（W3 实现）</text>
+    <text>已达 10 轮上限，可查看思辨报告</text>
   </view>
 </view>

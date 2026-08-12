@@ -1,1 +1,8 @@
-{"usingComponents":{},"navigationBarTitleText":"思辨报告"}
+{
+  "usingComponents": {
+    "logic-chain": "/components/logic-chain/index"
+  },
+  "navigationBarTitleText": "思辨报告",
+  "enableShareAppMessage": true,
+  "enableShareTimeline": true
+}
