@@ -1,10 +1,11 @@
 /**
  * verify-prompt-mirror.js — Prompt/用例镜像一致性校验（W4-D0-B5）
  *
- * 校验三组镜像：
+ * 校验四组镜像：
  *  1. prompts/evals/cases.json ↔ cloudfunctions/evalRunner/cases.json（sha256 必须逐字一致）
  *  2. miniprogram/utils/prompts.js 的 socrates 字段 ↔ evalRunner 内置 PROMPT_SOCRATES（逐字一致）
- *  3. prompts/socrates.md 抽检核心句子（md 为人类阅读镜像，不做逐字校验）
+ *  3. miniprogram/utils/prompts.js 的 expert_* 字段 ↔ evalRunner 内置 PROMPT_EXPERT_*（逐字一致，W4 加）
+ *  4. prompts/socrates.md 抽检核心句子（md 为人类阅读镜像，不做逐字校验）
  *
  * 任一硬性镜像不一致 → exit(1)（阻断提交/CI）
  * 用法：node tools/verify-prompt-mirror.js
@@ -62,11 +63,33 @@ if (fs.existsSync(promptsJs) && fs.existsSync(evalRunnerJs)) {
   } else {
     ok("PROMPT_SOCRATES（prompts.js ↔ evalRunner 内置）一致");
   }
+
+  /* 3. PROMPT_EXPERT_* 镜像（硬性：逐字一致，W4 加） */
+  const expertPairs = [
+    { js: "expert_science", runner: "PROMPT_EXPERT_SCIENCE", label: "科学专家" },
+    { js: "expert_humanities", runner: "PROMPT_EXPERT_HUMANITIES", label: "人文专家" },
+    { js: "expert_tech", runner: "PROMPT_EXPERT_TECH", label: "技术专家" },
+    { js: "expert_common", runner: "PROMPT_EXPERT_COMMON", label: "通用学者" },
+  ];
+  for (const pair of expertPairs) {
+    // prompts.js 里形如 `expert_science: \`...\`,`；evalRunner 里形如 `const PROMPT_EXPERT_SCIENCE = \`...\`;`
+    const reJs = new RegExp(`${pair.js}:\\s*\`([\\s\\S]*?)\`\\s*,?$`, "m");
+    const reRunner = new RegExp(`${pair.runner}\\s*=\\s*\`([\\s\\S]*?)\`;`);
+    const eJs = jsSrc.match(reJs);
+    const eRunner = runnerSrc.match(reRunner);
+    if (!eJs || !eRunner) {
+      fail(`无法提取 ${pair.label} prompt（正则失配：${pair.js} ↔ ${pair.runner}）`);
+    } else if (normalize(eJs[1]) !== normalize(eRunner[1])) {
+      fail(`${pair.label} prompt 不一致：miniprogram/utils/prompts.js[${pair.js}] 与 evalRunner[${pair.runner}] 内容不同`);
+    } else {
+      ok(`${pair.label} prompt（${pair.js} ↔ ${pair.runner}）一致`);
+    }
+  }
 } else {
-  fail("prompts.js 或 evalRunner/index.js 缺失，无法校验 PROMPT_SOCRATES");
+  fail("prompts.js 或 evalRunner/index.js 缺失，无法校验 PROMPT_SOCRATES / PROMPT_EXPERT_*");
 }
 
-/* 3. socrates.md 抽检（软校验：核心句子必须存在） */
+/* 4. socrates.md 抽检（软校验：核心句子必须存在） */
 const mdFile = path.join(ROOT, "prompts", "socrates.md");
 if (fs.existsSync(mdFile)) {
   const md = fs.readFileSync(mdFile, "utf8");
