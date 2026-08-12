@@ -1,1 +1,54 @@
-.placeholder{display:flex;align-items:center;justify-content:center;height:100vh;color:var(--text-secondary);font-size:15px}
+.dual-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+chat-stream {
+  flex: 1;
+  overflow: hidden;
+}
+
+.input-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+}
+
+.msg-input {
+  flex: 1;
+  height: 36px;
+  background: var(--bg-page);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.send-btn {
+  flex-shrink: 0;
+  background: var(--primary);
+  color: white;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  padding: 0 16px;
+  height: 36px;
+  line-height: 36px;
+  border: none;
+}
+
+.send-btn[disabled] {
+  background: var(--border);
+  color: var(--text-secondary);
+}
+
+.quota-notice,
+.round-limit-notice {
+  padding: 10px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--warning);
+  background: #FFFBEB;
+}

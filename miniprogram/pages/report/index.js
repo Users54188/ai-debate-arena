@@ -32,6 +32,7 @@ Page({
     sessionId: "",
     shareToken: "",
     isShareView: false,
+    isL2: false,
     loading: true,
     loadError: "",
     notFound: false,
@@ -96,13 +97,19 @@ Page({
         report,
         transcript,
         loading: false,
+        isL2: (report.mode || "L1") === "L2",
         strategyRows: this.buildStrategyRows(report),
         fallacyItems: this.buildFallacyItems(report, transcript),
         shareTitle: this.buildShareTitle(report, roundCount),
       });
 
-      // 渲染完成后绘制评分环
-      this.nextTick(() => this.drawScoreRing(report.score || 0));
+      // 渲染完成后绘制评分环；L2 额外绘制双维度雷达图
+      this.nextTick(() => {
+        this.drawScoreRing(report.score || 0);
+        if ((report.mode || "L1") === "L2") {
+          this.drawRadarChart(report);
+        }
+      });
     } catch (e) {
       console.error("[report] load failed:", e);
       this.setData({ loading: false, loadError: "网络异常，请稍后重试" });
@@ -151,7 +158,10 @@ Page({
   buildShareTitle(report, roundCount) {
     const score = (report && report.score) || 0;
     const rounds = roundCount || 10;
-    return `我和苏格拉底辩了 ${rounds} 轮，拿到 ${score} 分`;
+    const mode = (report && report.mode) || "L1";
+    return mode === "L2"
+      ? `共修 ${rounds} 轮，综合思辨 ${score} 分`
+      : `我和苏格拉底辩了 ${rounds} 轮，拿到 ${score} 分`;
   },
 
   /** 评分环（Canvas 2D 自绘：底环 + 进度弧 + 分数文字） */
@@ -202,6 +212,92 @@ Page({
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(String(Math.round(score || 0)), cx, cy);
+      });
+  },
+
+  /** L2 双维度雷达图（Canvas 2D：知识掌握分 vs 思辨深度分） */
+  drawRadarChart(report) {
+    const query = wx.createSelectorQuery();
+    query
+      .select("#radarChart")
+      .fields({ node: true, size: true })
+      .exec((res) => {
+        if (!res || !res[0] || !res[0].node) return;
+        const canvas = res[0].node;
+        const ctx = canvas.getContext("2d");
+        const dpr = wx.getWindowInfo().pixelRatio;
+        const width = res[0].width;
+        const height = res[0].height;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.scale(dpr, dpr);
+
+        const cx = width / 2;
+        const cy = height / 2;
+        const radius = Math.min(width, height) / 2 - 16;
+        const knowledge = Math.max(0, Math.min(100, report.knowledgeScore || 0));
+        const thinkDepth = Math.max(0, Math.min(100, report.思辨深度分 || report.score || 0));
+        const a = Math.PI / 4; // 45°
+
+        // 两轴终点（知识掌握 45°右上，思辨深度 45°右下）
+        const kx = cx + radius * Math.cos(a);
+        const ky = cy - radius * Math.sin(a);
+        const tx = cx + radius * Math.cos(-a);
+        const ty = cy - radius * Math.sin(-a);
+
+        // 底图：半透明圆环
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = "#E5E7EB";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // 轴线和标签
+        ctx.font = "11px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#6B7280";
+        for (const pt of [{ x: kx, y: ky, label: "知识掌握" }, { x: tx, y: ty, label: "思辨深度" }]) {
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(pt.x, pt.y);
+          ctx.strokeStyle = "#D1D5DB";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          // 标签在终点外
+          const lx = pt.x + (pt.x - cx) / radius * 20;
+          const ly = pt.y + (pt.y - cy) / radius * 20;
+          ctx.fillText(pt.label, lx, ly + 4);
+        }
+
+        // 数据点
+        const kRad = radius * (knowledge / 100);
+        const tRad = radius * (thinkDepth / 100);
+        const dkx = cx + kRad * Math.cos(a);
+        const dky = cy - kRad * Math.sin(a);
+        const dtx = cx + tRad * Math.cos(-a);
+        const dty = cy - tRad * Math.sin(-a);
+
+        // 半透明填充区域（从中心到两个数据点的弧面）
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(dkx, dky);
+        ctx.arc(cx, cy, Math.max(kRad, tRad), -a, a);
+        ctx.lineTo(dtx, dty);
+        ctx.closePath();
+        ctx.fillStyle = "rgba(79, 70, 229, 0.12)";
+        ctx.fill();
+
+        // 数据点标记
+        const dots = [
+          { x: dkx, y: dky, color: "#0EA5E9" },
+          { x: dtx, y: dty, color: "#8B5CF6" },
+        ];
+        for (const d of dots) {
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = d.color;
+          ctx.fill();
+        }
       });
   },
 
