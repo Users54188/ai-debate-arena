@@ -6,7 +6,7 @@
  * 交互：bindtouchstart 命中检测（触点 vs 节点包围盒，含 6px 容差），
  *       命中后高亮节点并加粗关联边。
  * 降级：chain 为 null 或节点数为 0 时组件自身渲染为空（不占位）。
- * 适配：Canvas 2D 需要 pixelRatio 缩放（wx.getSystemInfoSync().pixelRatio）。
+ * 适配：Canvas 2D 需要 pixelRatio 缩放（wx.getWindowInfo().pixelRatio）。
  */
 
 const PADDING_X = 24;
@@ -64,7 +64,7 @@ Component({
           if (!res || !res[0] || !res[0].node) return;
           this.canvas = res[0].node;
           this.ctx = this.canvas.getContext("2d");
-          this.dpr = wx.getSystemInfoSync().pixelRatio || 1;
+          this.dpr = wx.getWindowInfo().pixelRatio || 1;
           this.canvasWidth = res[0].width || 300;
           this.layout();
           this.draw();

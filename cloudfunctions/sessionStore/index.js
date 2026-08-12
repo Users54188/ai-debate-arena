@@ -1,6 +1,7 @@
 const cloud = require("wx-server-sdk");
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
+const _ = db.command;
 
 /**
  * sessionStore — 会话持久化 + 滚动摘要 + 用量记录（W2 完整实现）
@@ -32,6 +33,9 @@ const db = cloud.database();
 const MAX_RECENT_MESSAGES = 16; // 8 轮 × 2 条（user + assistant）
 const SUMMARY_MODEL = "hy3";
 const SUMMARY_MAX_CHARS = 300;
+const CONTENT_MAX_CHARS = 2000; // 单条消息硬截断（防文档膨胀/拖慢读取/耗数据库点池）
+const TRANSCRIPT_ALERT_CHARS = 8000; // transcript 总长报警阈值（超限打日志，便于运维介入）
+const APPEND_MAX_RETRIES = 3; // 乐观锁冲突重试上限
 
 async function trackUsage(mode, model, usage) {
   try {
@@ -85,6 +89,11 @@ async function summarize(sessionId, evictedMessages, oldSummary) {
 async function ensureSessionDoc(event) {
   const { OPENID } = cloud.getWXContext();
   const mode = event.mode || "L1";
+  // P1 修复（分享防泄露）：一次性分享令牌，分享链接只带 token 不带 sessionId。
+  // token 每会话唯一且不可枚举，仅可只读查看报告（generateReport 校验），拿不到 transcript
+  const shareToken =
+    event.shareToken ||
+    Math.random().toString(36).slice(2) + Date.now().toString(36) + Math.random().toString(36).slice(2);
   const res = await db.collection("sessions").add({
     data: {
       openid: OPENID || "",
@@ -95,6 +104,8 @@ async function ensureSessionDoc(event) {
       summary: "",
       round: 0,
       status: "active",
+      version: 0,
+      shareToken,
       createdAt: db.serverDate(),
       updatedAt: db.serverDate(),
     },
@@ -120,8 +131,13 @@ exports.main = async (event) => {
       try {
         const { sessionId } = event;
         if (!sessionId) return { code: -1, msg: "sessionId required" };
+        const { OPENID } = cloud.getWXContext();
         const res = await db.collection("sessions").doc(sessionId).get();
         const s = res.data || {};
+        // P0 修复（IDOR/隐私泄露）：归属校验，他人 sessionId 一律拒绝
+        if (!s || !s.openid || s.openid !== OPENID) {
+          return { code: -1, msg: "session not found or not owned" };
+        }
         return {
           code: 0,
           data: {
@@ -147,49 +163,87 @@ exports.main = async (event) => {
         const { sessionId, role, content, round } = event;
         if (!sessionId) return { code: -1, msg: "sessionId required" };
         if (role !== "user" && role !== "assistant") return { code: -1, msg: "role must be user|assistant" };
+        const { OPENID } = cloud.getWXContext();
 
-        const msg = { role, content: String(content || ""), round: Math.max(1, Number(round) || 1) };
+        // P1 修复：内容硬截断，防超长消息撑爆文档（转码后按字符计）
+        const rawContent = String(content || "");
+        const msg = {
+          role,
+          content: rawContent.length > CONTENT_MAX_CHARS ? rawContent.slice(0, CONTENT_MAX_CHARS) : rawContent,
+          round: Math.max(1, Number(round) || 1),
+        };
         const ref = db.collection("sessions").doc(sessionId);
 
-        // 先读取当前会话，判断是否需要裁剪
+        // P1 修复（并发丢消息）：recent/transcript 用 _.push 原子追加，round 用 _.max
+        // 原子推进，杜绝读-算-写覆盖；归属校验在读库时一并完成
         const cur = await ref.get();
         const s = cur.data || {};
-        const recent = Array.isArray(s.recent) ? s.recent : [];
-        const newRecent = [...recent, msg];
+        if (!s || !s.openid || s.openid !== OPENID) {
+          // P0 修复（IDOR）：归属校验，他人 sessionId 一律拒绝
+          return { code: -1, msg: "session not found or not owned" };
+        }
+        await ref.update({
+          data: {
+            recent: _.push([msg]),
+            transcript: _.push([msg]),
+            round: _.max([msg.round]),
+            status: "active",
+            version: _.inc(1),
+            updatedAt: db.serverDate(),
+          },
+        });
 
-        // W3: transcript 只增不裁，保留全量原文（供报告 fallacies.quote 逐字引用）
-        const transcript = Array.isArray(s.transcript) ? s.transcript : [];
-        const newTranscript = [...transcript, msg];
-
-        // 裁剪超 8 轮的旧轮次（成对弹出最旧的 user/assistant）
+        // 版本门控裁剪：读取最新 recent，超限时成对弹出最旧轮次。
+        // 用 where(_id + version) 条件更新防覆盖：若裁剪期间有并发追加，
+        // version 已变则本次裁剪失败重试（最多 N 次，让位于并发写入）
         let evicted = [];
-        while (newRecent.length > MAX_RECENT_MESSAGES) {
-          evicted.push(...newRecent.splice(0, 2));
+        for (let i = 0; i < APPEND_MAX_RETRIES; i++) {
+          const cur2 = await ref.get();
+          const s2 = cur2.data || {};
+          const recent = Array.isArray(s2.recent) ? s2.recent : [];
+          if (recent.length <= MAX_RECENT_MESSAGES) break;
+          const newRecent = recent.slice(2); // 弹出最旧的 user+assistant 一对
+          evicted.push(...recent.slice(0, 2));
+          // 兼容历史文档（无 version 字段）与新建文档：version 缺失或等于读到的版本才允许裁剪
+          const gate = _.or([
+            { _id: sessionId, version: s2.version || 0 },
+            { _id: sessionId, version: _.exists(false) },
+          ]);
+          const trimRes = await db
+            .collection("sessions")
+            .where(gate)
+            .update({ data: { recent: newRecent, updatedAt: db.serverDate() } });
+          if (trimRes.stats.updated === 1) break; // 裁剪成功
+          // version 冲突（期间有并发追加），重读重试
         }
 
-        // 更新 round 取两者较大值（幂等，防止并发覆盖；最小为 1）
-        const nextRound = Math.max(s.round || 0, Number(round) || 1, 1);
+        // P1 修复：transcript 只增不裁，但超长需报警（运维阈值，不阻断）
+        const totalChars = (await ref.get()).data.transcript.reduce(
+          (n, m) => n + (m.content ? m.content.length : 0),
+          0
+        );
+        if (totalChars > TRANSCRIPT_ALERT_CHARS) {
+          console.error(`[sessionStore] transcript oversized: session=${sessionId} chars=${totalChars}`);
+        }
+
+        const nextRound = Math.max(s.round || 0, msg.round, 1);
 
         let summary = s.summary || "";
         if (evicted.length > 0) {
           try {
-            // 第 9 轮起裁剪发生时触发滚动摘要（串行执行；失败不阻断，保留 summary 原值）
+            // 第 9 轮起裁剪发生时触发滚动摘要（失败不阻断，保留 summary 原值）
             summary = await summarize(sessionId, evicted, summary);
+            await ref.update({
+              data: {
+                summary,
+                status: nextRound >= 10 ? "finished" : "active",
+                updatedAt: db.serverDate(),
+              },
+            });
           } catch (e) {
             console.error("[sessionStore] summarize failed, keep old summary:", e && e.message);
           }
         }
-
-        await ref.update({
-          data: {
-            recent: newRecent,
-            transcript: newTranscript,
-            round: nextRound,
-            summary,
-            status: nextRound >= 10 ? "finished" : "active",
-            updatedAt: db.serverDate(),
-          },
-        });
 
         return { code: 0, data: { ok: true, round: nextRound, summaryUpdated: evicted.length > 0 } };
       } catch (e) {

@@ -168,9 +168,27 @@ function computeScore(round, strategyTags, fallacies, degraded) {
 }
 
 exports.main = async (event) => {
-  const { sessionId } = event || {};
-  if (!sessionId) return { code: -1, msg: "sessionId required" };
+  const { sessionId, shareToken } = event || {};
+  if (!sessionId && !shareToken) return { code: -1, msg: "sessionId or shareToken required" };
   const { OPENID } = cloud.getWXContext();
+
+  // P1 修复（分享防泄露）：shareToken 路径 = 只读分享视图。
+  // 仅返回已生成的报告，绝不触发模型调用（分享链接拿不到 transcript，也消耗不了 token）
+  if (shareToken) {
+    try {
+      const found = await db.collection("sessions").where({ shareToken }).limit(1).get();
+      const s = (found.data && found.data[0]) || null;
+      if (!s) return { code: -1, msg: "session not found" };
+      const existing = await db.collection("reports").where({ sessionId: s._id }).limit(1).get();
+      if (existing.data && existing.data.length) {
+        return { code: 0, data: { report: existing.data[0], cached: true, share: true } };
+      }
+      return { code: -1, msg: "报告尚未生成，请分享者先查看后再分享" };
+    } catch (e) {
+      console.error("[generateReport] share view failed:", e);
+      return { code: -1, msg: "share view failed" };
+    }
+  }
 
   try {
     // 读取会话 + 归属校验（先于幂等查询，防止他方 sessionId 读到缓存报告）
@@ -185,7 +203,7 @@ exports.main = async (event) => {
     // 幂等：已有报告直接返回（防重复生成、重复扣 Token）
     const existing = await db.collection("reports").where({ sessionId }).get();
     if (existing.data && existing.data.length > 0) {
-      return { code: 0, data: { report: existing.data[0], cached: true } };
+      return { code: 0, data: { report: existing.data[0], cached: true, shareToken: s.shareToken || "" } };
     }
 
     const transcript = Array.isArray(s.transcript) ? s.transcript : [];
@@ -268,6 +286,7 @@ exports.main = async (event) => {
         report: reportDoc,
         cached: false,
         degraded,
+        shareToken: s.shareToken || "",
       },
     };
   } catch (e) {

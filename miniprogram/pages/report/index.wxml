@@ -16,6 +16,7 @@
 
   <!-- 报告内容 -->
   <block wx:else>
+    <view wx:if="{{isShareView}}" class="share-hint">分享视图：仅展示报告内容，对话原文仅分享者可见</view>
     <view class="card score-card">
       <canvas type="2d" id="scoreRing" class="score-ring"></canvas>
       <view class="score-sub">

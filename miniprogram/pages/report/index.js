@@ -5,6 +5,10 @@
  *       → 归属校验通过后拉取 transcript（sessionStore.get withTranscript）
  *       → 渲染评分环/策略条/谬误列表/逻辑链/报告正文/对话回溯
  *
+ * 分享（P1 修复）：分享链接只带 shareToken（由 generateReport 返回），不再携带
+ *       sessionId。好友经分享进入时按 token 只读拉取已生成报告（不触发生成、
+ *       拿不到 transcript），transcript 回溯区显示"分享视图不展示对话原文"。
+ *
  * 降级与容错：
  * - generateReport code:-1 → 显示错误态 + 重试按钮，不白屏
  * - 报告 degraded=true → 轻提示"本次分析部分降级"
@@ -26,6 +30,8 @@ const STRATEGIES = [
 Page({
   data: {
     sessionId: "",
+    shareToken: "",
+    isShareView: false,
     loading: true,
     loadError: "",
     notFound: false,
@@ -40,8 +46,9 @@ Page({
 
   onLoad(options) {
     const sessionId = (options && options.sessionId) || "";
-    this.setData({ sessionId });
-    if (!sessionId) {
+    const shareToken = (options && options.token) || "";
+    this.setData({ sessionId, shareToken, isShareView: !!shareToken });
+    if (!sessionId && !shareToken) {
       this.setData({ loading: false, notFound: true, loadError: "会话不存在" });
       return;
     }
@@ -50,14 +57,14 @@ Page({
 
   /** 拉取报告（幂等）+ 对话回溯原文 */
   async loadReport() {
-    const { sessionId } = this.data;
-    if (!sessionId) return;
+    const { sessionId, shareToken, isShareView } = this.data;
+    if (!sessionId && !shareToken) return;
     this.setData({ loading: true, loadError: "" });
 
     try {
       const res = await wx.cloud.callFunction({
         name: config.cloudFunctions.generateReport,
-        data: { sessionId },
+        data: isShareView ? { shareToken } : { sessionId },
       });
       const result = res.result || {};
       if (result.code !== 0) {
@@ -72,8 +79,14 @@ Page({
         return;
       }
 
-      // 归属已由 generateReport 校验，随后拉取对话回溯原文
-      const transcript = await this.fetchTranscript(sessionId);
+      // 归属已由 generateReport 校验；分享视图不拉取 transcript（token 只读，拿不到原文）
+      let transcript = [];
+      if (!isShareView) {
+        this.setData({
+          shareToken: (result.data && result.data.shareToken) || this.data.shareToken,
+        });
+        transcript = await this.fetchTranscript(sessionId);
+      }
       const roundCount = transcript.reduce(
         (max, m) => Math.max(max, m.round || 0),
         0
@@ -151,7 +164,7 @@ Page({
         if (!res || !res[0] || !res[0].node) return;
         const canvas = res[0].node;
         const ctx = canvas.getContext("2d");
-        const dpr = wx.getSystemInfoSync().pixelRatio;
+        const dpr = wx.getWindowInfo().pixelRatio;
         const width = res[0].width;
         const height = res[0].height;
         canvas.width = width * dpr;
@@ -221,12 +234,15 @@ Page({
     wx.showToast({ title: "即将上线", icon: "none", duration: 1500 });
   },
 
-  /** 分享（标题动态分数；转发后进入报告页，可生成或查看报告） */
+  /** 分享（P1 修复：只带 shareToken，不携带 sessionId；无 token 时兜底不补 sessionId） */
   onShareAppMessage() {
+    const { shareToken } = this.data;
     return {
       title: this.data.shareTitle || "我的思辨报告",
-      // 缩略图：项目暂无本地图片素材，用微信默认页面截图（W6 海报时补本地素材）
-      path: `/pages/report/index?sessionId=${this.data.sessionId || ""}`,
+      // 分享链接只读（token 路径不触发生成、无 transcript）；token 不存在时引导进入首页
+      path: shareToken
+        ? `/pages/report/index?token=${shareToken}`
+        : "/pages/index/index",
     };
   },
 

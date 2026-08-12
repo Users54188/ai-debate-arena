@@ -8,8 +8,7 @@ App({
         traceUser: true,
       });
     }
-    const sysInfo = wx.getSystemInfoSync();
-    const sdkVersion = sysInfo.SDKVersion;
+    const sdkVersion = wx.getAppBaseInfo().SDKVersion;
     console.log(`SDKVersion: ${sdkVersion}`);
     const requiredVersion = "3.7.1"; // wx.cloud.extend.AI 最低要求（来源：腾讯云开发接入指引）
     if (this.compareVersion(sdkVersion, requiredVersion) < 0) {
