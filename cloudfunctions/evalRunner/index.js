@@ -257,12 +257,19 @@ exports.main = async (event = {}) => {
     const caseItem = cases[i];
     try {
       // 苏格拉底回复生成（带上文历史，role 范围 system/user/assistant）
+      // P0 修复（prompt 注入实际隔离）：用例内容（含部分对抗性用例）统一套
+      // <user_data> 标签，与 system 安全声明配套，声明不再是空话
+      const wrap = (m) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.role === "assistant" ? m.content : `<user_data>${m.content}</user_data>`,
+      });
       const history = Array.isArray(caseItem.context)
-        ? caseItem.context
-            .filter((m) => m && m.role && m.content)
-            .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }))
+        ? caseItem.context.filter((m) => m && m.role && m.content).map(wrap)
         : [];
-      const socratesOut = await runSocrates(prompt, [...history, { role: "user", content: caseItem.input }]);
+      const socratesOut = await runSocrates(prompt, [
+        ...history,
+        { role: "user", content: `<user_data>${caseItem.input}</user_data>` },
+      ]);
       await recordUsage("eval_L1", MODEL_SOCRATES, socratesOut.usage);
 
       // 裁判打分

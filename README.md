@@ -43,7 +43,7 @@
 |------|------|------|
 | P0 | sessionStore get/append 无归属校验（IDOR） | 均校验 `openid`，他人 sessionId 一律拒绝 |
 | P0 | evalRunner 无鉴权，任何人可触发 ~10万 Token 消耗 | openid 白名单（`config.json` 的 `allowedOpenids`，留空即禁用） |
-| P0 | 用户输入可注入 system prompt | 用户内容以 `<user_data>` 等标签包裹并声明为数据；JUDGE_PROMPT 加安全声明 |
+| P0 | 用户输入可注入 system prompt | 全路径隔离：evalRunner（socrates/judge）与 generateReport（annotate/report）均以 `<user_data>`/`<transcript>` 等标签包裹不可信输入并加安全声明，且实际完成标签包裹（非仅声明） |
 | P1 | append 读-算-写并发丢消息 | `_.push`/`_.max` 原子追加 + version 门控裁剪（重试 3 次） |
 | P1 | 消息无长度上限、transcript 可无限膨胀 | 单条硬截断 2000 字符；transcript 超 8000 字符报警 |
 | P1 | 分享链接携带 sessionId（可枚举触发报告） | 分享改带一次性 `shareToken`（只读、不触发生成、无 transcript） |

@@ -193,17 +193,28 @@ exports.main = async (event) => {
           },
         });
 
-        // 版本门控裁剪：读取最新 recent，超限时成对弹出最旧轮次。
+        // 版本门控裁剪：读取最新 recent，超限时弹出最旧轮次。
         // 用 where(_id + version) 条件更新防覆盖：若裁剪期间有并发追加，
         // version 已变则本次裁剪失败重试（最多 N 次，让位于并发写入）
         let evicted = [];
+        let lastTranscript = [];
         for (let i = 0; i < APPEND_MAX_RETRIES; i++) {
           const cur2 = await ref.get();
           const s2 = cur2.data || {};
-          const recent = Array.isArray(s2.recent) ? s2.recent : [];
+          lastTranscript = Array.isArray(s2.transcript) ? s2.transcript : [];
+          let recent = Array.isArray(s2.recent) ? s2.recent : [];
           if (recent.length <= MAX_RECENT_MESSAGES) break;
-          const newRecent = recent.slice(2); // 弹出最旧的 user+assistant 一对
-          evicted.push(...recent.slice(0, 2));
+          // 成对弹出最旧轮次：头部必须是 user+assistant 才算一对；
+          // 某轮 assistant 落库失败导致头部不成对时按 1 条弹出，避免破坏交替顺序
+          let removed = [];
+          while (recent.length > MAX_RECENT_MESSAGES) {
+            const first = recent[0] || {};
+            const second = recent[1];
+            const isPair = first.role === "user" && second && second.role === "assistant";
+            const n = isPair ? 2 : 1;
+            removed.push(...recent.slice(0, n));
+            recent = recent.slice(n);
+          }
           // 兼容历史文档（无 version 字段）与新建文档：version 缺失或等于读到的版本才允许裁剪
           const gate = _.or([
             { _id: sessionId, version: s2.version || 0 },
@@ -212,13 +223,18 @@ exports.main = async (event) => {
           const trimRes = await db
             .collection("sessions")
             .where(gate)
-            .update({ data: { recent: newRecent, updatedAt: db.serverDate() } });
-          if (trimRes.stats.updated === 1) break; // 裁剪成功
+            .update({ data: { recent, updatedAt: db.serverDate() } });
+          if (trimRes.stats.updated === 1) {
+            evicted = removed; // 覆盖而非累加：重试时以最后一次实际弹出的对为准
+            break; // 裁剪成功
+          }
           // version 冲突（期间有并发追加），重读重试
         }
 
-        // P1 修复：transcript 只增不裁，但超长需报警（运维阈值，不阻断）
-        const totalChars = (await ref.get()).data.transcript.reduce(
+        // P1 修复：transcript 只增不裁，但超长需报警（运维阈值，不阻断）。
+        // 复用裁剪循环中最后一次读取的文档（追加后、裁剪前的完整 transcript），
+        // 省一次独立读取；文档被并发删除时按空数组处理，不抛 TypeError
+        const totalChars = lastTranscript.reduce(
           (n, m) => n + (m.content ? m.content.length : 0),
           0
         );
@@ -233,13 +249,28 @@ exports.main = async (event) => {
           try {
             // 第 9 轮起裁剪发生时触发滚动摘要（失败不阻断，保留 summary 原值）
             summary = await summarize(sessionId, evicted, summary);
-            await ref.update({
-              data: {
-                summary,
-                status: nextRound >= 10 ? "finished" : "active",
-                updatedAt: db.serverDate(),
-              },
-            });
+            // version 门控写回：两轮并发裁剪时只允许基于最新版本写入，
+            // 防止互相覆盖对方刚生成的摘要
+            let written = false;
+            for (let i = 0; i < APPEND_MAX_RETRIES && !written; i++) {
+              const latest = await ref.get();
+              const ls = latest.data || {};
+              const gate = _.or([
+                { _id: sessionId, version: ls.version || 0 },
+                { _id: sessionId, version: _.exists(false) },
+              ]);
+              const up = await db.collection("sessions").where(gate).update({
+                data: {
+                  summary,
+                  status: nextRound >= 10 ? "finished" : "active",
+                  updatedAt: db.serverDate(),
+                },
+              });
+              written = up.stats.updated === 1;
+            }
+            if (!written) {
+              console.error("[sessionStore] summary write conflict after retries, keep latest");
+            }
           } catch (e) {
             console.error("[sessionStore] summarize failed, keep old summary:", e && e.message);
           }
