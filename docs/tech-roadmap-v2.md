@@ -62,7 +62,16 @@
 单次 LLM 调用 ≈ system prompt 400 + 会话上下文 500 + 用户输入 80 + 模型输出 150 ≈ 1200 Token
 ```
 
-**分模式测算**（上下文随轮次滚动，取均值估算）：
+> **W2 评估基线说明（2026-08-10）**：v2.0 苏格拉底 system prompt 由 ~250 字增至 ~750 字
+> （对抗性强化，见 prompts/socrates.md 变更日志），单次调用约 +350~450 Token，
+> 本节 v1.0 估算的"system prompt 400"需按 +400 上修；L1 单会话（10 轮 + 摘要）
+> 约 +3.5~4.5k Token。**实测校准流程**：真机走满 10 轮 L1 会话，取 3 个以上样本，
+> 汇总 token_usage 表按 sessionId/mode 关联的实际 prompt_tokens + completion_tokens，
+> 用实测均值替换本节估算值并标注样本数（提报材料引用实测值）。
+> evalRunner 云函数全量跑评测（50 条用例 × 2 次调用 ≈ 10 万 Token）同样计入 AI 资源包
+> 消耗，已按"每天最多一次全量"防刷（cloudfunctions/evalRunner）。
+
+**分模式测算**（上下文随轮次滚动，取均值估算；⚠️ 含 system prompt 上修前的旧口径）：
 
 | 场景 | 计算 | 每次 Token | v1.0 估值 | 偏差 |
 |------|------|:---:|:---:|:---:|
@@ -228,6 +237,7 @@ async function* streamRoleReply({ role, sessionId, userMessage }) {
 sessions 表
 ├── openid: string     # 云函数写入时显式注入（_openid 系统字段不会自动注入）；getQuota 按此统计每日配额
 ├── recent: array      # 最近 8 轮原文（环形，写入时裁剪，保证苏格拉底可引用原话）
+├── transcript: array  # W3 新增：全量原文（只增不裁，≤8KB/会话），供 generateReport 的 fallacies.quote 逐字引用；get 默认不返回，需 withTranscript: true
 ├── summary: string    # 第 9 轮起触发滚动摘要（1 次 LLM 调用 ≈800 Token，已计入测算）
 ├── round: number
 ├── mode / topic / status / createdAt(serverDate) / updatedAt
