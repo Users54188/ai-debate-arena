@@ -26,6 +26,17 @@
       </view>
     </view>
 
+    <!-- L2 双维度雷达图 -->
+    <view wx:if="{{isL2}}" class="card radar-card">
+      <view class="card-title">双维评估</view>
+      <canvas type="2d" id="radarChart" class="radar-canvas"></canvas>
+      <view class="radar-labels">
+        <view class="radar-label-item"><text class="dot-k"></text>知识掌握：{{report.knowledgeScore || 0}}分</view>
+        <view class="radar-label-item"><text class="dot-d"></text>思辨深度：{{report.思辨深度分 || report.score || 0}}分</view>
+      </view>
+      <view wx:if="{{report.knowledgeDegraded}}" class="degraded-tip">知识评估降级，仅供参考</view>
+    </view>
+
     <!-- 深度分：五类策略条形图 -->
     <view class="card" wx:if="{{strategyRows.length}}">
       <view class="card-title">追问策略覆盖</view>
