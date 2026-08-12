@@ -1,11 +1,23 @@
 <view class="container">
   <view class="hero">
+    <image class="hero-logo" src="/images/app-icon.jpeg" mode="aspectFill" />
     <text class="hero-title">AI 思辨场</text>
     <text class="hero-subtitle">与 AI 对话，训练你的思辨力</text>
   </view>
 
+  <!-- 段位展示 -->
+  <view class="rank-container">
+    <image class="rank-border" src="/images/rank-border.jpeg" mode="aspectFill" />
+    <view class="rank-content">
+      <text class="rank-title">当前段位</text>
+      <text class="rank-level">青铜 I</text>
+      <text class="rank-desc">完成更多思辨挑战可提升段位</text>
+    </view>
+  </view>
+
   <view class="mode-list">
     <view class="mode-card" bindtap="goSocrates">
+      <image class="level-badge level-badge-l1" src="/images/level1-badge.png" mode="aspectFill" />
       <view class="mode-badge badge-l1">入门</view>
       <text class="mode-title">L1 苏格拉底追问</text>
       <text class="mode-desc">AI 用提问帮你检验信念，不直接给答案</text>
@@ -13,6 +25,7 @@
     </view>
 
     <view class="mode-card mode-locked" bindtap="goDual">
+      <image class="level-badge level-badge-l2" src="/images/level2-badge.png" mode="aspectFill" />
       <view class="mode-badge badge-l2">进阶</view>
       <text class="mode-title">L2 双人共修</text>
       <text class="mode-desc">专家讲解 + 苏格拉底追问，交替进行</text>
@@ -20,6 +33,7 @@
     </view>
 
     <view class="mode-card mode-locked" bindtap="goDebate">
+      <image class="level-badge level-badge-l3" src="/images/level3-badge.png" mode="aspectFill" />
       <view class="mode-badge badge-l3">高阶</view>
       <text class="mode-title">L3 辩论场</text>
       <text class="mode-desc">正反方+裁判三方辩论，围观投票</text>
