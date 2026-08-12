@@ -191,7 +191,9 @@ Page({
       console.error("[dual] send failed:", e);
       if (this.data.streaming) {
         const restored = this.data.messages.slice();
-        const trimCount = this.data.phase === "socrates" ? 4 : 3; // user+expert 或 user+expert+socrates
+        // 失败时回滚本轮新增气泡：expert 阶段只多了 user+expert 共 2 条；
+        // socrates 阶段多了 user+expert+socrates 共 3 条
+        const trimCount = this.data.phase === "socrates" ? 3 : 2;
         restored.splice(userIdx, trimCount);
         this.setData({ messages: restored, inputText: text });
       } else {

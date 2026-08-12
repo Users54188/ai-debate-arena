@@ -14,7 +14,7 @@ Page({
   },
 
   goDual() {
-    wx.showToast({ title: "完成一场 L1 后解锁", icon: "none" });
+    wx.navigateTo({ url: "/pages/dual/index" });
   },
 
   goDebate() {
