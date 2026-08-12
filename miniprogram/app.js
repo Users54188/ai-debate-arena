@@ -4,7 +4,7 @@ App({
       console.error("CloudBase SDK not available, check base library version.");
     } else {
       wx.cloud.init({
-        env: "<云开发环境ID>",
+        env: "cloudbase-d3gvaqczs2298c253",
         traceUser: true,
       });
     }

@@ -16,7 +16,7 @@
 
   <!-- 首帧未到达时的占位态 -->
   <view wx:if="{{streaming && waitingFirstChunk}}" class="message-row msg-left">
-    <text class="role-label">思考中</text>
+    <text class="role-label">{{waitingText}}</text>
     <view class="bubble bubble-streaming">
       <view class="typing-dots">
         <view class="dot"></view>
