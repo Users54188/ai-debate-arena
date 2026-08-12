@@ -7,7 +7,11 @@
     "weui-miniprogram": "^1.3.0"
   },
   "devDependencies": {},
-  "scripts": {},
+  "scripts": {
+    "verify": "node tools/verify-prompt-mirror.js",
+    "precommit": "node tools/verify-prompt-mirror.js",
+    "lint": "node tools/check-syntax.js"
+  },
   "author": "",
   "license": "MIT"
 }
