@@ -172,7 +172,15 @@ Page({
       await this.runStream(apiMessages, msgIndex, newRound);
     } catch (e) {
       console.error("[socrates] send failed:", e);
-      // 清洗半成品状态，允许用户重试
+      // D0-B6 修复：清除本轮已 push 的用户气泡与空回复气泡，恢复输入框，
+      // 避免重试时累积重复气泡；仅在 streaming 状态下才存在这两条
+      if (this.data.streaming) {
+        const restored = this.data.messages.slice();
+        restored.splice(msgIndex - 1, 2); // 用户气泡在 msgIndex-1，空回复气泡在 msgIndex
+        this.setData({ messages: restored, inputText: text });
+      } else {
+        this.setData({ inputText: text });
+      }
       this.setData({ streaming: false, waitingFirstChunk: false });
       wx.showToast({
         title: "网络异常，请稍后重试",
