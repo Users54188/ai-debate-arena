@@ -1,1 +1,1 @@
-{"usingComponents":{},"navigationBarTitleText":"双人共修"}
+{"usingComponents":{"chat-stream":"/components/chat-stream/index"},"navigationBarTitleText":"双人共修"}
