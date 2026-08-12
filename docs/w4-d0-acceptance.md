@@ -5,7 +5,7 @@
 
 ## 前提确认（5 分钟）
 
-- [ ] `git log main` 包含 `acda2aa`（二轮补丁）与 `df1c53d`（W4-D0 低优债）
+- [ ] `git log main` 包含 `acda2aa`（PR#2 二轮补丁）与 `f055163`（PR#3 W4-D0 低优债）
 - [ ] 微信开发者工具已部署 `sessionStore`、`generateReport`、`evalRunner`（含 config.json 白名单）
 - [ ] 云数据库集合存在：`sessions` / `reports` / `token_usage` / `eval_runs`
 
