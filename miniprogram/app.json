@@ -13,6 +13,44 @@
     "navigationBarTextStyle": "white",
     "backgroundColor": "#F5F3FF"
   },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#4F46E5",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/home.png",
+        "selectedIconPath": "images/home.png"
+      },
+      {
+        "pagePath": "pages/debate/index",
+        "text": "辩论",
+        "iconPath": "images/debate.png",
+        "selectedIconPath": "images/debate.png"
+      },
+      {
+        "pagePath": "pages/socrates/index",
+        "text": "竞技",
+        "iconPath": "images/game.png",
+        "selectedIconPath": "images/game.png"
+      },
+      {
+        "pagePath": "pages/report/index",
+        "text": "历史",
+        "iconPath": "images/history.png",
+        "selectedIconPath": "images/history.png"
+      },
+      {
+        "pagePath": "pages/ranking/index",
+        "text": "记忆",
+        "iconPath": "images/memory.png",
+        "selectedIconPath": "images/memory.png"
+      }
+    ]
+  },
   "style": "v2",
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents"
