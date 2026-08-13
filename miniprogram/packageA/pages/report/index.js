@@ -337,7 +337,7 @@ Page({
       title: this.data.shareTitle || "我的思辨报告",
       // 分享链接只读（token 路径不触发生成、无 transcript）；token 不存在时引导进入首页
       path: shareToken
-        ? `/pages/report/index?token=${shareToken}`
+        ? `/packageA/pages/report/index?token=${shareToken}`
         : "/pages/index/index",
     };
   },
