@@ -236,7 +236,7 @@ Page({
         const cy = height / 2;
         const radius = Math.min(width, height) / 2 - 16;
         const knowledge = Math.max(0, Math.min(100, report.knowledgeScore || 0));
-        const thinkDepth = Math.max(0, Math.min(100, report.思辨深度分 || report.score || 0));
+        const thinkDepth = Math.max(0, Math.min(100, report['思辨深度分'] || report.score || 0));
         const a = Math.PI / 4; // 45°
 
         // 两轴终点（知识掌握 45°右上，思辨深度 45°右下）
