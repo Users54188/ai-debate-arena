@@ -4,39 +4,69 @@
   </view>
 
   <block wx:else>
-    <!-- 段位卡片 -->
-    <view class="rank-card">
-      <image class="rank-avatar" src="/images/app-icon.jpeg" mode="aspectFill" />
+    <!-- 段位卡片（含头像/昵称编辑入口） -->
+    <view class="rank-card {{rankAnimClass}}">
+      <button class="avatar-btn" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar">
+        <image wx:if="{{profile.avatar}}" class="avatar" src="{{profile.avatar}}" mode="aspectFill" />
+        <view wx:else class="avatar-ph">头像</view>
+      </button>
       <view class="rank-info">
-        <text class="rank-name">{{rank.name}}</text>
-        <text class="rank-next">距离 {{rank.next}}</text>
-      </view>
-      <view class="rank-progress">
-        <view class="rank-progress-bar" style="width: {{rank.progress}}%"></view>
+        <input
+          class="nick-input"
+          type="nickname"
+          placeholder="点击设置昵称"
+          value="{{profile.nickName}}"
+          bindinput="onNickNameInput"
+          bindblur="onNickNameBlur"
+        />
+        <text class="rank-name">{{profile.rank || '新手'}}</text>
+        <text class="rank-meta">累计 {{profile.totalRounds || 0}} 轮 · {{profile.totalSessions || 0}} 场</text>
       </view>
     </view>
 
     <!-- 统计卡片 -->
     <view class="stats-grid">
       <view class="stat-cell">
-        <text class="stat-value">{{stats.count}}</text>
+        <text class="stat-value">{{profile.totalSessions || 0}}</text>
         <text class="stat-label">完成场次</text>
       </view>
       <view class="stat-cell">
-        <text class="stat-value">{{stats.bestScore}}</text>
-        <text class="stat-label">最佳得分</text>
+        <text class="stat-value">{{profile.totalRounds || 0}}</text>
+        <text class="stat-label">累计轮次</text>
       </view>
       <view class="stat-cell">
-        <text class="stat-value">{{stats.avgScore}}</text>
+        <text class="stat-value">{{profile.avgScore || 0}}</text>
         <text class="stat-label">平均得分</text>
       </view>
       <view class="stat-cell">
-        <text class="stat-value">{{stats.totalScore}}</text>
-        <text class="stat-label">累计得分</text>
+        <text class="stat-value">{{profile.winRate || 0}}%</text>
+        <text class="stat-label">胜率</text>
+      </view>
+    </view>
+
+    <!-- 今日配额分档（按段位） -->
+    <view class="section-title">今日配额（按段位分档）</view>
+    <view class="quota-list">
+      <view class="quota-row">
+        <text>单人思辨</text>
+        <text class="quota-val">{{(profile.dailyLimit && profile.dailyLimit.L1) || 0}} 次/日</text>
+      </view>
+      <view class="quota-row">
+        <text>双人共修</text>
+        <text class="quota-val">{{(profile.dailyLimit && profile.dailyLimit.L2) || 0}} 次/日</text>
+      </view>
+      <view class="quota-row">
+        <text>三方辩论</text>
+        <text class="quota-val">{{(profile.dailyLimit && profile.dailyLimit.L3) || 0}} 次/日</text>
+      </view>
+      <view class="quota-row">
+        <text>单日总轮次上限</text>
+        <text class="quota-val">{{profile.maxRounds || 0}}</text>
       </view>
     </view>
 
     <!-- 功能入口 -->
+    <view class="section-title">更多</view>
     <view class="menu-list">
       <view class="menu-item" bindtap="goHistory">
         <text class="menu-label">思辨历史</text>
@@ -46,15 +76,23 @@
         <text class="menu-label">段位排行</text>
         <text class="menu-arrow">›</text>
       </view>
+      <view class="menu-item" bindtap="showPrivacy">
+        <text class="menu-label">隐私说明</text>
+        <text class="menu-arrow">›</text>
+      </view>
       <view class="menu-item" bindtap="showAbout">
-        <text class="menu-label">关于与合规说明</text>
+        <text class="menu-label">关于与合规</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="clearCache">
+        <text class="menu-label">清空本地缓存</text>
         <text class="menu-arrow">›</text>
       </view>
     </view>
 
     <view class="disclaimer">
-      <text>本应用为 2026 微信小程序开发者大赛参赛作品</text>
       <text>AI 生成内容仅供参考，不构成专业建议</text>
+      <text class="openid-line">账号标识：{{openid}}</text>
     </view>
   </block>
 </view>

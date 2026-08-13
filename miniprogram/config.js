@@ -43,6 +43,7 @@ module.exports = {
     userProfile: "userProfile",
     getQuota: "getQuota",
     generateReport: "generateReport",
+    topics: "topics",
   },
 
   // 数据库集合名
