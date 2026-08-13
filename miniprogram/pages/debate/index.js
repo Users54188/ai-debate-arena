@@ -47,17 +47,35 @@ Page({
     quotaExhausted: false,
     voteCounts: { affirmative: 0, negative: 0 },
     hasVotedThisRound: false,
+    topicCandidates: [],
+    topicLoading: true,
   },
 
   onLoad() {
     this.sessionId = null;
     this.sessionSummary = "";
     this.checkQuota();
+    this.loadTopics();
   },
 
   onShow() {
     if (this.data.phase === "input" && !this.data.streaming) {
       this.checkQuota();
+    }
+  },
+
+  /** 加载辩题白名单（合规：辩题必须来自 topics_v1 集合） */
+  async loadTopics() {
+    try {
+      const res = await wx.cloud.callFunction({
+        name: "topics",
+        data: { action: "list", limit: 6 },
+      });
+      const list = (res.result && res.result.data && res.result.data.topics) || [];
+      this.setData({ topicCandidates: list, topicLoading: false });
+    } catch (e) {
+      console.error("[debate] load topics failed:", e);
+      this.setData({ topicCandidates: [], topicLoading: false });
     }
   },
 
@@ -102,6 +120,30 @@ Page({
         icon: "none", duration: 2000,
       });
       return;
+    }
+
+    // 合规门：辩题须来自白名单（自由命题也走 topics.validate 校验，拒绝非白名单话题）
+    const whitelistHit = this.data.topicCandidates.some((t) => t.title === topic);
+    if (!whitelistHit) {
+      try {
+        const vRes = await wx.cloud.callFunction({
+          name: "topics",
+          data: { action: "validate", title: topic },
+        });
+        const v = (vRes.result && vRes.result.data) || {};
+        if (!v.valid) {
+          wx.showToast({
+            title: v.msg || "话题不在白名单，请从辩题库选择",
+            icon: "none", duration: 2500,
+          });
+          return;
+        }
+      } catch (e) {
+        // 校验服务不可用时保守拒绝（避免非白名单流过）
+        console.warn("[debate] topic validate failed:", e);
+        wx.showToast({ title: "辩题校验失败，请从辩题库选择", icon: "none", duration: 2000 });
+        return;
+      }
     }
 
     await this.checkQuota();

@@ -5,15 +5,18 @@
       <text class="topic-sub">AI 将分别扮演正方、反方与裁判，你作为围观者投票</text>
     </view>
     <view class="topic-examples">
-      <text class="examples-label">参考命题：</text>
-      <view class="example-item" bindtap="onPickExample" data-topic="人工智能会取代人类大部分工作">
-        · 人工智能会取代人类大部分工作
+      <text class="examples-label">从辩题库选择（推荐）：</text>
+      <view
+        wx:for="{{topicCandidates}}"
+        wx:key="_id"
+        class="example-item"
+        bindtap="onPickExample"
+        data-topic="{{item.title}}"
+      >
+        · {{item.title}}
       </view>
-      <view class="example-item" bindtap="onPickExample" data-topic="短视频对青少年的影响大于书籍">
-        · 短视频对青少年的影响大于书籍
-      </view>
-      <view class="example-item" bindtap="onPickExample" data-topic="金钱比时间更重要">
-        · 金钱比时间更重要
+      <view wx:if="{{topicCandidates.length === 0 && !topicLoading}}" class="example-item example-empty">
+        暂无推荐辩题，可自由命题
       </view>
     </view>
     <textarea
