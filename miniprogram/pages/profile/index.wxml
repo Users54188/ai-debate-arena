@@ -1,0 +1,60 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state-box">
+    <text class="state-text">加载中...</text>
+  </view>
+
+  <block wx:else>
+    <!-- 段位卡片 -->
+    <view class="rank-card">
+      <image class="rank-avatar" src="/images/app-icon.jpeg" mode="aspectFill" />
+      <view class="rank-info">
+        <text class="rank-name">{{rank.name}}</text>
+        <text class="rank-next">距离 {{rank.next}}</text>
+      </view>
+      <view class="rank-progress">
+        <view class="rank-progress-bar" style="width: {{rank.progress}}%"></view>
+      </view>
+    </view>
+
+    <!-- 统计卡片 -->
+    <view class="stats-grid">
+      <view class="stat-cell">
+        <text class="stat-value">{{stats.count}}</text>
+        <text class="stat-label">完成场次</text>
+      </view>
+      <view class="stat-cell">
+        <text class="stat-value">{{stats.bestScore}}</text>
+        <text class="stat-label">最佳得分</text>
+      </view>
+      <view class="stat-cell">
+        <text class="stat-value">{{stats.avgScore}}</text>
+        <text class="stat-label">平均得分</text>
+      </view>
+      <view class="stat-cell">
+        <text class="stat-value">{{stats.totalScore}}</text>
+        <text class="stat-label">累计得分</text>
+      </view>
+    </view>
+
+    <!-- 功能入口 -->
+    <view class="menu-list">
+      <view class="menu-item" bindtap="goHistory">
+        <text class="menu-label">思辨历史</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="goRanking">
+        <text class="menu-label">段位排行</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="showAbout">
+        <text class="menu-label">关于与合规说明</text>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+
+    <view class="disclaimer">
+      <text>本应用为 2026 微信小程序开发者大赛参赛作品</text>
+      <text>AI 生成内容仅供参考，不构成专业建议</text>
+    </view>
+  </block>
+</view>
