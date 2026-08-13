@@ -94,4 +94,14 @@ Page({
       showCancel: false,
     });
   },
+
+  showPrivacy() {
+    wx.showModal({
+      title: "隐私说明",
+      content:
+        "为提供服务并改进体验，本小程序收集：微信 openid（账号标识）、对话记录（用于会话恢复与报告生成）、头像昵称（仅在你主动设置时保存）。上述信息仅用于本小程序内功能，不对外提供。",
+      showCancel: false,
+      confirmText: "知道了",
+    });
+  },
 });
