@@ -1,0 +1,37 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state-box">
+    <text class="state-text">加载中...</text>
+  </view>
+
+  <view wx:elif="{{empty}}" class="state-box">
+    <text class="state-text">还没有思辨记录</text>
+    <text class="state-sub">去首页完成一场思辨，报告会在这里沉淀</text>
+  </view>
+
+  <scroll-view wx:else class="list" scroll-y>
+    <view
+      class="session-card"
+      wx:for="{{sessions}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="goReport"
+      bindlongpress="onDelete"
+    >
+      <view class="card-left">
+        <view class="mode-tag tag-{{item.modeClass}}">{{item.mode}}</view>
+        <view class="card-body">
+          <text class="card-title">{{item.topic}}</text>
+          <text class="card-meta">{{item.modeLabel}} · {{item.roundsLabel}}</text>
+        </view>
+      </view>
+      <view class="card-right">
+        <text class="card-time">{{item.createdAt}}</text>
+        <text class="card-arrow">›</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="tip safe-bottom">
+    <text>长按会话卡可删除历史记录</text>
+  </view>
+</view>

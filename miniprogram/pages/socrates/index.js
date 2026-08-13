@@ -45,12 +45,14 @@ Page({
     round: 0,
     quotaExhausted: false,
     roundLimitReached: false,
+    loading: true,
   },
 
   onLoad() {
     this.sessionId = null;
     this.sessionSummary = "";
     this.checkQuota();
+    this.setData({ loading: false });
   },
 
   onShow() {

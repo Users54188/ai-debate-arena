@@ -4,7 +4,7 @@
 }
 
 .hero {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   text-align: center;
 }
 
@@ -29,13 +29,14 @@
   color: var(--text-secondary);
 }
 
-.rank-container {
+/* 思辨进度卡（journey-border 美工替换旧 rank-border） */
+.journey-card {
   position: relative;
-  margin-bottom: 32px;
-  height: 180px;
+  margin-bottom: 24px;
+  height: 160px;
 }
 
-.rank-border {
+.journey-border {
   position: absolute;
   top: 0;
   left: 0;
@@ -44,41 +45,54 @@
   border-radius: var(--radius-lg);
 }
 
-.rank-content {
+.journey-content {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 0 20px;
+  padding: 0 16px;
 }
 
-.rank-title {
+.journey-title {
   display: block;
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
 }
 
-.rank-level {
-  display: block;
+.journey-stats {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 6px;
+}
+
+.journey-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.journey-value {
   font-size: 20px;
   font-weight: 700;
   color: var(--primary);
-  margin-bottom: 4px;
 }
 
-.rank-desc {
-  display: block;
-  font-size: 12px;
+.journey-label {
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
+.journey-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* 三种模式入口 */
 .mode-list {
   display: flex;
   flex-direction: column;
@@ -90,14 +104,8 @@
   overflow: hidden;
   background: var(--bg-card);
   border-radius: var(--radius-lg);
- 20px;
- 36px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
-}
-
-.mode-locked {
-  opacity: 0.7;
 }
 
 .mode-badge {
@@ -127,14 +135,11 @@
   margin-bottom: 8px;
 }
 
-.mode-quota {
-  font-size: 12px;
-  color: var(--success);
-}
-
-.mode-lock-tip {
-  font-size: 12px;
-  color: var(--warning);
+.mode-entrance {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary);
 }
 
 .level-badge {
@@ -144,16 +149,14 @@
   width: 80px;
   height: 80px;
   opacity: 0.15;
-}
-
-.level-badge-l1 {
   transform: rotate(20deg);
 }
 
-.level-badge-l2 {
-  transform: rotate(20deg);
-}
-
-.level-badge-l3 {
-  transform: rotate(20deg);
+.mode-decor {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  width: 40px;
+  height: 40px;
+  opacity: 0.5;
 }
