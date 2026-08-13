@@ -1,0 +1,9 @@
+feat(W7): 性能优化 — 主包瘦身分包（packageA）
+
+- 非首屏页迁入分包：socrates/dual/debate/report/ranking → miniprogram/packageA/pages/
+- 主包仅保留 tabBar 页（index/mine）+ components/utils，体积大幅下降
+- app.json 配置 subPackages；更新全部页面跳转 URL 与分享 path（index/socrates/dual/report）
+- 路径校验通过：app.json 合法、所有页面文件存在、无 switchTab/redirectTo 引用旧路径
+- ⚠️ 待真机验证：分包首屏加载与跨包跳转（非 tabBar 分包页）
+
+注：tabBar 页必须留在主包，"我的"页（mine）为主包第二栏。

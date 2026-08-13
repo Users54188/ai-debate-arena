@@ -273,7 +273,7 @@ Page({
       success: (res) => {
         if (res.confirm) {
           wx.navigateTo({
-            url: `/pages/report/index?sessionId=${this.sessionId || ""}`,
+            url: `/packageA/pages/report/index?sessionId=${this.sessionId || ""}`,
           });
         }
       },

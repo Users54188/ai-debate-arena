@@ -1,12 +1,19 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/socrates/index",
-    "pages/dual/index",
-    "pages/debate/index",
-    "pages/report/index",
-    "pages/ranking/index",
     "pages/mine/index"
+  ],
+  "subPackages": [
+    {
+      "root": "packageA",
+      "pages": [
+        "pages/socrates/index",
+        "pages/dual/index",
+        "pages/debate/index",
+        "pages/report/index",
+        "pages/ranking/index"
+      ]
+    }
   ],
   "tabBar": {
     "color": "#999999",
