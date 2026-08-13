@@ -1,0 +1,60 @@
+<view class="page">
+  <view class="header">
+    <button class="avatar-btn" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar">
+      <image class="avatar" src="{{profile.avatar}}" mode="aspectFill" />
+      <view wx:if="{{!profile.avatar}}" class="avatar-ph">头像</view>
+    </button>
+    <view class="user-meta">
+      <input
+        class="nickname"
+        type="nickname"
+        placeholder="点击设置昵称"
+        value="{{profile.nickName}}"
+        bindinput="onNickNameInput"
+        bindblur="onNickNameBlur"
+      />
+      <view class="rank">{{profile.rank || '新手'}} · 累计 {{profile.totalRounds || 0}} 轮</view>
+    </view>
+  </view>
+
+  <view class="stats">
+    <view class="stat">
+      <view class="num">{{profile.totalSessions || 0}}</view>
+      <view class="label">总场次</view>
+    </view>
+    <view class="stat">
+      <view class="num">{{profile.totalRounds || 0}}</view>
+      <view class="label">总轮次</view>
+    </view>
+    <view class="stat">
+      <view class="num">{{profile.avgScore || 0}}</view>
+      <view class="label">平均评分</view>
+    </view>
+    <view class="stat">
+      <view class="num">{{profile.winRate || 0}}%</view>
+      <view class="label">胜率</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">今日配额（按段位分档）</view>
+    <view class="quota-row"><text>单人思辨</text><text class="val">{{profile.dailyLimit.L1 || 0}} 次/日</text></view>
+    <view class="quota-row"><text>双人共修</text><text class="val">{{profile.dailyLimit.L2 || 0}} 次/日</text></view>
+    <view class="quota-row"><text>三方辩论</text><text class="val">{{profile.dailyLimit.L3 || 0}} 次/日</text></view>
+    <view class="quota-row"><text>单日总轮次上限</text><text class="val">{{profile.maxRounds || 0}}</text></view>
+  </view>
+
+  <view class="section">
+    <view class="cell" bindtap="goFeedback">
+      <text>意见反馈</text><text class="arrow">›</text>
+    </view>
+    <view class="cell" bindtap="clearCache">
+      <text>清空本地缓存</text><text class="arrow">›</text>
+    </view>
+    <view class="cell">
+      <text>账号标识</text><text class="openid">{{openid}}</text>
+    </view>
+  </view>
+
+  <view class="tip">段位由累计训练轮次自动评定，配额按段位分档；限制由服务端判定，重启小程序不会重置。</view>
+</view>

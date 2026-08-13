@@ -1,0 +1,169 @@
+.page {
+  min-height: 100vh;
+  background: #f5f3ff;
+  padding: 24rpx 24rpx 60rpx;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-radius: 24rpx;
+  padding: 40rpx 32rpx;
+  color: #fff;
+}
+
+.avatar-btn {
+  width: 120rpx;
+  height: 120rpx;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.avatar-btn::after {
+  border: none;
+}
+
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+}
+
+.avatar-ph {
+  font-size: 28rpx;
+  color: #fff;
+}
+
+.user-meta {
+  margin-left: 28rpx;
+  flex: 1;
+}
+
+.nickname {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #fff;
+  background: transparent;
+}
+
+.rank {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  opacity: 0.9;
+}
+
+.stats {
+  display: flex;
+  background: #fff;
+  border-radius: 24rpx;
+  margin-top: 24rpx;
+  padding: 32rpx 0;
+}
+
+.stat {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+
+.stat::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 20rpx;
+  bottom: 20rpx;
+  width: 1rpx;
+  background: #eee;
+}
+
+.stat:last-child::after {
+  display: none;
+}
+
+.num {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+.label {
+  font-size: 24rpx;
+  color: #888;
+  margin-top: 8rpx;
+}
+
+.section {
+  background: #fff;
+  border-radius: 24rpx;
+  margin-top: 24rpx;
+  padding: 12rpx 32rpx;
+}
+
+.section-title {
+  font-size: 26rpx;
+  color: #888;
+  padding: 20rpx 0 8rpx;
+}
+
+.quota-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+  font-size: 30rpx;
+  color: #333;
+}
+
+.quota-row:last-child {
+  border-bottom: none;
+}
+
+.quota-row .val {
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.cell {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+  font-size: 30rpx;
+  color: #333;
+}
+
+.cell:last-child {
+  border-bottom: none;
+}
+
+.arrow {
+  color: #bbb;
+  font-size: 36rpx;
+}
+
+.openid {
+  font-size: 22rpx;
+  color: #999;
+  max-width: 360rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tip {
+  margin-top: 28rpx;
+  font-size: 22rpx;
+  color: #999;
+  line-height: 1.6;
+  padding: 0 12rpx;
+}
