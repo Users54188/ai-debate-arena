@@ -3,10 +3,11 @@ App({
     if (!wx.cloud) {
       console.error("CloudBase SDK not available, check base library version.");
     } else {
+      console.log('onLaunch called, init cloud...');
       wx.cloud.init({
         env: "cloudbase-d3gvaqczs2298c253",
         traceUser: true,
-      });
+      }).then(()=>console.log('cloud init OK')).catch(e=>console.error('cloud init FAIL:',e));
     }
     const sdkVersion = wx.getAppBaseInfo().SDKVersion;
     console.log(`SDKVersion: ${sdkVersion}`);
