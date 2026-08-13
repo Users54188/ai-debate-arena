@@ -292,3 +292,61 @@
   border: 2rpx solid #c7d2fe;
 }
 .poster-btn::after { border: none; }
+
+/* 海报弹层 */
+.poster-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 999;
+}
+
+.poster-sheet {
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 32rpx 32rpx 60rpx;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.poster-canvas {
+  width: 620rpx;
+  height: 900rpx;
+  background: #eee;
+  border-radius: 16rpx;
+}
+
+.poster-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 28rpx;
+  width: 100%;
+}
+
+.poster-save {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 999rpx;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 30rpx;
+}
+.poster-save::after { border: none; }
+
+.poster-close {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 999rpx;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 30rpx;
+}
+.poster-close::after { border: none; }

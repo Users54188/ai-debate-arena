@@ -52,10 +52,7 @@ Page({
     this.sessionId = null;
     this.sessionSummary = "";
     this.checkQuota();
-    // 模拟加载动画，2秒后隐藏
-    setTimeout(() => {
-      this.setData({ loading: false });
-    }, 2000);
+    this.setData({ loading: false });
   },
 
   onShow() {
