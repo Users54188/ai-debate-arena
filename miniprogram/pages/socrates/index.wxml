@@ -42,7 +42,7 @@
     <button
       class="send-btn"
       bindtap="sendMessage"
-      disabled="{{!inputText.trim() || streaming || quotaExhausted}}"
+      disabled="{{inputText.length === 0 || streaming || quotaExhausted}}"
       size="mini"
     >
       发送

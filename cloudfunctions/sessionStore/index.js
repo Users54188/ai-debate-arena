@@ -14,7 +14,7 @@ const _ = db.command;
  *               → 追加消息；recent 超 8 轮（16 条）裁剪最旧轮次并入滚动摘要；
  *                 transcript 同步追加同一条消息（只增不裁，供报告生成引用原话）
  *   trackUsage: { mode, model, prompt_tokens, completion_tokens }
- *
+ * 
  * transcript（W3 新增）：
  * - 与 recent 同源的消息数组，但永不裁剪、不压缩，保存全量原文（≤8KB/会话）
  * - get 默认不返回，需显式传 withTranscript: true（避免普通对话读取带全量记录）
