@@ -48,6 +48,9 @@
     <view class="cell" bindtap="goFeedback">
       <text>意见反馈</text><text class="arrow">›</text>
     </view>
+    <view class="cell" bindtap="showPrivacy">
+      <text>隐私说明</text><text class="arrow">›</text>
+    </view>
     <view class="cell" bindtap="clearCache">
       <text>清空本地缓存</text><text class="arrow">›</text>
     </view>

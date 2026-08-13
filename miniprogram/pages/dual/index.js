@@ -19,8 +19,8 @@ const config = require("../../config");
 const MAX_USER_ROUNDS = 6; // L2 封顶：6 用户轮 × 2 角色 = 12 条消息
 const SENSITIVE_FALLBACK = "这个话题不太适合展开，我们换一个思辨话题吧。";
 
-function displayMsg(role, content) {
-  return { role, content };
+function displayMsg(role, content, note) {
+  return { role, content, note: note || "" };
 }
 
 function recentToApi(recent) {
@@ -75,9 +75,17 @@ Page({
       name: config.cloudFunctions.sessionStore,
       data: { action: "create", mode: "L2" },
     });
-    const data = (res.result && res.result.data) || {};
+    const result = res.result || {};
+    if (result.code === -2) {
+      // 服务端配额强校验拒绝（ENFORCE_QUOTA=true 时触发），重启小程序无法绕过
+      this.setData({ quotaExhausted: true });
+      const err = new Error(result.msg || "今日该模式次数已用完");
+      err.code = -2;
+      throw err;
+    }
+    const data = result.data || {};
     if (!data.sessionId) {
-      throw new Error("session create failed: " + ((res.result && res.result.msg) || "unknown"));
+      throw new Error("session create failed: " + (result.msg || "unknown"));
     }
     this.sessionId = data.sessionId;
     return this.sessionId;
@@ -200,7 +208,11 @@ Page({
         this.setData({ inputText: text });
       }
       this.setData({ streaming: false, waitingFirstChunk: false, phase: "" });
-      wx.showToast({ title: "网络异常，请稍后重试", icon: "none", duration: 2000 });
+      wx.showToast({
+        title: e.code === -2 ? (e.message || "今日次数已用完") : "网络异常，请稍后重试",
+        icon: "none",
+        duration: 2000,
+      });
     }
   },
 
@@ -219,11 +231,11 @@ Page({
           updated[msgIndex] = displayMsg(role, fullText);
           self.setData({ messages: updated, waitingFirstChunk: false });
         },
-        onStreamEnd({ fullText: final, finishReason }) {
+        onStreamEnd({ fullText: final, finishReason, note }) {
           const safe = finishReason === "sensitive";
           const result = safe ? SENSITIVE_FALLBACK : final;
           const updated = [...self.data.messages];
-          updated[msgIndex] = displayMsg(role, result);
+          updated[msgIndex] = displayMsg(role, result, note);
           self.setData({ messages: updated });
           resolve(result);
         },

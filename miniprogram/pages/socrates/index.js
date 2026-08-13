@@ -23,9 +23,9 @@ const config = require("../../config");
 
 const SENSITIVE_FALLBACK = "这个话题不太适合展开，我们换一个思辨话题吧。";
 
-/** 展示用消息（role 保留业务角色，供组件渲染头像/配色） */
-function displayMsg(role, content) {
-  return { role, content };
+/** 展示用消息（role 保留业务角色，供组件渲染头像/配色；note 为混元模型标识，合规保留展示） */
+function displayMsg(role, content, note) {
+  return { role, content, note: note || "" };
 }
 
 /** 服务端 recent 消息 → API messages（role 映射为模型可接受的 user/assistant） */
@@ -88,9 +88,17 @@ Page({
       name: config.cloudFunctions.sessionStore,
       data: { action: "create", mode: "L1" },
     });
-    const data = (res.result && res.result.data) || {};
+    const result = res.result || {};
+    if (result.code === -2) {
+      // 服务端配额强校验拒绝（ENFORCE_QUOTA=true 时触发），重启小程序无法绕过
+      this.setData({ quotaExhausted: true });
+      const err = new Error(result.msg || "今日该模式次数已用完");
+      err.code = -2;
+      throw err;
+    }
+    const data = result.data || {};
     if (!data.sessionId) {
-      throw new Error("session create failed: " + ((res.result && res.result.msg) || "unknown"));
+      throw new Error("session create failed: " + (result.msg || "unknown"));
     }
     this.sessionId = data.sessionId;
     return this.sessionId;
@@ -121,7 +129,7 @@ Page({
 
   async sendMessage() {
     const text = this.data.inputText.trim();
-    if (!text || this.data.streaming || this.data.roundLimitReached) return;
+    if (!text || this.data.streaming || this.data.roundLimitReached || this.data.quotaExhausted) return;
 
     const newRound = this.data.round + 1;
     if (newRound > config.maxRounds) return;
@@ -183,7 +191,7 @@ Page({
       restored.splice(msgIndex - 1, 2);
       this.setData({ messages: restored, inputText: text, streaming: false, waitingFirstChunk: false });
       wx.showToast({
-        title: "网络异常，请稍后重试",
+        title: e.code === -2 ? (e.message || "今日次数已用完") : "网络异常，请稍后重试",
         icon: "none",
         duration: 2000,
       });
@@ -224,12 +232,12 @@ Page({
         updated[msgIndex] = displayMsg("socrates", streamingContent);
         self.setData({ messages: updated, waitingFirstChunk: false });
       },
-      onStreamEnd: async ({ fullText, finishReason }) => {
+      onStreamEnd: async ({ fullText, finishReason, note }) => {
         // 输出审核未通过：撤回内容，替换兜底文案
         const safe = finishReason === "sensitive";
         const finalText = safe ? SENSITIVE_FALLBACK : fullText;
         const finalMessages = [...self.data.messages];
-        finalMessages[msgIndex] = displayMsg("socrates", finalText);
+        finalMessages[msgIndex] = displayMsg("socrates", finalText, note);
 
         self.setData({
           messages: finalMessages,

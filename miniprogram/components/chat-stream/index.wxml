@@ -11,6 +11,8 @@
     <!-- 气泡 -->
     <view class="bubble {{item.bubbleCls}}">
       <text class="bubble-text">{{item.content}}</text>
+      <!-- 混元 note 保留（合规：不删除模型 note 字段，常驻展示） -->
+      <text wx:if="{{item.note}}" class="bubble-note">{{item.note}}</text>
     </view>
   </view>
 
