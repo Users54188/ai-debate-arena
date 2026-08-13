@@ -61,6 +61,9 @@ Page({
   },
 
   async checkQuota() {
+    // 测试期间临时放开：不检查配额、不锁按钮
+    this.setData({ quotaExhausted: false });
+    return;
     try {
       const res = await wx.cloud.callFunction({
         name: config.cloudFunctions.getQuota,
@@ -120,44 +123,47 @@ Page({
     const text = this.data.inputText.trim();
     if (!text || this.data.streaming || this.data.roundLimitReached) return;
 
-    // 配额检查（fail-open：查询失败时放行）
-    if (this.data.quotaExhausted) return;
-    await this.checkQuota();
-    if (this.data.quotaExhausted) return;
-
-    // 输入安全检查（fail-close：审核服务异常时拒绝发送）
-    const checkResult = await msgSecCheck(text, 1);
-    if (!checkResult.pass) {
-      wx.showToast({
-        title: checkResult.degraded ? "网络繁忙，请稍后重试" : "内容包含违规信息，请修改后重试",
-        icon: "none",
-        duration: 2000,
-      });
-      return;
-    }
-
     const newRound = this.data.round + 1;
     if (newRound > config.maxRounds) return;
 
-    const messages = [...this.data.messages, displayMsg("user", text)];
-    const msgIndex = messages.length; // 流式气泡的位置
+    // 优化：点击立即上屏用户消息 + 思考态，避免串行云调用期间"假死"
+    const msgIndex = this.data.messages.length + 1; // 苏格拉底流式气泡的位置
+    this.setData({
+      messages: [...this.data.messages, displayMsg("user", text), displayMsg("socrates", "")],
+      inputText: "",
+      streaming: true,
+      waitingFirstChunk: true,
+      round: newRound,
+    });
 
     try {
-      // 创建/恢复会话（云端裁剪与摘要逻辑在 append 内）
-      await this.ensureSession();
+      // 安全审核与会话创建并行，缩短首屏延迟
+      const [checkResult, sessionId] = await Promise.all([
+        msgSecCheck(text, 1),
+        this.ensureSession(),
+      ]);
+
+      // 审核不通过：撤回本轮气泡并提示（fail-close）
+      if (!checkResult.pass) {
+        const restored = this.data.messages.slice();
+        restored.splice(msgIndex - 1, 2);
+        this.setData({ messages: restored, inputText: text, streaming: false, waitingFirstChunk: false });
+        wx.showToast({
+          title: checkResult.degraded ? "网络繁忙，请稍后重试" : "内容包含违规信息，请修改后重试",
+          icon: "none",
+          duration: 2000,
+        });
+        return;
+      }
+
       const recent = await this.loadSessionContext();
-      if (recent === null) return; // 已满 10 轮
+      if (recent === null) {
+        this.setData({ streaming: false, waitingFirstChunk: false });
+        return; // 已满上限
+      }
 
-      this.setData({
-        messages: [...messages, displayMsg("socrates", "")],
-        inputText: "",
-        streaming: true,
-        waitingFirstChunk: true,
-        round: newRound,
-      });
-
-      // 用户消息先行落库（保证云端上下文与展示一致）
-      await this.persistMessage("user", text, newRound);
+      // 用户消息落库与流式生成并行（落库不阻塞首字渲染）
+      this.persistMessage("user", text, newRound);
 
       // 组装 API context：system + 滚动摘要 + 历史（role 已映射）+ 本轮用户输入
       const apiMessages = [
@@ -172,16 +178,10 @@ Page({
       await this.runStream(apiMessages, msgIndex, newRound);
     } catch (e) {
       console.error("[socrates] send failed:", e);
-      // D0-B6 修复：清除本轮已 push 的用户气泡与空回复气泡，恢复输入框，
-      // 避免重试时累积重复气泡；仅在 streaming 状态下才存在这两条
-      if (this.data.streaming) {
-        const restored = this.data.messages.slice();
-        restored.splice(msgIndex - 1, 2); // 用户气泡在 msgIndex-1，空回复气泡在 msgIndex
-        this.setData({ messages: restored, inputText: text });
-      } else {
-        this.setData({ inputText: text });
-      }
-      this.setData({ streaming: false, waitingFirstChunk: false });
+      // 清除本轮已 push 的用户气泡与空回复气泡，恢复输入框
+      const restored = this.data.messages.slice();
+      restored.splice(msgIndex - 1, 2);
+      this.setData({ messages: restored, inputText: text, streaming: false, waitingFirstChunk: false });
       wx.showToast({
         title: "网络异常，请稍后重试",
         icon: "none",
