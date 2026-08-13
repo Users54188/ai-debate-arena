@@ -4,17 +4,18 @@ const db = cloud.database();
 const _ = db.command;
 
 /**
- * sessionStore — 会话持久化 + 滚动摘要 + 用量记录（W2 完整实现）
+ * sessionStore — 会话持久化 + 滚动摘要 + 用量记录 + 投票记录（W2-W5 完整实现）
  *
  * 接口：
- *   action: "create" | "get" | "append" | "trackUsage"
+ *   action: "create" | "get" | "append" | "trackUsage" | "trackVote"
  *   create:     { mode: "L1"|"L2"|"L3", topic? } → { sessionId }
  *   get:        { sessionId } → { session: { recent, summary, round, status } }
- *   append:     { sessionId, role: "user"|"assistant", content, round }
+ *   append:     { sessionId, role: "user"|"assistant"|"affirmative"|"negative"|"judge", content, round }
  *               → 追加消息；recent 超 8 轮（16 条）裁剪最旧轮次并入滚动摘要；
  *                 transcript 同步追加同一条消息（只增不裁，供报告生成引用原话）
  *   trackUsage: { mode, model, prompt_tokens, completion_tokens }
- * 
+ *   trackVote:  { sessionId, round, side: "affirmative"|"negative" }  — L3 用户围观投票
+ *
  * transcript（W3 新增）：
  * - 与 recent 同源的消息数组，但永不裁剪、不压缩，保存全量原文（≤8KB/会话）
  * - get 默认不返回，需显式传 withTranscript: true（避免普通对话读取带全量记录）
@@ -162,7 +163,12 @@ exports.main = async (event) => {
       try {
         const { sessionId, role, content, round } = event;
         if (!sessionId) return { code: -1, msg: "sessionId required" };
-        if (role !== "user" && role !== "assistant") return { code: -1, msg: "role must be user|assistant" };
+        // 兼容业务角色：affirmative/negative/judge 在 transcript/recent 里保留业务角色名
+        // （供报告页渲染角色标签），但写入时映射为标准 role 值
+        const VALID_BUSINESS_ROLES = ["user", "assistant", "affirmative", "negative", "judge"];
+        if (!VALID_BUSINESS_ROLES.includes(role)) {
+          return { code: -1, msg: "invalid role" };
+        }
         const { OPENID } = cloud.getWXContext();
 
         // P1 修复：内容硬截断，防超长消息撑爆文档（转码后按字符计）
@@ -301,6 +307,40 @@ exports.main = async (event) => {
       } catch (e) {
         console.error("[sessionStore] trackUsage failed:", e);
         return { code: -1, msg: "trackUsage failed" };
+      }
+    }
+
+    case "trackVote": {
+      // L3 围观投票：记录到 votes 表（用户行为数据，不影响 AI 发言）
+      try {
+        const { OPENID } = cloud.getWXContext();
+        const { sessionId, round, side } = event;
+        if (!sessionId) return { code: -1, msg: "sessionId required" };
+        if (side !== "affirmative" && side !== "negative") {
+          return { code: -1, msg: "side must be affirmative|negative" };
+        }
+        // 归属校验：只能为自己会话投票（防止刷票）
+        const sessionRes = await db.collection("sessions").doc(sessionId).get();
+        const s = sessionRes.data || {};
+        if (!s || !s.openid || s.openid !== OPENID) {
+          return { code: -1, msg: "session not found or not owned" };
+        }
+        if ((s.mode || "L1") !== "L3") {
+          return { code: -1, msg: "vote only for L3" };
+        }
+        await db.collection("votes").add({
+          data: {
+            openid: OPENID,
+            sessionId,
+            round: Math.max(1, Number(round) || 1),
+            side,
+            createdAt: db.serverDate(),
+          },
+        });
+        return { code: 0, data: { ok: true } };
+      } catch (e) {
+        console.error("[sessionStore] trackVote failed:", e);
+        return { code: -1, msg: "trackVote failed" };
       }
     }
 
