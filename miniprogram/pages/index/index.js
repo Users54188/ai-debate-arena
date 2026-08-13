@@ -45,6 +45,6 @@ Page({
   },
 
   goDebate() {
-    wx.navigateTo({ url: "/pages/debate/index" });
+wx.navigateTo({ url: "/pages/debate/index" });
   },
 });
