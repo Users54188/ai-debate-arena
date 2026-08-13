@@ -59,6 +59,7 @@ Component({
       const renderMessages = (list || []).map((m) => ({
         role: m.role,
         content: m.content,
+        note: m.note || "",
         isUser: m.role === "user",
         roleText: ROLE_LABELS[m.role] || m.role,
         bubbleCls: BUBBLE_CLASSES[m.role] || "bubble-default",

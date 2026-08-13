@@ -38,6 +38,72 @@ const CONTENT_MAX_CHARS = 2000; // 单条消息硬截断（防文档膨胀/拖�
 const TRANSCRIPT_ALERT_CHARS = 8000; // transcript 总长报警阈值（超限打日志，便于运维介入�?
 const APPEND_MAX_RETRIES = 3; // 乐观锁冲突重试上�?
 
+// 服务端配额强校验开关：测试期关闭（保持临时放开）；上线前改 true 启用。
+const ENFORCE_QUOTA = false;
+
+// 段位分档（与 userProfile / getQuota 保持一致）
+const TIERS = {
+  new:      { daily: { L1: 3,  L2: 2,  L3: 1 },  maxRounds: 10 },
+  bronze:   { daily: { L1: 5,  L2: 3,  L3: 2 },  maxRounds: 12 },
+  silver:   { daily: { L1: 8,  L2: 5,  L3: 3 },  maxRounds: 15 },
+  gold:     { daily: { L1: 12, L2: 8,  L3: 5 },  maxRounds: 20 },
+  platinum: { daily: { L1: 20, L2: 12, L3: 8 },  maxRounds: 30 },
+  diamond:  { daily: { L1: 30, L2: 20, L3: 12 }, maxRounds: 40 },
+  king:     { daily: { L1: 50, L2: 30, L3: 20 }, maxRounds: 60 },
+  beta:     { daily: { L1: 999, L2: 999, L3: 999 }, maxRounds: 999 },
+};
+
+function bjTodayRange() {
+  const OFFSET = 8 * 3600 * 1000;
+  const bjDayStartUtc = Math.floor((Date.now() + OFFSET) / 86400000) * 86400000 - OFFSET;
+  return { today: new Date(bjDayStartUtc), tomorrow: new Date(bjDayStartUtc + 86400000) };
+}
+
+async function getUserClassify(OPENID) {
+  try {
+    const u = await db.collection("users").doc(OPENID || "").get();
+    return (u.data && u.data.classify) || "new";
+  } catch (e) {
+    return "new";
+  }
+}
+
+// 创建会话前强校验：按 openid+日 统计场次与总轮次，超限拒绝。ENFORCE_QUOTA=false 时放行。
+async function enforceQuotaBeforeCreate(OPENID, mode) {
+  if (!ENFORCE_QUOTA) return { ok: true };
+  const classify = await getUserClassify(OPENID);
+  const tier = TIERS[classify] || TIERS.new;
+  const limit = tier.daily[mode] || 3;
+  const maxRounds = tier.maxRounds;
+  const { today, tomorrow } = bjTodayRange();
+
+  const sessRes = await db
+    .collection("sessions")
+    .where({ openid: OPENID || "", mode, createdAt: _.gte(today).and(_.lt(tomorrow)) })
+    .count();
+  const used = sessRes.total || 0;
+  if (used >= limit) {
+    return { ok: false, reason: "daily", used, limit, msg: "今日该模式次数已用完" };
+  }
+
+  let totalRounds = 0;
+  try {
+    const agg = await db
+      .collection("sessions")
+      .where({ openid: OPENID || "", createdAt: _.gte(today).and(_.lt(tomorrow)) })
+      .aggregate()
+      .group({ _id: null, totalRounds: db.command.aggregate.sum("$round") })
+      .end();
+    if (agg.list && agg.list[0]) totalRounds = agg.list[0].totalRounds || 0;
+  } catch (e) {
+    console.error("[sessionStore] round aggregate failed:", e);
+  }
+  if (totalRounds >= maxRounds) {
+    return { ok: false, reason: "rounds", used: totalRounds, limit: maxRounds, msg: "今日总轮次已达上限" };
+  }
+  return { ok: true };
+}
+
 async function trackUsage(mode, model, usage) {
   try {
     const u = usage || {};
@@ -120,6 +186,15 @@ exports.main = async (event) => {
   switch (action) {
     case "create": {
       try {
+        const { OPENID } = cloud.getWXContext();
+        const q = await enforceQuotaBeforeCreate(OPENID || "", event.mode || "L1");
+        if (!q.ok) {
+          return {
+            code: -2,
+            msg: q.msg,
+            data: { reason: q.reason, used: q.used, limit: q.limit },
+          };
+        }
         const sessionId = await ensureSessionDoc(event);
         return { code: 0, data: { sessionId } };
       } catch (e) {
