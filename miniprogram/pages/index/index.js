@@ -18,7 +18,6 @@ Page({
   },
 
   goDebate() {
-    // 测试期间临时放开：直接跳转（正式版需实现 L2 完成解锁逻辑）
     wx.navigateTo({ url: "/pages/debate/index" });
   },
 });

@@ -85,8 +85,28 @@ if (fs.existsSync(promptsJs) && fs.existsSync(evalRunnerJs)) {
       ok(`${pair.label} prompt（${pair.js} ↔ ${pair.runner}）一致`);
     }
   }
+
+  /* 4. PROMPT_DEBATE_* 镜像（硬性：逐字一致，W5 加） */
+  const debatePairs = [
+    { js: "debate_affirmative", runner: "PROMPT_DEBATE_AFFIRMATIVE", label: "辩论正方" },
+    { js: "debate_negative", runner: "PROMPT_DEBATE_NEGATIVE", label: "辩论反方" },
+    { js: "debate_judge", runner: "PROMPT_DEBATE_JUDGE", label: "辩论裁判" },
+  ];
+  for (const pair of debatePairs) {
+    const reJs = new RegExp(`${pair.js}:\\s*\`([\\s\\S]*?)\`\\s*,?$`, "m");
+    const reRunner = new RegExp(`${pair.runner}\\s*=\\s*\`([\\s\\S]*?)\`;`);
+    const eJs = jsSrc.match(reJs);
+    const eRunner = runnerSrc.match(reRunner);
+    if (!eJs || !eRunner) {
+      fail(`无法提取 ${pair.label} prompt（正则失配：${pair.js} ↔ ${pair.runner}）`);
+    } else if (normalize(eJs[1]) !== normalize(eRunner[1])) {
+      fail(`${pair.label} prompt 不一致：prompts.js[${pair.js}] 与 evalRunner[${pair.runner}] 内容不同`);
+    } else {
+      ok(`${pair.label} prompt（${pair.js} ↔ ${pair.runner}）一致`);
+    }
+  }
 } else {
-  fail("prompts.js 或 evalRunner/index.js 缺失，无法校验 PROMPT_SOCRATES / PROMPT_EXPERT_*");
+  fail("prompts.js 或 evalRunner/index.js 缺失，无法校验 PROMPT_SOCRATES / PROMPT_EXPERT_* / PROMPT_DEBATE_*");
 }
 
 /* 4. socrates.md 抽检（软校验：核心句子必须存在） */
