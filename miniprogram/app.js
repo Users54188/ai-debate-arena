@@ -1,4 +1,10 @@
+const config = require("./config");
+
 App({
+  globalData: {
+    openid: "",
+  },
+
   onLaunch() {
     if (!wx.cloud) {
       console.error("CloudBase SDK not available, check base library version.");
@@ -9,6 +15,19 @@ App({
         traceUser: true,
       }).then(()=>console.log('cloud init OK')).catch(e=>console.error('cloud init FAIL:',e));
     }
+
+    // 静默建档：首次进入即创建 users 文档（服务端 openid 稳定，无需 wx.login 换 code）
+    wx.cloud
+      .callFunction({ name: config.cloudFunctions.userProfile, data: { action: "ensure" } })
+      .then((res) => {
+        const d = res.result && res.result.data;
+        if (d && d.openid) {
+          this.globalData.openid = d.openid;
+          wx.setStorageSync("openid", d.openid);
+        }
+      })
+      .catch((e) => console.error("[app] userProfile ensure failed:", e));
+
     const sdkVersion = wx.getAppBaseInfo().SDKVersion;
     console.log(`SDKVersion: ${sdkVersion}`);
     const requiredVersion = "3.7.1"; // wx.cloud.extend.AI 最低要求（来源：腾讯云开发接入指引）

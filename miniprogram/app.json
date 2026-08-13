@@ -5,8 +5,19 @@
     "pages/dual/index",
     "pages/debate/index",
     "pages/report/index",
-    "pages/ranking/index"
+    "pages/ranking/index",
+    "pages/mine/index"
   ],
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#4F46E5",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页" },
+      { "pagePath": "pages/mine/index", "text": "我的" }
+    ]
+  },
   "window": {
     "navigationBarBackgroundColor": "#4F46E5",
     "navigationBarTitleText": "思辨场",
