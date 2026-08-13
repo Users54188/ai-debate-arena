@@ -45,7 +45,7 @@
   },
   "compileType": "miniprogram",
   "libVersion": "3.7.1",
-  "appid": "",
+  "appid": "wxc158769af1e2ce0a",
   "projectname": "ai-debate-arena",
   "miniprogramRoot": "miniprogram/",
   "cloudfunctionRoot": "cloudfunctions/",
