@@ -2,6 +2,8 @@
   "pages": [
     "pages/index/index",
     "pages/socrates/index",
+    "pages/history/index",
+    "pages/profile/index",
     "pages/dual/index",
     "pages/debate/index",
     "pages/report/index",
@@ -26,28 +28,22 @@
         "selectedIconPath": "images/home.png"
       },
       {
-        "pagePath": "pages/debate/index",
-        "text": "辩论",
-        "iconPath": "images/debate.png",
-        "selectedIconPath": "images/debate.png"
-      },
-      {
         "pagePath": "pages/socrates/index",
-        "text": "竞技",
-        "iconPath": "images/game.png",
-        "selectedIconPath": "images/game.png"
+        "text": "思辨",
+        "iconPath": "images/practice.png",
+        "selectedIconPath": "images/practice.png"
       },
       {
-        "pagePath": "pages/report/index",
+        "pagePath": "pages/history/index",
         "text": "历史",
         "iconPath": "images/history.png",
         "selectedIconPath": "images/history.png"
       },
       {
-        "pagePath": "pages/ranking/index",
-        "text": "记忆",
-        "iconPath": "images/memory.png",
-        "selectedIconPath": "images/memory.png"
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "images/profile.png",
+        "selectedIconPath": "images/profile.png"
       }
     ]
   },
