@@ -111,4 +111,8 @@ Page({
     const pad = (n) => String(n).padStart(2, "0");
     return `${t.getMonth() + 1}月${t.getDate()}日`;
   },
+
+  goHome() {
+    wx.switchTab({ url: "/pages/index/index" });
+  },
 });

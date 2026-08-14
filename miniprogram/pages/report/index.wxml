@@ -4,14 +4,18 @@
 
   <!-- 加载态 -->
   <view wx:if="{{loading}}" class="loading-box">
-    <view class="loading-spinner"></view>
-    <text class="loading-text">报告生成中…</text>
+    <empty-state mode="loading" title="报告生成中..." />
   </view>
 
   <!-- 错误/不存在 -->
   <view wx:elif="{{loadError}}" class="error-box">
-    <text class="error-text">{{loadError}}</text>
-    <button wx:if="{{!notFound}}" class="retry-btn" bindtap="onRetry">重试</button>
+    <empty-state
+      mode="error"
+      title="{{loadError}}"
+      desc="{{notFound ? '可能链接已失效或会话被删除' : '网络异常或服务繁忙'}}"
+      cta="{{notFound ? '回首页' : '重试'}}"
+      bind:tap="onStateCta"
+    />
   </view>
 
   <!-- 报告内容 -->

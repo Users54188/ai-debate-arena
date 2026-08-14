@@ -57,3 +57,5 @@
     </view>
   </view>
 </view>
+
+<onboarding wx:if="{{showOnboarding}}" bind:done="onOnboardingDone" />

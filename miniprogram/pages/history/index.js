@@ -68,6 +68,10 @@ Page({
     wx.navigateTo({ url: `/pages/report/index?sessionId=${id}` });
   },
 
+  goHome() {
+    wx.switchTab({ url: "/pages/index/index" });
+  },
+
   onDelete(e) {
     const id = (e.currentTarget.dataset || {}).id;
     if (!id) return;

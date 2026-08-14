@@ -1,6 +1,6 @@
 <view class="page">
   <view wx:if="{{loading}}" class="state-box">
-    <text class="state-text">加载中...</text>
+    <empty-state mode="loading" />
   </view>
 
   <block wx:else>

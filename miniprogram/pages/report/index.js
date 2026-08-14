@@ -326,6 +326,15 @@ Page({
     this.loadReport();
   },
 
+  /** empty-state CTA 统一入口：notFound 走回首页，其余重试 */
+  onStateCta() {
+    if (this.data.notFound) {
+      wx.switchTab({ url: "/pages/index/index" });
+    } else {
+      this.onRetry();
+    }
+  },
+
   /** 生成分享海报（Canvas 2d：背景图 + 分数 + 模式 + 报告摘要） */
   async onPoster() {
     const report = this.data.report;

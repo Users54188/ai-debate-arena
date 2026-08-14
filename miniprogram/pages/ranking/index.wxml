@@ -1,11 +1,16 @@
 <view class="page">
   <view wx:if="{{loading}}" class="state-box">
-    <text class="state-text">加载中...</text>
+    <empty-state mode="loading" />
   </view>
 
   <view wx:elif="{{empty}}" class="state-box">
-    <text class="state-text">还没有排行数据</text>
-    <text class="state-sub">完成思辨后，这里会记录你的最佳成绩</text>
+    <empty-state
+      mode="empty"
+      title="还没有排行数据"
+      desc="完成思辨后，这里会记录你的最佳成绩"
+      cta="去思辨"
+      bind:tap="goHome"
+    />
   </view>
 
   <block wx:else>
