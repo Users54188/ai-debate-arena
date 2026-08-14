@@ -159,22 +159,5 @@ exports.main = async (event) => {
     return updateProfile(OPENID || "", event);
   }
 
-  // 内部接口（其他云函数调用，不暴露给小程序端）：批量按 openid 取档案（供 ranking 用）
-  if (action === "batchGet" && Array.isArray(event.openids)) {
-    if (event.openids.length > 100) {
-      return { code: -1, msg: "batchGet max 100 openids" };
-    }
-    try {
-      const res = await db
-        .collection("users")
-        .where({ openid: _.in(event.openids) })
-        .get();
-      return { code: 0, data: { users: res.data || [] } };
-    } catch (e) {
-      console.error("[userProfile] batchGet failed:", e);
-      return { code: -1, msg: "batchGet failed" };
-    }
-  }
-
   return { code: -1, msg: `Unknown action: ${action}` };
 };
