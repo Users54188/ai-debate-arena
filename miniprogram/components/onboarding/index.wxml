@@ -1,0 +1,22 @@
+<view class="onboarding-mask">
+  <swiper class="onboarding-swiper" current="{{current}}" bindchange="onSwiperChange" circular="{{false}}">
+    <swiper-item wx:for="{{slides}}" wx:key="index">
+      <view class="slide" style="background: {{item.bg}};">
+        <view class="slide-emoji">{{item.emoji}}</view>
+        <text class="slide-title">{{item.title}}</text>
+        <text class="slide-desc">{{item.desc}}</text>
+      </view>
+    </swiper-item>
+  </swiper>
+
+  <view class="onboarding-dots">
+    <view class="dot {{current === idx ? 'dot-active' : ''}}" wx:for="{{slides}}" wx:for-index="idx" wx:key="idx"></view>
+  </view>
+
+  <view class="onboarding-actions safe-bottom">
+    <text class="skip-btn" bindtap="onSkip">跳过</text>
+    <button class="next-btn" bindtap="onNext">
+      {{current === slides.length - 1 ? '开始思辨' : '下一步'}}
+    </button>
+  </view>
+</view>

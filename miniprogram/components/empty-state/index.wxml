@@ -1,0 +1,6 @@
+<view class="empty-state">
+  <view class="empty-emoji">{{defaultMeta[mode].emoji}}</view>
+  <text class="empty-title">{{title || defaultMeta[mode].defaultTitle}}</text>
+  <text wx:if="{{desc}}" class="empty-desc">{{desc}}</text>
+  <button wx:if="{{cta}}" class="empty-cta" bindtap="onCta" size="mini">{{cta}}</button>
+</view>
