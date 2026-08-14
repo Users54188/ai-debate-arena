@@ -354,7 +354,7 @@ Page({
         });
         const canvas = node.node;
         const ctx = canvas.getContext("2d");
-        const dpr = wx.getSystemInfoSync().pixelRatio || 2;
+        const dpr = (wx.getWindowInfo && wx.getWindowInfo().pixelRatio) || 2;
         canvas.width = node.width * dpr;
         canvas.height = node.height * dpr;
         ctx.scale(dpr, dpr);
@@ -374,7 +374,8 @@ Page({
         ctx.fillText("AI 思辨场", W / 2, H * 0.36);
         ctx.font = "16px sans-serif";
         ctx.fillStyle = "#6B7280";
-        ctx.fillText((this.data.isL2 ? "双人共修" : (report.mode === "L3" ? "辩论场" : "苏格拉底追问")) + " · 思辨报告", W / 2, H * 0.36 + 30);
+        const modeLabel = report.mode === "L3" ? "辩论场" : this.data.isL2 ? "双人共修" : "苏格拉底追问";
+        ctx.fillText(modeLabel + " · 思辨报告", W / 2, H * 0.36 + 30);
 
         ctx.fillStyle = "#111827";
         ctx.font = "bold 56px sans-serif";
@@ -383,15 +384,34 @@ Page({
         ctx.fillStyle = "#9CA3AF";
         ctx.fillText("思辨得分", W / 2, H * 0.50 + 26);
 
-        const text = report.reportText || "";
-        ctx.font = "15px sans-serif";
-        ctx.fillStyle = "#374151";
-        const maxWidth = W - 48;
-        const lines = this.wrapText(ctx, text, maxWidth, 5);
-        let y = H * 0.58;
-        for (const line of lines) {
-          ctx.fillText(line, W / 2, y);
-          y += 22;
+        // L3 海报分支：展示正反方投票分布（替代通用报告摘要）
+        if (report.mode === "L3" && report.debate) {
+          const d = report.debate || {};
+          const aff = (report.voteScore) || 0;
+          ctx.font = "13px sans-serif";
+          ctx.fillStyle = "#7C3AED";
+          const affPts = (d.affirmativePoints || []).slice(0, 2);
+          for (const p of affPts) {
+            ctx.fillText("正方：" + (p.point || "").slice(0, 24), W / 2, H * 0.58);
+          }
+          ctx.fillStyle = "#F97316";
+          const negPts = (d.negativePoints || []).slice(0, 2);
+          let ny = H * 0.62;
+          for (const p of negPts) {
+            ctx.fillText("反方：" + (p.point || "").slice(0, 24), W / 2, ny);
+            ny += 20;
+          }
+        } else {
+          const text = report.reportText || "";
+          ctx.font = "15px sans-serif";
+          ctx.fillStyle = "#374151";
+          const maxWidth = W - 48;
+          const lines = this.wrapText(ctx, text, maxWidth, 5);
+          let y = H * 0.58;
+          for (const line of lines) {
+            ctx.fillText(line, W / 2, y);
+            y += 22;
+          }
         }
 
         ctx.fillStyle = "#9CA3AF";
