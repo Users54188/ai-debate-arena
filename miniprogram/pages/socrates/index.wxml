@@ -1,22 +1,6 @@
-<view class="socrates-page">
-  <!-- 加载动画 -->
-  <view wx:if="{{loading}}" class="loading-overlay">
-    <video
-      class="loading-video"
-      src="/images/socrates-loading.mp4"
-      autoplay
-      loop
-      muted
-      show-center-play-btn="{{false}}"
-      show-fullscreen-btn="{{false}}"
-      show-play-btn="{{false}}"
-      controls="{{false}}"
-    />
-    <text class="loading-text">苏格拉底正在思考...</text>
-  </view>
-
-  <!-- 背景图 -->
-  <image class="bg-image" src="/images/bg-tarot.png" mode="aspectFill" />
+﻿<view class="socrates-page">
+  <!-- 背景（移除塔罗图，纯色渐变） -->
+  <view class="bg-gradient"></view>
 
   <!-- chat-stream 对话区 -->
   <chat-stream
@@ -35,14 +19,14 @@
       bindconfirm="sendMessage"
       placeholder="说出你的观点，苏格拉底会追问你..."
       confirm-type="send"
-      disabled="{{loading || streaming || quotaExhausted}}"
+      disabled="{{streaming || quotaExhausted}}"
       adjust-position="{{true}}"
       cursor-spacing="{{12}}"
     />
     <button
       class="send-btn"
       bindtap="sendMessage"
-      disabled="{{!inputText.trim() || loading || streaming || quotaExhausted}}"
+      disabled="{{inputText.length === 0 || streaming || quotaExhausted}}"
       size="mini"
     >
       发送

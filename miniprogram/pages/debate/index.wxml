@@ -1,1 +1,96 @@
-<view class="placeholder"><text>L3 辩论场 — W5 实现</text></view>
+<view class="debate-page">
+  <view wx:if="{{phase === 'input'}}" class="topic-input-section">
+    <view class="topic-header">
+      <text class="topic-title">提出一个值得辩论的命题</text>
+      <text class="topic-sub">AI 将分别扮演正方、反方与裁判，你作为围观者投票</text>
+    </view>
+    <view class="topic-examples">
+      <text class="examples-label">从辩题库选择（推荐）：</text>
+      <view
+        wx:for="{{topicCandidates}}"
+        wx:key="_id"
+        class="example-item"
+        bindtap="onPickExample"
+        data-topic="{{item.title}}"
+      >
+        · {{item.title}}
+      </view>
+      <view wx:if="{{topicCandidates.length === 0 && !topicLoading}}" class="example-item example-empty">
+        暂无推荐辩题，可自由命题
+      </view>
+    </view>
+    <textarea
+      class="topic-textarea"
+      value="{{topic}}"
+      bindinput="onTopicInput"
+      placeholder="例如：人工智能会取代人类大部分工作"
+      maxlength="80"
+      auto-height
+      disabled="{{quotaExhausted}}"
+    />
+    <button
+      class="start-btn"
+      bindtap="startDebate"
+      disabled="{{!topic.trim() || quotaExhausted}}"
+    >开始辩论</button>
+    <view wx:if="{{quotaExhausted}}" class="quota-notice">
+      今日 L3 辩论次数已用完，明天再来
+    </view>
+  </view>
+
+  <view wx:if="{{phase !== 'input'}}" class="debate-stage">
+    <view class="topic-bar">
+      <text class="topic-bar-label">命题：</text>
+      <text class="topic-bar-text">{{topic}}</text>
+      <text wx:if="{{phase === 'finished'}}" class="reset-link" bindtap="onResetTopic">换命题</text>
+    </view>
+
+    <scroll-view class="debate-stream" scroll-y scroll-top="{{scrollTop}}" scroll-with-animation>
+      <view wx:for="{{messages}}" wx:key="index" class="debate-message debate-{{item.role}}">
+        <view class="role-tag role-tag-{{item.role}}">
+          <text>{{item.role === 'user' ? '我出的命题' : item.role === 'affirmative' ? '正方' : item.role === 'negative' ? '反方' : '裁判'}}</text>
+          <text wx:if="{{item.role !== 'user'}}" class="round-tag">第 {{item.round}} 轮</text>
+        </view>
+        <view class="bubble bubble-{{item.role}}">
+          <text class="bubble-text">{{item.content}}</text>
+        </view>
+      </view>
+
+      <view wx:if="{{streaming && waitingFirstChunk}}" class="debate-message debate-{{currentRole}}">
+        <view class="role-tag role-tag-{{currentRole}}">
+          <text>{{currentRole === 'affirmative' ? '正方' : currentRole === 'negative' ? '反方' : '裁判'}}思考中…</text>
+        </view>
+        <view class="bubble bubble-streaming">
+          <view class="typing-dots">
+            <view class="dot"></view>
+            <view class="dot"></view>
+            <view class="dot"></view>
+          </view>
+        </view>
+      </view>
+
+      <view style="height: 40rpx;"></view>
+    </scroll-view>
+
+    <view wx:if="{{phase === 'debating' && !streaming}}" class="vote-bar safe-bottom">
+      <view wx:if="{{!hasVotedThisRound && round > 0 && round < 4}}" class="vote-prompt">
+        <text class="vote-label">本轮哪方更说服你？</text>
+        <view class="vote-buttons">
+          <view class="vote-btn vote-affirmative" bindtap="onVote" data-side="affirmative">正方 +1</view>
+          <view class="vote-btn vote-negative" bindtap="onVote" data-side="negative">反方 +1</view>
+        </view>
+        <text class="skip-link" bindtap="continueNextRound">跳过投票，进入下一轮</text>
+      </view>
+      <view wx:if="{{hasVotedThisRound && round < 4}}" class="continue-section">
+        <button class="continue-btn" bindtap="continueNextRound">进入第 {{round + 1}} 轮</button>
+      </view>
+      <view wx:if="{{round === 0}}" class="waiting-section">
+        <text class="waiting-text">三方发言中…</text>
+      </view>
+    </view>
+
+    <view wx:if="{{phase === 'debating' && streaming}}" class="streaming-bar">
+      <text class="streaming-text">{{currentRole === 'affirmative' ? '正方陈述中…' : currentRole === 'negative' ? '反方反驳中…' : '裁判点评中…'}}</text>
+    </view>
+  </view>
+</view>

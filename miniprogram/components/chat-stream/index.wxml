@@ -6,11 +6,17 @@
   class="chat-container"
 >
   <view wx:for="{{renderMessages}}" wx:key="index" class="message-row {{item.isUser ? 'msg-right' : 'msg-left'}}">
-    <!-- 角色标签 -->
-    <text wx:if="{{!item.isUser}}" class="role-label">{{item.roleText}}</text>
-    <!-- 气泡 -->
-    <view class="bubble {{item.bubbleCls}}">
-      <text class="bubble-text">{{item.content}}</text>
+    <!-- AI 角色头像（圆形首字位） -->
+    <view wx:if="{{!item.isUser}}" class="avatar-circle {{item.avatarCls}}">{{item.avatarChar}}</view>
+    <view class="message-main">
+      <!-- 角色标签 -->
+      <text wx:if="{{!item.isUser}}" class="role-label">{{item.roleText}}</text>
+      <!-- 气泡 -->
+      <view class="bubble {{item.bubbleCls}}">
+        <text class="bubble-text">{{item.content}}</text>
+        <!-- 混元 note 保留（合规：不删除模型 note 字段，常驻展示） -->
+        <text wx:if="{{item.note}}" class="bubble-note">{{item.note}}</text>
+      </view>
     </view>
   </view>
 

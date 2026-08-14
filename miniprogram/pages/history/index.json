@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "empty-state": "/components/empty-state/index"
+  },
+  "navigationBarTitleText": "思辨历史"
+}

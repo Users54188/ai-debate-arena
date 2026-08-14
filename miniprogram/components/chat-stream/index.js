@@ -30,6 +30,23 @@ const BUBBLE_CLASSES = {
   judge: "bubble-judge",
 };
 
+// 头像首字（用于圆形头像位）
+const AVATAR_CHAR = {
+  socrates: "苏",
+  expert: "专",
+  affirmative: "正",
+  negative: "反",
+  judge: "裁",
+};
+
+const AVATAR_CLASSES = {
+  socrates: "avatar-socrates",
+  expert: "avatar-expert",
+  affirmative: "avatar-affirmative",
+  negative: "avatar-negative",
+  judge: "avatar-judge",
+};
+
 Component({
   properties: {
     messages: { type: Array, value: [] },
@@ -59,9 +76,12 @@ Component({
       const renderMessages = (list || []).map((m) => ({
         role: m.role,
         content: m.content,
+        note: m.note || "",
         isUser: m.role === "user",
         roleText: ROLE_LABELS[m.role] || m.role,
         bubbleCls: BUBBLE_CLASSES[m.role] || "bubble-default",
+        avatarChar: AVATAR_CHAR[m.role] || "",
+        avatarCls: AVATAR_CLASSES[m.role] || "",
       }));
       this.setData({ renderMessages });
     },

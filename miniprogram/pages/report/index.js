@@ -43,6 +43,7 @@ Page({
     strategyRows: [],
     fallacyItems: [],
     shareTitle: "",
+    poster: { show: false, ready: false },
   },
 
   onLoad(options) {
@@ -325,9 +326,173 @@ Page({
     this.loadReport();
   },
 
-  /** 海报占位（W6 实现） */
-  onPoster() {
-    wx.showToast({ title: "即将上线", icon: "none", duration: 1500 });
+  /** empty-state CTA 统一入口：notFound 走回首页，其余重试 */
+  onStateCta() {
+    if (this.data.notFound) {
+      wx.switchTab({ url: "/pages/index/index" });
+    } else {
+      this.onRetry();
+    }
+  },
+
+  /** 生成分享海报（Canvas 2d：背景图 + 分数 + 模式 + 报告摘要） */
+  async onPoster() {
+    const report = this.data.report;
+    if (!report) return;
+    this.setData({ poster: { show: true, ready: false } });
+    this.nextTick(async () => {
+      try {
+        const query = wx.createSelectorQuery();
+        const node = await new Promise((resolve, reject) => {
+          query
+            .select("#posterCanvas")
+            .fields({ node: true, size: true })
+            .exec((res) => {
+              if (res && res[0] && res[0].node) resolve(res[0]);
+              else reject(new Error("poster canvas not found"));
+            });
+        });
+        const canvas = node.node;
+        const ctx = canvas.getContext("2d");
+        const dpr = (wx.getWindowInfo && wx.getWindowInfo().pixelRatio) || 2;
+        canvas.width = node.width * dpr;
+        canvas.height = node.height * dpr;
+        ctx.scale(dpr, dpr);
+        const W = node.width;
+        const H = node.height;
+
+        // 背景（美工 poster-bg.jpeg；加载失败退化为渐变）
+        const bg = await this.loadImage("/images/poster-bg.jpeg");
+        ctx.drawImage(bg, 0, 0, W, H);
+
+        ctx.fillStyle = "rgba(255,255,255,0.94)";
+        ctx.fillRect(0, H * 0.30, W, H * 0.70);
+
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#4F46E5";
+        ctx.font = "bold 34px sans-serif";
+        ctx.fillText("AI 思辨场", W / 2, H * 0.36);
+        ctx.font = "16px sans-serif";
+        ctx.fillStyle = "#6B7280";
+        const modeLabel = report.mode === "L3" ? "辩论场" : this.data.isL2 ? "双人共修" : "苏格拉底追问";
+        ctx.fillText(modeLabel + " · 思辨报告", W / 2, H * 0.36 + 30);
+
+        ctx.fillStyle = "#111827";
+        ctx.font = "bold 56px sans-serif";
+        ctx.fillText(String(report.score || 0), W / 2, H * 0.50);
+        ctx.font = "14px sans-serif";
+        ctx.fillStyle = "#9CA3AF";
+        ctx.fillText("思辨得分", W / 2, H * 0.50 + 26);
+
+        // L3 海报分支：展示正反方投票分布（替代通用报告摘要）
+        if (report.mode === "L3" && report.debate) {
+          const d = report.debate || {};
+          const aff = (report.voteScore) || 0;
+          ctx.font = "13px sans-serif";
+          ctx.fillStyle = "#7C3AED";
+          const affPts = (d.affirmativePoints || []).slice(0, 2);
+          for (const p of affPts) {
+            ctx.fillText("正方：" + (p.point || "").slice(0, 24), W / 2, H * 0.58);
+          }
+          ctx.fillStyle = "#F97316";
+          const negPts = (d.negativePoints || []).slice(0, 2);
+          let ny = H * 0.62;
+          for (const p of negPts) {
+            ctx.fillText("反方：" + (p.point || "").slice(0, 24), W / 2, ny);
+            ny += 20;
+          }
+        } else {
+          const text = report.reportText || "";
+          ctx.font = "15px sans-serif";
+          ctx.fillStyle = "#374151";
+          const maxWidth = W - 48;
+          const lines = this.wrapText(ctx, text, maxWidth, 5);
+          let y = H * 0.58;
+          for (const line of lines) {
+            ctx.fillText(line, W / 2, y);
+            y += 22;
+          }
+        }
+
+        ctx.fillStyle = "#9CA3AF";
+        ctx.font = "12px sans-serif";
+        ctx.fillText("长按识别或打开小程序查看完整报告", W / 2, H * 0.92);
+
+        this.posterCanvas = canvas;
+        this.setData({ "poster.ready": true });
+      } catch (e) {
+        console.error("[report] poster draw failed:", e);
+        this.setData({ poster: { show: false, ready: false } });
+        wx.showToast({ title: "海报生成失败", icon: "none" });
+      }
+    });
+  },
+
+  /** 加载本地图片（返回 canvas 可绘制的对象） */
+  loadImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = wx.createImage();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("image load failed"));
+      img.src = src;
+    });
+  },
+
+  /** 文本换行（单行超宽截断） */
+  wrapText(ctx, text, maxWidth, maxLines) {
+    const chars = String(text || "").split("");
+    const lines = [];
+    let cur = "";
+    for (const c of chars) {
+      if (ctx.measureText(cur + c).width > maxWidth) {
+        lines.push(cur);
+        cur = c;
+        if (lines.length >= maxLines - 1) break;
+      } else {
+        cur += c;
+      }
+    }
+    if (cur) lines.push(cur);
+    return lines.slice(0, maxLines);
+  },
+
+  onPosterClose() {
+    this.setData({ "poster.show": false });
+  },
+
+  noop() {},
+
+  /** 保存海报到相册（授权失败引导设置） */
+  onPosterSave() {
+    const canvas = this.posterCanvas;
+    if (!canvas) {
+      wx.showToast({ title: "海报未就绪", icon: "none" });
+      return;
+    }
+    wx.canvasToTempFilePath({
+      canvas,
+      success: (res) => {
+        wx.saveImageToPhotosAlbum({
+          filePath: res.tempFilePath,
+          success: () => wx.showToast({ title: "已保存到相册", icon: "success" }),
+          fail: (err) => {
+            if (err && err.errMsg && err.errMsg.includes("auth")) {
+              wx.showModal({
+                title: "需要相册权限",
+                content: "请在设置中开启保存到相册权限",
+                confirmText: "去设置",
+                success: (r) => {
+                  if (r.confirm) wx.openSetting();
+                },
+              });
+            } else {
+              wx.showToast({ title: "保存失败", icon: "none" });
+            }
+          },
+        });
+      },
+      fail: () => wx.showToast({ title: "导出失败", icon: "none" }),
+    });
   },
 
   /** 分享（P1 修复：只带 shareToken，不携带 sessionId；无 token 时兜底不补 sessionId） */

@@ -1,1 +1,38 @@
-<view class="placeholder"><text>段位排行 — W6 实现</text></view>
+<view class="page">
+  <view wx:if="{{loading}}" class="state-box">
+    <empty-state mode="loading" />
+  </view>
+
+  <view wx:elif="{{empty}}" class="state-box">
+    <empty-state
+      mode="empty"
+      title="还没有排行数据"
+      desc="完成思辨后，这里会记录你的最佳成绩"
+      cta="去思辨"
+      bind:tap="goHome"
+    />
+  </view>
+
+  <block wx:else>
+    <!-- 段位卡 -->
+    <view class="rank-card">
+      <image class="rank-trophy" src="/images/trophy.png" mode="aspectFill" />
+      <text class="rank-name">{{rank.name}}</text>
+      <text class="rank-next">距离 {{rank.next}}</text>
+      <view class="rank-progress">
+        <view class="rank-progress-bar" style="width: {{rank.progress}}%"></view>
+      </view>
+    </view>
+
+    <!-- 各模式最佳 -->
+    <view class="section-title">各模式最佳成绩</view>
+    <view class="row-list">
+      <view class="row-item" wx:for="{{rows}}" wx:key="mode">
+        <text class="row-mode">L{{item.mode}}</text>
+        <text class="row-label">{{item.modeLabel}}</text>
+        <text class="row-score">{{item.score}} 分</text>
+        <text class="row-time">{{item.time}}</text>
+      </view>
+    </view>
+  </block>
+</view>
