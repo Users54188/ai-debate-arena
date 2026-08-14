@@ -37,13 +37,13 @@
         "pagePath": "pages/history/index",
         "text": "历史",
         "iconPath": "images/history.png",
-        "selectedIconPath": "images/history.png"
+        "selectedIconPath": "images/history_sel.png"
       },
       {
         "pagePath": "pages/profile/index",
         "text": "我的",
         "iconPath": "images/profile.png",
-        "selectedIconPath": "images/profile.png"
+        "selectedIconPath": "images/profile_sel.png"
       }
     ]
   },
