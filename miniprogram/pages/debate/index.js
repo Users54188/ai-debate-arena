@@ -353,4 +353,33 @@ Page({
     this.sessionId = null;
     this.sessionSummary = "";
   },
+
+  /** 邀请好友围观（按钮入口；实际转发走 onShareAppMessage） */
+  onInviteWatch() {
+    if (!this.sessionId) return;
+    wx.showToast({ title: "点击右上角 ··· 转发", icon: "none", duration: 2000 });
+  },
+
+  /** L3 辩论分享：本人带 sessionId（好友进入只读围观），无 session 兜底回首页 */
+  onShareAppMessage() {
+    const topic = this.data.topic || "AI 三方辩论";
+    if (this.sessionId) {
+      return {
+        title: `围观这场辩论：${topic.slice(0, 20)}`,
+        path: `/pages/report/index?sessionId=${this.sessionId}`,
+      };
+    }
+    return {
+      title: "AI 思辨场 — 三方辩论围观",
+      path: "/pages/index/index",
+    };
+  },
+
+  /** 朋友圈分享（同上） */
+  onShareTimeline() {
+    return {
+      title: `围观这场辩论：${(this.data.topic || "").slice(0, 20)}`,
+      query: this.sessionId ? `sessionId=${this.sessionId}` : "",
+    };
+  },
 });
