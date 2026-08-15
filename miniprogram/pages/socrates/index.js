@@ -229,7 +229,22 @@ Page({
       onStreamEnd: async ({ fullText, finishReason }) => {
         // 输出审核未通过：撤回内容，替换兜底文案
         const safe = finishReason === "sensitive";
-        const finalText = safe ? SENSITIVE_FALLBACK : fullText;
+        let finalText = safe ? SENSITIVE_FALLBACK : fullText;
+
+        // P1 修复（输出二次审核）：finish_reason 非 sensitive 时也再做一次 msgSecCheck
+        // 防 finish_reason 漏报；degraded（审核服务异常）时不撤回（fail-open，
+        // 已经过第一道 sensitive 检测，不应让审核服务故障卡死用户）
+        if (!safe && finalText) {
+          try {
+            const outCheck = await msgSecCheck(finalText, 2);
+            if (!outCheck.pass && !outCheck.degraded) {
+              finalText = SENSITIVE_FALLBACK;
+            }
+          } catch (e) {
+            console.warn("[socrates] output second-check failed:", e);
+          }
+        }
+
         const finalMessages = [...self.data.messages];
         finalMessages[msgIndex] = displayMsg("socrates", finalText);
 

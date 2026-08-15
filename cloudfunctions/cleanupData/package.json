@@ -1,7 +1,8 @@
 {
-  "name": "generateReport",
+  "name": "cleanupData",
   "version": "1.0.0",
   "main": "index.js",
+  "description": "用户数据 TTL 清理（合规：30 天保留期）",
   "dependencies": {
     "wx-server-sdk": "^4.0.2"
   }
