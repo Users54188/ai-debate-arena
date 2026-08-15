@@ -4,39 +4,45 @@ const db = cloud.database();
 const _ = db.command;
 
 /**
- * sessionStore �?会话持久�?+ 滚动摘要 + 用量记录 + 投票记录（W2-W5 完整实现�?
+ * sessionStore — 会话持久化 + 滚动摘要 + 用量记录 + 投票记录（W2-W5 完整实现）
  *
- * 接口�?
+ * 接口：
  *   action: "create" | "get" | "append" | "trackUsage" | "trackVote"
- *   create:     { mode: "L1"|"L2"|"L3", topic? } �?{ sessionId }
- *   get:        { sessionId } �?{ session: { recent, summary, round, status } }
+ *   create:     { mode: "L1"|"L2"|"L3", topic? } → { sessionId }
+ *   get:        { sessionId } → { session: { recent, summary, round, status } }
  *   append:     { sessionId, role: "user"|"assistant"|"affirmative"|"negative"|"judge", content, round }
- *               �?追加消息；recent �?8 轮（16 条）裁剪最旧轮次并入滚动摘要；
- *                 transcript 同步追加同一条消息（只增不裁，供报告生成引用原话�?
+ *               → 追加消息；recent 满 8 轮（16 条）裁剪最旧轮次并入滚动摘要；
+ *                 transcript 同步追加同一条消息（只增不裁，供报告生成引用原话）
  *   trackUsage: { mode, model, prompt_tokens, completion_tokens }
-*   trackVote:  { sessionId, round, side: "affirmative"|"negative" }  → L3 用户围观投票
+ *   trackVote:  { sessionId, round, side: "affirmative"|"negative" }  → L3 用户围观投票
  *
  * transcript（W3 新增）：
- * - �?recent 同源的消息数组，但永不裁剪、不压缩，保存全量原文（�?KB/会话�?
- * - get 默认不返回，需显式�?withTranscript: true（避免普通对话读取带全量记录�?
+ * - 与 recent 同源的消息数组，但永不裁剪、不压缩，保存全量原文（≤16KB/会话）
+ * - get 默认不返回，需显式传 withTranscript: true（避免普通对话读取带全量记录）
  *
  * 配额统计契约（必须遵守，配合 getQuota）：
- * - 会话文档创建时显式写�?openid（cloud.getWXContext().OPENID）与 createdAt: db.serverDate()
- *   （_openid 系统字段在云函数写入时不会自动注入，禁止依赖�?
- * - mode 字段�?L1/L2/L3
+ * - 会话文档创建时显式写入 openid（cloud.getWXContext().OPENID）与 createdAt: db.serverDate()
+ *   （_openid 系统字段在云函数写入时不会自动注入，禁止依赖）
+ * - mode 字段为 L1/L2/L3
  *
- * 滚动摘要�?
- * - recent 存原文但硬裁剪；�?9 轮起裁剪发生时触发一�?hy3 摘要调用（≤300 字）
- * - 裁剪与摘要先读后写串行执行（非数据库事务；fail-safe：摘要失败不阻断对话�?
- *   失败�?summary 保持原值，后续裁剪会再次触发补齐）
+ * 滚动摘要：
+ * - recent 存原文但硬裁剪；第 9 轮起裁剪发生时触发一次 hy3 摘要调用（≤300 字）
+ * - 裁剪与摘要先读后写串行执行（非数据库事务；fail-safe：摘要失败不阻断对话，
+ *   失败后 summary 保持原值，后续裁剪会再次触发补齐）
+ *
+ * 安全（W7 + 2026-08-16 合规整改）：
+ * - get/append/trackVote 均校验 openid 归属（IDOR 防护，他人 sessionId 一律拒绝）
+ * - create 在 mode=L3 时强制调用 topics 云函数 validate，服务端兜底白名单
+ *   （前端白名单校验可被绕过：攻击者可直接调 sessionStore.create 传任意敏感议题）
+ *   topics.validate 故障时保守拒绝，避免非白名单话题流过
  */
 
-const MAX_RECENT_MESSAGES = 16; // 8 �?× 2 条（user + assistant�?
+const MAX_RECENT_MESSAGES = 16; // 8 轮 × 2 条（user + assistant）
 const SUMMARY_MODEL = "hy3";
 const SUMMARY_MAX_CHARS = 300;
-const CONTENT_MAX_CHARS = 2000; // 单条消息硬截断（防文档膨胀/拖慢读取/耗数据库点池�?
-const TRANSCRIPT_ALERT_CHARS = 8000; // transcript 总长报警阈值（超限打日志，便于运维介入�?
-const APPEND_MAX_RETRIES = 3; // 乐观锁冲突重试上�?
+const CONTENT_MAX_CHARS = 2000; // 单条消息硬截断（防文档膨胀/拖慢读取/耗数据库点池）
+const TRANSCRIPT_ALERT_CHARS = 8000; // transcript 总长报警阈值（超限打日志，便于运维介入）
+const APPEND_MAX_RETRIES = 3; // 乐观锁冲突重试上限
 
 // 服务端配额强校验开关：测试期关闭（保持临时放开）；上线前改 true 启用。
 const ENFORCE_QUOTA = false;
@@ -104,6 +110,34 @@ async function enforceQuotaBeforeCreate(OPENID, mode) {
   return { ok: true };
 }
 
+/**
+ * P1 修复（服务端白名单兜底）：mode=L3 时强制校验 topic 必须在白名单
+ * 前端 topics 云函数的 validate 可被绕过（攻击者直接调 sessionStore.create），
+ * 所以服务端必须再做一次校验。topics.validate 故障时保守拒绝。
+ */
+async function enforceTopicWhitelist(mode, topic) {
+  if (mode !== "L3") return { ok: true };
+  const title = String(topic || "").trim();
+  if (!title) {
+    return { ok: false, msg: "L3 会话必须传入辩题" };
+  }
+  if (title.length > 80) {
+    return { ok: false, msg: "辩题过长（≤80 字）" };
+  }
+  try {
+    const v = await cloud.callFunction({
+      name: "topics",
+      data: { action: "validate", title },
+    });
+    const vData = (v.result && v.result.data) || {};
+    if (vData.valid) return { ok: true };
+    return { ok: false, msg: vData.msg || "话题不在白名单，请从辩题库选择" };
+  } catch (e) {
+    console.error("[sessionStore] topics.validate failed:", e);
+    return { ok: false, msg: "辩题校验服务暂时不可用，请稍后重试" };
+  }
+}
+
 async function trackUsage(mode, model, usage) {
   try {
     const u = usage || {};
@@ -123,12 +157,12 @@ async function trackUsage(mode, model, usage) {
   }
 }
 
-/** 滚动摘要：把被裁剪的最旧轮次并�?summary（hy3 一次调用，�?00 字） */
+/** 滚动摘要：把被裁剪的最旧轮次并入 summary（hy3 一次调用，≤300 字） */
 async function summarize(sessionId, evictedMessages, oldSummary) {
   const ai = cloud.ai();
   const model = ai.createModel("cloudbase");
   const evictedText = evictedMessages
-    .map((m) => `${m.role === "user" ? "用户" : "苏格拉底"}�?{m.content}`)
+    .map((m) => `${m.role === "user" ? "用户" : "苏格拉底"}：${m.content}`)
     .join("\n");
 
   const res = await model.generateText({
@@ -140,14 +174,14 @@ async function summarize(sessionId, evictedMessages, oldSummary) {
       },
       {
         role: "user",
-        content: `已有摘要�?{oldSummary || "（无�?}\n新增对话：\n${evictedText}`,
+        content: `已有摘要：${oldSummary || "（无）"}\n新增对话：\n${evictedText}`,
       },
     ],
   });
 
   let newSummary = ((res && res.text) || "").trim();
   if (newSummary.length > 600) {
-    newSummary = newSummary.slice(0, 600); // 防御性截�?
+    newSummary = newSummary.slice(0, 600); // 防御性截断
   }
   await trackUsage("summary", SUMMARY_MODEL, res.usage);
   return newSummary || oldSummary;
@@ -156,8 +190,8 @@ async function summarize(sessionId, evictedMessages, oldSummary) {
 async function ensureSessionDoc(event) {
   const { OPENID } = cloud.getWXContext();
   const mode = event.mode || "L1";
-  // P1 修复（分享防泄露）：一次性分享令牌，分享链接只带 token 不带 sessionId�?
-  // token 每会话唯一且不可枚举，仅可只读查看报告（generateReport 校验），拿不�?transcript
+  // P1 修复（分享防泄露）：一次性分享令牌，分享链接只带 token 不带 sessionId。
+  // token 每会话唯一且不可枚举，仅可只读查看报告（generateReport 校验），拿不到 transcript
   const shareToken =
     event.shareToken ||
     Math.random().toString(36).slice(2) + Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -187,7 +221,16 @@ exports.main = async (event) => {
     case "create": {
       try {
         const { OPENID } = cloud.getWXContext();
-        const q = await enforceQuotaBeforeCreate(OPENID || "", event.mode || "L1");
+        const mode = event.mode || "L1";
+
+        // P1 修复（服务端白名单兜底）：L3 辩题必须经过 topics 云函数 validate
+        // 必须先于配额校验执行：避免恶意请求既绕过白名单又消耗一次配额计数
+        const topicCheck = await enforceTopicWhitelist(mode, event.topic);
+        if (!topicCheck.ok) {
+          return { code: -1, msg: topicCheck.msg };
+        }
+
+        const q = await enforceQuotaBeforeCreate(OPENID || "", mode);
         if (!q.ok) {
           return {
             code: -2,
@@ -210,7 +253,7 @@ exports.main = async (event) => {
         const { OPENID } = cloud.getWXContext();
         const res = await db.collection("sessions").doc(sessionId).get();
         const s = res.data || {};
-        // P0 修复（IDOR/隐私泄露）：归属校验，他�?sessionId 一律拒�?
+        // P0 修复（IDOR/隐私泄露）：归属校验，他人 sessionId 一律拒绝
         if (!s || !s.openid || s.openid !== OPENID) {
           return { code: -1, msg: "session not found or not owned" };
         }
@@ -223,7 +266,7 @@ exports.main = async (event) => {
               round: s.round || 0,
               status: s.status || "active",
               mode: s.mode || "",
-              // W3: 仅报告等需要全量原文的场景显式要求时返�?
+              // W3: 仅报告等需要全量原文的场景显式要求时返回
               ...(event.withTranscript ? { transcript: s.transcript || [] } : {}),
             },
           },
@@ -238,15 +281,15 @@ exports.main = async (event) => {
       try {
         const { sessionId, role, content, round } = event;
         if (!sessionId) return { code: -1, msg: "sessionId required" };
-        // 兼容业务角色：affirmative/negative/judge �?transcript/recent 里保留业务角色名
-        // （供报告页渲染角色标签），但写入时映射为标准 role �?
+        // 兼容业务角色：affirmative/negative/judge 在 transcript/recent 里保留业务角色名
+        // （供报告页渲染角色标签），但写入时映射为标准 role 名
         const VALID_BUSINESS_ROLES = ["user", "assistant", "affirmative", "negative", "judge"];
         if (!VALID_BUSINESS_ROLES.includes(role)) {
           return { code: -1, msg: "invalid role" };
         }
         const { OPENID } = cloud.getWXContext();
 
-        // P1 修复：内容硬截断，防超长消息撑爆文档（转码后按字符计�?
+        // P1 修复：内容硬截断，防超长消息撑爆文档（转码后按字符计）
         const rawContent = String(content || "");
         const msg = {
           role,
@@ -255,12 +298,12 @@ exports.main = async (event) => {
         };
         const ref = db.collection("sessions").doc(sessionId);
 
-        // P1 修复（并发丢消息）：recent/transcript �?_.push 原子追加，round �?_.max
-        // 原子推进，杜绝读-�?写覆盖；归属校验在读库时一并完�?
+        // P1 修复（并发丢消息）：recent/transcript 用 _.push 原子追加，round 用 _.max
+        // 原子推进，杜绝读-改-写覆盖；归属校验在读库时一并完成
         const cur = await ref.get();
         const s = cur.data || {};
         if (!s || !s.openid || s.openid !== OPENID) {
-          // P0 修复（IDOR）：归属校验，他�?sessionId 一律拒�?
+          // P0 修复（IDOR）：归属校验，他人 sessionId 一律拒绝
           return { code: -1, msg: "session not found or not owned" };
         }
         await ref.update({
@@ -274,9 +317,9 @@ exports.main = async (event) => {
           },
         });
 
-        // 版本门控裁剪：读取最�?recent，超限时弹出最旧轮次�?
-        // �?where(_id + version) 条件更新防覆盖：若裁剪期间有并发追加�?
-        // version 已变则本次裁剪失败重试（最�?N 次，让位于并发写入）
+        // 版本门控裁剪：读取最新 recent，超限时弹出最旧轮次。
+        // 用 where(_id + version) 条件更新防覆盖：若裁剪期间有并发追加，
+        // version 已变则本次裁剪失败重试（最多 N 次，让位于并发写入）
         let evicted = [];
         let lastTranscript = [];
         for (let i = 0; i < APPEND_MAX_RETRIES; i++) {
@@ -285,8 +328,8 @@ exports.main = async (event) => {
           lastTranscript = Array.isArray(s2.transcript) ? s2.transcript : [];
           let recent = Array.isArray(s2.recent) ? s2.recent : [];
           if (recent.length <= MAX_RECENT_MESSAGES) break;
-          // 成对弹出最旧轮次：头部必须�?user+assistant 才算一对；
-          // 某轮 assistant 落库失败导致头部不成对时�?1 条弹出，避免破坏交替顺序
+          // 成对弹出最旧轮次：头部必须是 user+assistant 才算一对；
+          // 某轮 assistant 落库失败导致头部不成对时，按 1 条弹出，避免破坏交替顺序
           let removed = [];
           while (recent.length > MAX_RECENT_MESSAGES) {
             const first = recent[0] || {};
@@ -296,7 +339,7 @@ exports.main = async (event) => {
             removed.push(...recent.slice(0, n));
             recent = recent.slice(n);
           }
-          // 兼容历史文档（无 version 字段）与新建文档：version 缺失或等于读到的版本才允许裁�?
+          // 兼容历史文档（无 version 字段）与新建文档：version 缺失或等于读到的版本才允许裁剪
           const gate = _.or([
             { _id: sessionId, version: s2.version || 0 },
             { _id: sessionId, version: _.exists(false) },
@@ -306,15 +349,15 @@ exports.main = async (event) => {
             .where(gate)
             .update({ data: { recent, updatedAt: db.serverDate() } });
           if (trimRes.stats.updated === 1) {
-            evicted = removed; // 覆盖而非累加：重试时以最后一次实际弹出的对为�?
+            evicted = removed; // 覆盖而非累加：重试时以最后一次实际弹出的对为准
             break; // 裁剪成功
           }
           // version 冲突（期间有并发追加），重读重试
         }
 
-        // P1 修复：transcript 只增不裁，但超长需报警（运维阈值，不阻断）�?
-        // 复用裁剪循环中最后一次读取的文档（追加后、裁剪前的完�?transcript），
-        // 省一次独立读取；文档被并发删除时按空数组处理，不�?TypeError
+        // P1 修复：transcript 只增不裁，但超长需报警（运维阈值，不阻断）。
+        // 复用裁剪循环中最后一次读取的文档（追加后、裁剪前的完整 transcript），
+        // 省一次独立读取；文档被并发删除时按空数组处理，不会 TypeError
         const totalChars = lastTranscript.reduce(
           (n, m) => n + (m.content ? m.content.length : 0),
           0
@@ -328,7 +371,7 @@ exports.main = async (event) => {
         let summary = s.summary || "";
         if (evicted.length > 0) {
           try {
-            // �?9 轮起裁剪发生时触发滚动摘要（失败不阻断，保留 summary 原值）
+            // 第 9 轮起裁剪发生时触发滚动摘要（失败不阻断，保留 summary 原值）
             summary = await summarize(sessionId, evicted, summary);
             // version 门控写回：两轮并发裁剪时只允许基于最新版本写入，
             // 防止互相覆盖对方刚生成的摘要
@@ -386,7 +429,7 @@ exports.main = async (event) => {
     }
 
     case "trackVote": {
-      // L3 围观投票：记录到 votes 表（用户行为数据，不影响 AI 发言�?
+      // L3 围观投票：记录到 votes 表（用户行为数据，不影响 AI 发言）
       try {
         const { OPENID } = cloud.getWXContext();
         const { sessionId, round, side } = event;

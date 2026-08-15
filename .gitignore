@@ -5,4 +5,5 @@ dist/
 
 project.private.config.json
 pr-body.md
+pr-body-*.md
 

@@ -14,6 +14,7 @@
 
 const config = require("../config");
 const { streamThrottle: STREAM_THROTTLE, streamTimeout: STREAM_TIMEOUT } = config;
+const { wrapUserData } = require("./escape-xml");
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -59,6 +60,15 @@ async function streamText(opts) {
   const { model, messages, mode, onChunk, onStreamEnd, onError } = opts;
   const provider = createModel();
 
+  // P1 修复（prompt 注入）：所有 user 消息内容用 <user_data> 标签包裹 + XML 五字符转义
+  // 与服务端 evalRunner / generateReport 的注入隔离策略完全对齐——同一份 prompt，
+  // 评测路径硬隔离、生产路径同样硬隔离。固定指令字符串同样包裹（无副作用，反而更安全）。
+  const safeMessages = (messages || []).map((m) =>
+    m && m.role === "user" && typeof m.content === "string"
+      ? { ...m, content: wrapUserData(m.content) }
+      : m
+  );
+
   let fullText = "";
   let accumulated = "";
   let lastFlush = Date.now();
@@ -67,7 +77,7 @@ async function streamText(opts) {
   async function attempt() {
     try {
       const res = await provider.streamText({
-        data: { model, messages },
+        data: { model, messages: safeMessages },
       });
 
       for await (const chunk of res.textStream) {

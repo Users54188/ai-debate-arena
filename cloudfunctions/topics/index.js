@@ -24,19 +24,22 @@ const _ = db.command;
  *       保证 L3 入口不会完全无题可选；上线前运营导入完整白名单覆盖。
  */
 
+// 合规整改（2026-08-16）：移除涉政治、职场争议、价值观敏感议题，全部替换为
+// 教育 / 科技 / 生活 / 科学类无争议话题，规避审核员二次关注。上线前应由运营
+// 在 topics_v1 集合导入完整白名单覆盖本兜底列表。
 const FALLBACK_TOPICS = [
   { title: "人工智能会取代人类大部分工作", category: "tech", difficulty: 2, tags: ["AI", "社会"] },
   { title: "努力就一定能成功", category: "life", difficulty: 1, tags: ["奋斗", "信念"] },
   { title: "学历史有用", category: "philosophy", difficulty: 1, tags: ["教育"] },
   { title: "短视频让人的注意力变短", category: "tech", difficulty: 2, tags: ["媒体"] },
-  { title: "996 是奋斗的体现", category: "life", difficulty: 3, tags: ["职场", "伦理"] },
-  { title: "人性本善", category: "philosophy", difficulty: 3, tags: ["哲学"] },
   { title: "终身学习比单次教育更重要", category: "philosophy", difficulty: 2, tags: ["教育"] },
   { title: "虚拟现实会比现实更有吸引力", category: "tech", difficulty: 2, tags: ["科技"] },
   { title: "人类应该主动接触外星文明", category: "science", difficulty: 3, tags: ["宇宙"] },
-  { title: "自由比平等更重要", category: "philosophy", difficulty: 3, tags: ["政治"] },
   { title: "数据比经验更可靠", category: "tech", difficulty: 2, tags: ["决策"] },
   { title: "标准化考试能衡量学生能力", category: "life", difficulty: 2, tags: ["教育"] },
+  { title: "阅读纸质书比电子书更能让人专注", category: "life", difficulty: 1, tags: ["阅读", "教育"] },
+  { title: "围棋训练能提升人的逻辑思维能力", category: "science", difficulty: 2, tags: ["脑科学", "教育"] },
+  { title: "在线教育会取代传统课堂", category: "tech", difficulty: 2, tags: ["教育", "科技"] },
 ];
 
 const MAX_LIMIT = 50;

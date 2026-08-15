@@ -265,7 +265,21 @@ Page({
         },
         onStreamEnd: async ({ fullText, finishReason }) => {
           const safe = finishReason === "sensitive";
-          const finalText = safe ? SENSITIVE_FALLBACK : fullText;
+          let finalText = safe ? SENSITIVE_FALLBACK : fullText;
+
+          // P1 修复（输出二次审核）：finish_reason 非 sensitive 时再做一次 msgSecCheck
+          // degraded（审核服务异常）时不撤回
+          if (!safe && finalText) {
+            try {
+              const outCheck = await msgSecCheck(finalText, 2);
+              if (!outCheck.pass && !outCheck.degraded) {
+                finalText = SENSITIVE_FALLBACK;
+              }
+            } catch (e) {
+              console.warn(`[debate] ${role} output second-check failed:`, e);
+            }
+          }
+
           const updated = [...this.data.messages];
           updated[msgIndex] = displayMsg(role, finalText, round);
           this.setData({ messages: updated, streaming: false, waitingFirstChunk: false });

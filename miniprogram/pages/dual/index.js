@@ -221,11 +221,32 @@ Page({
         },
         onStreamEnd({ fullText: final, finishReason }) {
           const safe = finishReason === "sensitive";
-          const result = safe ? SENSITIVE_FALLBACK : final;
-          const updated = [...self.data.messages];
-          updated[msgIndex] = displayMsg(role, result);
-          self.setData({ messages: updated });
-          resolve(result);
+          let result = safe ? SENSITIVE_FALLBACK : final;
+
+          // P1 修复（输出二次审核）：finish_reason 非 sensitive 时再做一次 msgSecCheck
+          // degraded（审核服务异常）时不撤回，避免审核故障卡死对话
+          const finalize = () => {
+            const updated = [...self.data.messages];
+            updated[msgIndex] = displayMsg(role, result);
+            self.setData({ messages: updated });
+            resolve(result);
+          };
+
+          if (!safe && result) {
+            msgSecCheck(result, 2)
+              .then((outCheck) => {
+                if (!outCheck.pass && !outCheck.degraded) {
+                  result = SENSITIVE_FALLBACK;
+                }
+                finalize();
+              })
+              .catch((e) => {
+                console.warn(`[dual] ${role} output second-check failed:`, e);
+                finalize();
+              });
+          } else {
+            finalize();
+          }
         },
         onError(err) {
           console.error(`[dual] ${role} stream error:`, err);
