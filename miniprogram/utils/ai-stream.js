@@ -58,7 +58,6 @@ function createModel() {
  */
 async function streamText(opts) {
   const { model, messages, mode, onChunk, onStreamEnd, onError } = opts;
-  const provider = createModel();
 
   // P1 修复（prompt 注入）：所有 user 消息内容用 <user_data> 标签包裹 + XML 五字符转义
   // 与服务端 evalRunner / generateReport 的注入隔离策略完全对齐——同一份 prompt，
@@ -73,9 +72,13 @@ async function streamText(opts) {
   let accumulated = "";
   let lastFlush = Date.now();
   let retries = 0;
+  let provider;
 
   async function attempt() {
     try {
+      // createModel 放在 try 内：wx.cloud.extend.AI 不可用（基础库过低或云开发未初始化）
+      // 时抛错，走统一重试/错误回调，不产生未捕获异常
+      provider = provider || createModel();
       const res = await provider.streamText({
         data: { model, messages: safeMessages },
       });

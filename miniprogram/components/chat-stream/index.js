@@ -48,6 +48,11 @@ const AVATAR_CLASSES = {
 };
 
 Component({
+  options: {
+    addGlobalClass: true,
+    styleIsolation: "apply-shared",
+  },
+
   properties: {
     messages: { type: Array, value: [] },
     streaming: { type: Boolean, value: false },

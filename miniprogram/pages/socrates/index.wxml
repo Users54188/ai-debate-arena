@@ -1,4 +1,4 @@
-﻿<view class="socrates-page">
+<view class="socrates-page">
   <!-- 背景（移除塔罗图，纯色渐变） -->
   <view class="bg-gradient"></view>
 

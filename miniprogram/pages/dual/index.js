@@ -43,10 +43,14 @@ Page({
   },
 
   onLoad() {
-    this.sessionId = null;
-    this.sessionSummary = "";
-    this.expertPrompt = null;
-    this.checkQuota();
+    try {
+      this.sessionId = null;
+      this.sessionSummary = "";
+      this.expertPrompt = null;
+      this.checkQuota();
+    } catch (e) {
+      console.error("[dual] onLoad failed:", e);
+    }
   },
 
   onShow() {

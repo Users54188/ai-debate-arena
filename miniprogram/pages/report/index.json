@@ -3,7 +3,5 @@
     "logic-chain": "/components/logic-chain/index",
     "empty-state": "/components/empty-state/index"
   },
-  "navigationBarTitleText": "思辨报告",
-  "enableShareAppMessage": true,
-  "enableShareTimeline": true
+  "navigationBarTitleText": "思辨报告"
 }

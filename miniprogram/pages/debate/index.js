@@ -52,10 +52,15 @@ Page({
   },
 
   onLoad() {
-    this.sessionId = null;
-    this.sessionSummary = "";
-    this.checkQuota();
-    this.loadTopics();
+    try {
+      this.sessionId = null;
+      this.sessionSummary = "";
+      this.checkQuota();
+      this.loadTopics();
+    } catch (e) {
+      console.error("[debate] onLoad failed:", e);
+      this.setData({ topicLoading: false });
+    }
   },
 
   onShow() {

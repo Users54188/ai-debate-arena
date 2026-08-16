@@ -49,10 +49,15 @@ Page({
   },
 
   onLoad() {
-    this.sessionId = null;
-    this.sessionSummary = "";
-    this.checkQuota();
-    this.setData({ loading: false });
+    try {
+      this.sessionId = null;
+      this.sessionSummary = "";
+      this.checkQuota();
+      this.setData({ loading: false });
+    } catch (e) {
+      console.error("[socrates] onLoad failed:", e);
+      this.setData({ loading: false });
+    }
   },
 
   onShow() {
@@ -64,22 +69,8 @@ Page({
 
   async checkQuota() {
     // 测试期间临时放开：不检查配额、不锁按钮
+    // 正式上线时改回实际查询（见 git 历史中 checkQuota 实现）
     this.setData({ quotaExhausted: false });
-    return;
-    try {
-      const res = await wx.cloud.callFunction({
-        name: config.cloudFunctions.getQuota,
-        data: { mode: "L1" },
-      });
-      const q = (res.result && res.result.data) || {};
-      const exhausted = !q.available && q.used >= q.limit;
-      if (exhausted !== this.data.quotaExhausted) {
-        this.setData({ quotaExhausted: exhausted });
-      }
-    } catch (e) {
-      console.error("[socrates] quota check failed:", e);
-      // 查询失败不阻塞使用
-    }
   },
 
   /** 首轮时创建会话（配额按 sessions 表 openid+mode+当日统计） */

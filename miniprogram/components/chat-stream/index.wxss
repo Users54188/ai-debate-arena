@@ -53,7 +53,7 @@
 
 .role-label {
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #6B7280);
   margin-bottom: 4px;
   padding-left: 4px;
 }
@@ -61,7 +61,7 @@
 /* 气泡通用 */
 .bubble {
   padding: 10px 14px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 12px);
   font-size: 15px;
   line-height: 1.6;
   word-break: break-word;
@@ -77,57 +77,57 @@
   display: block;
   margin-top: 4px;
   font-size: 10px;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #6B7280);
   opacity: 0.7;
 }
 
 /* 用户气泡 — 右对齐、左下角直角 */
 .bubble-user {
-  background: var(--user-bubble);
+  background: var(--user-bubble, #EEF2FF);
   border-bottom-right-radius: 4px;
 }
 
 /* AI 角色气泡 — 左对齐、右下角直角，左侧色条 */
 .bubble-socrates {
   background: #F5F3FF;
-  border-left: 3px solid var(--l1-socrates);
+  border-left: 3px solid var(--l1-socrates, #4F46E5);
   border-bottom-left-radius: 4px;
 }
 
 .bubble-expert {
   background: #F0FDFA;
-  border-left: 3px solid var(--l2-expert);
+  border-left: 3px solid var(--l2-expert, #0D9488);
   border-bottom-left-radius: 4px;
 }
 
 .bubble-affirmative {
   background: #FAF5FF;
-  border-left: 3px solid var(--l3-affirmative);
+  border-left: 3px solid var(--l3-affirmative, #7C3AED);
   border-bottom-left-radius: 4px;
 }
 
 .bubble-negative {
   background: #FFF7ED;
-  border-left: 3px solid var(--l3-negative);
+  border-left: 3px solid var(--l3-negative, #F97316);
   border-bottom-left-radius: 4px;
 }
 
 .bubble-judge {
   background: #EEF2FF;
-  border-left: 3px solid var(--l3-judge);
+  border-left: 3px solid var(--l3-judge, #6366F1);
   border-bottom-left-radius: 4px;
 }
 
 .bubble-default {
-  background: var(--bg-card);
-  border-left: 3px solid var(--border);
+  background: var(--bg-card, #FFFFFF);
+  border-left: 3px solid var(--border, #E0E7FF);
   border-bottom-left-radius: 4px;
 }
 
 /* 流式打字中占位 */
 .bubble-streaming {
   padding: 14px 18px;
-  background: var(--user-bubble);
+  background: var(--user-bubble, #EEF2FF);
 }
 
 .typing-dots {
@@ -139,7 +139,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--l1-socrates);
+  background: var(--l1-socrates, #4F46E5);
   animation: typing-bounce 1.4s infinite ease-in-out both;
 }
 
@@ -157,6 +157,6 @@
   text-align: center;
   padding: 12px 0;
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #6B7280);
   opacity: 0.6;
 }
