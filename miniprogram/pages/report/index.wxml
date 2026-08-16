@@ -69,12 +69,6 @@
       </view>
     </view>
 
-    <!-- 逻辑链 -->
-    <view class="card" wx:if="{{report.logicChain}}">
-      <view class="card-title">论证链条</view>
-      <logic-chain chain="{{report.logicChain}}" />
-    </view>
-
     <!-- 高光原话 -->
     <view class="card" wx:if="{{report.highlights.length}}">
       <view class="card-title">你的精彩原话</view>

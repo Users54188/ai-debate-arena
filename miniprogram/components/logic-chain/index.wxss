@@ -1,6 +1,0 @@
-.logic-chain {
-  width: 100%;
-}
-.lc-canvas {
-  display: block;
-}

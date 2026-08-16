@@ -29,7 +29,6 @@ const KNOWLEDGE_MODEL = "hy3"; // 知识掌握评估（L2 专用，第 3 次调�
 const DEGRADED_ANNOTATION = {
   strategyTags: [],
   fallacies: [],
-  logicChain: null,
   highlights: [],
 };
 
@@ -95,19 +94,14 @@ const ANNOTATE_PROMPT = `你是思辨过程的严谨标注器。你将收到一�
 {
   "strategyTags": [{ "round": 1, "type": "预设|证据|边界|后果|定义" }],
   "fallacies": [{ "type": "滑坡|稻草人|循环论证|以偏概全|其他", "quote": "用户原话（必须逐字摘自用户发言）", "round": 3 }],
-  "logicChain": {
-    "nodes": [{ "id": "n1", "label": "不超过12字的短语", "kind": "观点|前提|追问" }],
-    "edges": [{ "from": "n1", "to": "n2" }]
-  },
   "highlights": ["用户最精彩的1-2句原话，逐字摘录"]
 }
 
 要求：
 1. strategyTags 只统计苏格拉底的追问轮，type 从五类中选最贴切的一个
 2. fallacies 只标注用户话语中的明显逻辑谬误；没有则给空数组；quote 必须逐字摘自对话原文，禁止改写
-3. logicChain 提取用户观点链：nodes 控制在 4-10 个，label 为 ≤12 字短语，edges 表示推导/追问关系
-4. highlights 逐字摘录用户最精彩的 1-2 句原话
-5. 只输出 JSON，不输出任何其他文字`;
+3. highlights 逐字摘录用户最精彩的 1-2 句原话
+4. 只输出 JSON，不输出任何其他文字`;
 
 /** 报告 prompt（≤300 字，克制、不吹捧、无感叹号） */
 const REPORT_PROMPT = (annotationJson, summary) => `你是思辨报告撰写者。基于下面的结构化标注与对话摘要，写一份不超过 ${REPORT_MAX_CHARS} 字的中文思辨报告。
@@ -425,10 +419,6 @@ exports.main = async (event) => {
             annotation = {
               strategyTags: Array.isArray(parsed.strategyTags) ? parsed.strategyTags : [],
               fallacies: Array.isArray(parsed.fallacies) ? parsed.fallacies : [],
-              logicChain:
-                parsed.logicChain && Array.isArray(parsed.logicChain.nodes) && parsed.logicChain.nodes.length > 0
-                  ? parsed.logicChain
-                  : null,
               highlights: Array.isArray(parsed.highlights) ? parsed.highlights : [],
             };
             break;
@@ -591,7 +581,6 @@ exports.main = async (event) => {
         : {}),
       strategyTags: mode === "L3" ? [] : annotation.strategyTags,
       fallacies: mode === "L3" ? [] : annotation.fallacies,
-      logicChain: mode === "L3" ? null : annotation.logicChain,
       highlights: mode === "L3" ? [] : annotation.highlights,
       reportText,
       degraded,

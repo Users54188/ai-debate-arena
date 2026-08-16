@@ -1,9 +1,0 @@
-<view class="logic-chain" wx:if="{{visible}}">
-  <canvas
-    type="2d"
-    id="lcCanvas"
-    class="lc-canvas"
-    style="width: 100%; height: {{canvasHeight}}px;"
-    bindtouchstart="onTouchStart"
-  ></canvas>
-</view>
