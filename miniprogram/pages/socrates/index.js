@@ -206,6 +206,7 @@ Page({
   async runStream(apiMessages, msgIndex, newRound) {
     const self = this;
     let streamingContent = "";
+    const chat = self.selectComponent("#chat");
 
     await streamText({
       model: config.model.chat,
@@ -213,9 +214,18 @@ Page({
       mode: "L1",
       onChunk(delta) {
         streamingContent += delta;
-        const updated = [...self.data.messages];
-        updated[msgIndex] = displayMsg("socrates", streamingContent);
-        self.setData({ messages: updated, waitingFirstChunk: false });
+        // 性能优化：调用组件局部更新方法，避免每秒数十次全量 setData 重渲染
+        if (chat) {
+          chat.appendChunk(delta);
+        } else {
+          // 组件查询失败时回退到旧路径
+          const updated = [...self.data.messages];
+          updated[msgIndex] = displayMsg("socrates", streamingContent);
+          self.setData({ messages: updated });
+        }
+        if (self.data.waitingFirstChunk) {
+          self.setData({ waitingFirstChunk: false });
+        }
       },
       onStreamEnd: async ({ fullText, finishReason }) => {
         // 输出审核未通过：撤回内容，替换兜底文案

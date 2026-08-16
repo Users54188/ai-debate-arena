@@ -1,122 +1,122 @@
+/* 思辨历史页 —— 星夜思辨 */
+
 .page {
-  min-height: 100vh;
-  background: var(--bg-page);
+  position: relative;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--night-1) 0%, var(--night-0) 100%);
 }
 
 .state-box {
+  position: relative;
+  z-index: 1;
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding-top: 120px;
-}
-
-.state-text {
-  font-size: 16px;
-  color: var(--text-secondary);
-}
-
-.state-sub {
-  font-size: 13px;
-  color: var(--text-tertiary);
+  padding: var(--sp-4);
 }
 
 .list {
+  position: relative;
+  z-index: 1;
   flex: 1;
-  padding: 12px;
-  box-sizing: border-box;
+  min-height: 0;
 }
 
+.list-inner {
+  padding: var(--sp-3) var(--sp-4) var(--sp-5);
+}
+
+/* === 会话卡 === */
 .session-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-card);
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 10px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-2);
+  transition: transform 120ms ease, border-color 200ms ease;
+}
+
+.card-hover {
+  transform: scale(0.98);
+  border-color: var(--glass-border-strong) !important;
 }
 
 .card-left {
   display: flex;
   align-items: center;
+  gap: var(--sp-2);
   flex: 1;
   min-width: 0;
 }
 
 .mode-tag {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: #fff;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  color: #FFFFFF;
   flex-shrink: 0;
-  margin-right: 10px;
+  letter-spacing: 0;
 }
 
-.tag-l1 {
-  background: #4f46e5;
-}
-
-.tag-l2 {
-  background: #0d9488;
-}
-
-.tag-l3 {
-  background: #d97706;
-}
+.tag-l1 { background: linear-gradient(135deg, var(--star-indigo), #4338CA); box-shadow: 0 0 16rpx rgba(99, 102, 241, 0.4); }
+.tag-l2 { background: linear-gradient(135deg, #06B6D4, #0E7490); box-shadow: 0 0 16rpx rgba(103, 232, 249, 0.4); }
+.tag-l3 { background: linear-gradient(135deg, var(--star-violet), #9333EA); box-shadow: 0 0 16rpx rgba(192, 132, 252, 0.4); }
 
 .card-body {
-  display: flex;
-  flex-direction: column;
+  flex: 1;
   min-width: 0;
 }
 
 .card-title {
-  font-size: 15px;
-  color: var(--text-primary);
+  display: block;
+  font-size: var(--fs-body);
   font-weight: 500;
-  white-space: nowrap;
+  color: var(--text-1);
+  margin-bottom: 4rpx;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 200px;
+  white-space: nowrap;
 }
 
 .card-meta {
-  font-size: 12px;
-  color: var(--text-tertiary);
-  margin-top: 4px;
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  letter-spacing: 1rpx;
 }
 
 .card-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-1);
   flex-shrink: 0;
 }
 
 .card-time {
-  font-size: 11px;
-  color: var(--text-tertiary);
+  font-size: var(--fs-caption);
+  color: var(--text-4);
 }
 
 .card-arrow {
-  font-size: 18px;
-  color: var(--text-tertiary);
+  font-size: var(--fs-body);
+  color: var(--star-purple);
 }
 
 .tip {
+  position: relative;
+  z-index: 1;
   text-align: center;
-  padding: 8px 0 20px;
-  font-size: 11px;
-  color: var(--text-tertiary);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-caption);
+  color: var(--text-4);
+  letter-spacing: 1rpx;
 }

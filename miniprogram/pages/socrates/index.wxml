@@ -1,45 +1,47 @@
-<view class="socrates-page">
-  <!-- 背景（移除塔罗图，纯色渐变） -->
-  <view class="bg-gradient"></view>
+<view class="page">
+  <star-field />
 
-  <!-- chat-stream 对话区 -->
-  <chat-stream
-    messages="{{messages}}"
-    streaming="{{streaming}}"
-    waitingFirstChunk="{{waitingFirstChunk}}"
-    showAiLabel="{{true}}"
-  />
-
-  <!-- 底部输入区 -->
-  <view class="input-bar safe-bottom">
-    <input
-      class="msg-input"
-      value="{{inputText}}"
-      bindinput="onInput"
-      bindconfirm="sendMessage"
-      placeholder="说出你的观点，苏格拉底会追问你..."
-      confirm-type="send"
-      disabled="{{streaming || quotaExhausted}}"
-      adjust-position="{{true}}"
-      cursor-spacing="{{12}}"
+  <view class="body">
+    <chat-stream
+      id="chat"
+      messages="{{messages}}"
+      streaming="{{streaming}}"
+      waitingFirstChunk="{{waitingFirstChunk}}"
+      waitingText="苏格拉底正在思考"
+      showAiLabel="{{true}}"
     />
-    <button
-      class="send-btn"
-      bindtap="sendMessage"
-      disabled="{{inputText.length === 0 || streaming || quotaExhausted}}"
-      size="mini"
-    >
-      发送
-    </button>
   </view>
 
-  <!-- 配额用尽提示 -->
-  <view wx:if="{{quotaExhausted}}" class="quota-notice">
-    <text>今日 L1 会话次数已用完，明天再来思辨吧</text>
-  </view>
+  <view class="dock safe-bottom">
+    <view class="dock-inner">
+      <input
+        class="dock-input"
+        value="{{inputText}}"
+        bindinput="onInput"
+        bindconfirm="sendMessage"
+        placeholder="说出你的观点…"
+        placeholder-class="ph"
+        confirm-type="send"
+        confirm-hold="true"
+        hold-keyboard="true"
+        adjust-position="{{true}}"
+        cursor-spacing="28"
+        disabled="{{streaming || quotaExhausted}}"
+      />
+      <button
+        class="dock-send"
+        bindtap="sendMessage"
+        disabled="{{inputText.length === 0 || streaming || quotaExhausted}}"
+        size="mini"
+        hover-class="btn-hover"
+      >发送</button>
+    </view>
 
-  <!-- 轮次上限提示 -->
-  <view wx:if="{{roundLimitReached}}" class="round-limit-notice">
-    <text>已达 10 轮上限，可查看思辨报告</text>
+    <view wx:if="{{quotaExhausted}}" class="notice">
+      今日 L1 会话次数已用完，明日再会
+    </view>
+    <view wx:if="{{roundLimitReached}}" class="notice notice-round">
+      已达 10 轮上限，可查看思辨报告
+    </view>
   </view>
 </view>

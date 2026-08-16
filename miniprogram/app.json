@@ -10,15 +10,17 @@
     "pages/ranking/index"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#4F46E5",
+    "navigationBarBackgroundColor": "#07041F",
     "navigationBarTitleText": "思辨场",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#F5F3FF"
+    "backgroundColor": "#07041F",
+    "backgroundColorTop": "#07041F",
+    "backgroundColorBottom": "#07041F"
   },
   "tabBar": {
-    "color": "#9CA3AF",
-    "selectedColor": "#312E81",
-    "backgroundColor": "#ffffff",
+    "color": "#8B86C7",
+    "selectedColor": "#B58BFF",
+    "backgroundColor": "#0E0830",
     "borderStyle": "black",
     "list": [
       {

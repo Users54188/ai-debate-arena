@@ -1,4 +1,7 @@
 <view class="page">
+  <star-field />
+  <scroll-view scroll-y class="scaffold">
+
   <view wx:if="{{loading}}" class="state-box">
     <empty-state mode="loading" />
   </view>
@@ -95,4 +98,7 @@
       <text class="openid-line">账号标识：{{openid}}</text>
     </view>
   </block>
+
+  <view class="bottom-spacer"></view>
+  </scroll-view>
 </view>

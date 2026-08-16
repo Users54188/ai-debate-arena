@@ -1,14 +1,11 @@
-<view class="report-page">
-  <!-- AI 生成标识（合规常驻角标） -->
-  <view class="ai-badge">AI 生成</view>
+<view class="page">
+  <star-field />
 
-  <!-- 加载态 -->
-  <view wx:if="{{loading}}" class="loading-box">
+  <view wx:if="{{loading}}" class="state-wrap">
     <empty-state mode="loading" title="报告生成中..." />
   </view>
 
-  <!-- 错误/不存在 -->
-  <view wx:elif="{{loadError}}" class="error-box">
+  <view wx:elif="{{loadError}}" class="state-wrap">
     <empty-state
       mode="error"
       title="{{loadError}}"
@@ -18,32 +15,42 @@
     />
   </view>
 
-  <!-- 报告内容 -->
-  <block wx:else>
+  <scroll-view wx:else scroll-y class="scaffold">
     <view wx:if="{{isShareView}}" class="share-hint">分享视图：仅展示报告内容，对话原文仅分享者可见</view>
-    <view class="card score-card">
+
+    <!-- 评分环 -->
+    <view class="glass-card score-card">
       <canvas type="2d" id="scoreRing" class="score-ring"></canvas>
-      <view class="score-sub">
-        <view class="sub-item"><text class="sub-label">基础分</text><text class="sub-value">{{report.baseScore}}</text></view>
-        <view class="sub-item"><text class="sub-label">深度分</text><text class="sub-value">{{report.depthScore}}</text></view>
-        <view class="sub-item"><text class="sub-label">修正分</text><text class="sub-value">{{report.fixScore}}</text></view>
+      <view class="score-meta">
+        <view class="meta-item">
+          <text class="meta-label">基础</text>
+          <text class="meta-value">{{report.baseScore}}</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-label">深度</text>
+          <text class="meta-value">{{report.depthScore}}</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-label">修正</text>
+          <text class="meta-value">{{report.fixScore}}</text>
+        </view>
       </view>
     </view>
 
-    <!-- L2 双维度雷达图 -->
-    <view wx:if="{{isL2}}" class="card radar-card">
-      <view class="card-title">双维评估</view>
+    <!-- L2 双维度雷达 -->
+    <view wx:if="{{isL2}}" class="glass-card radar-card">
+      <text class="card-title">双维评估</text>
       <canvas type="2d" id="radarChart" class="radar-canvas"></canvas>
       <view class="radar-labels">
-        <view class="radar-label-item"><text class="dot-k"></text>知识掌握：{{report.knowledgeScore || 0}}分</view>
-        <view class="radar-label-item"><text class="dot-d"></text>思辨深度：{{report['思辨深度分'] || report.score || 0}}分</view>
+        <view class="rl-item"><text class="dot-k"></text>知识掌握：{{report.knowledgeScore || 0}}分</view>
+        <view class="rl-item"><text class="dot-d"></text>思辨深度：{{report['思辨深度分'] || report.score || 0}}分</view>
       </view>
       <view wx:if="{{report.knowledgeDegraded}}" class="degraded-tip">知识评估降级，仅供参考</view>
     </view>
 
-    <!-- 深度分：五类策略条形图 -->
-    <view class="card" wx:if="{{strategyRows.length}}">
-      <view class="card-title">追问策略覆盖</view>
+    <!-- 策略覆盖 -->
+    <view wx:if="{{strategyRows.length}}" class="glass-card">
+      <text class="card-title">追问策略覆盖</text>
       <view class="strategy-row" wx:for="{{strategyRows}}" wx:key="key">
         <text class="strategy-label">{{item.label}}</text>
         <view class="strategy-track">
@@ -54,14 +61,15 @@
     </view>
 
     <!-- 谬误列表 -->
-    <view class="card" wx:if="{{fallacyItems.length}}">
-      <view class="card-title">论证谬误（点击定位原话）</view>
+    <view wx:if="{{fallacyItems.length}}" class="glass-card">
+      <text class="card-title">论证谬误（点击定位原话）</text>
       <view
         class="fallacy-item"
         wx:for="{{fallacyItems}}"
         wx:key="index"
         data-index="{{index}}"
         bindtap="onFallacyTap"
+        hover-class="item-hover"
       >
         <text class="fallacy-type">{{item.type}}</text>
         <text class="fallacy-quote">「{{item.quote}}」</text>
@@ -70,29 +78,29 @@
     </view>
 
     <!-- 高光原话 -->
-    <view class="card" wx:if="{{report.highlights.length}}">
-      <view class="card-title">你的精彩原话</view>
+    <view wx:if="{{report.highlights.length}}" class="glass-card">
+      <text class="card-title">你的精彩原话</text>
       <view class="highlight-item" wx:for="{{report.highlights}}" wx:key="index">
         <text>「{{item}}」</text>
       </view>
     </view>
 
-    <!-- 自然语言报告 -->
-    <view class="card">
-      <view class="card-title">思辨报告</view>
+    <!-- 报告正文 -->
+    <view class="glass-card">
+      <text class="card-title">思辨报告</text>
       <view wx:if="{{report.degraded}}" class="degraded-tip">本次分析部分降级，评分仅为基础分</view>
       <text class="report-text" user-select>{{report.reportText}}</text>
     </view>
 
     <!-- 对话回溯 -->
-    <view class="card" wx:if="{{transcript.length}}">
-      <view class="card-title">对话回溯</view>
+    <view wx:if="{{transcript.length}}" class="glass-card">
+      <text class="card-title">对话回溯</text>
       <scroll-view scroll-y class="transcript-scroll" scroll-into-view="{{scrollTarget}}">
         <view
           wx:for="{{transcript}}"
           wx:key="index"
           id="msg-{{index}}"
-          class="msg {{item.role === 'user' ? 'user' : 'socrates'}} {{highlightIndex === index ? 'highlight' : ''}}"
+          class="msg-row {{item.role === 'user' ? 'msg-user' : 'msg-ai'}} {{highlightIndex === index ? 'highlight' : ''}}"
         >
           <text class="msg-role">{{item.role === 'user' ? '我' : '苏格拉底'}}</text>
           <text class="msg-content">{{item.content}}</text>
@@ -100,17 +108,18 @@
       </scroll-view>
     </view>
 
-    <!-- 海报 -->
-    <button class="poster-btn" bindtap="onPoster">生成分享海报</button>
-  </block>
+    <button class="btn-primary poster-btn" bindtap="onPoster">生成分享海报</button>
+
+    <view class="bottom-spacer"></view>
+  </scroll-view>
 
   <!-- 海报弹层 -->
   <view wx:if="{{poster.show}}" class="poster-overlay" bindtap="onPosterClose">
     <view class="poster-sheet" catchtap="noop">
       <canvas type="2d" id="posterCanvas" class="poster-canvas"></canvas>
       <view class="poster-actions">
-        <button class="poster-save" bindtap="onPosterSave">保存到相册</button>
-        <button class="poster-close" bindtap="onPosterClose">关闭</button>
+        <button class="btn-primary poster-save" bindtap="onPosterSave">保存到相册</button>
+        <button class="btn-ghost poster-close" bindtap="onPosterClose">关闭</button>
       </view>
     </view>
   </view>

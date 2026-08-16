@@ -190,25 +190,28 @@ Page({
         const ratio = Math.max(0, Math.min(1, (score || 0) / 100));
         const end = start + ratio * Math.PI * 2;
 
-        // 底环
+        // 底环（适配深色背景）
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = "#E5E7EB";
+        ctx.strokeStyle = "rgba(157, 107, 255, 0.15)";
         ctx.lineWidth = lineWidth;
         ctx.stroke();
 
-        // 进度弧
+        // 进度弧（紫色发光）
         if (ratio > 0) {
           ctx.beginPath();
           ctx.arc(cx, cy, radius, start, end);
-          ctx.strokeStyle = "#4F46E5";
+          ctx.strokeStyle = "#9D6BFF";
           ctx.lineWidth = lineWidth;
           ctx.lineCap = "round";
+          ctx.shadowColor = "rgba(157, 107, 255, 0.6)";
+          ctx.shadowBlur = 16;
           ctx.stroke();
+          ctx.shadowBlur = 0;
         }
 
-        // 分数
-        ctx.fillStyle = "#1F2937";
+        // 分数（白色发光）
+        ctx.fillStyle = "#F5F3FF";
         ctx.font = "bold 28px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -246,22 +249,22 @@ Page({
         const tx = cx + radius * Math.cos(-a);
         const ty = cy - radius * Math.sin(-a);
 
-        // 底图：半透明圆环
+        // 底图：半透明圆环（深色适配）
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = "#E5E7EB";
+        ctx.strokeStyle = "rgba(157, 107, 255, 0.2)";
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        // 轴线和标签
+        // 轴线和标签（深色适配）
         ctx.font = "11px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillStyle = "#6B7280";
+        ctx.fillStyle = "#C7CFF0";
         for (const pt of [{ x: kx, y: ky, label: "知识掌握" }, { x: tx, y: ty, label: "思辨深度" }]) {
           ctx.beginPath();
           ctx.moveTo(cx, cy);
           ctx.lineTo(pt.x, pt.y);
-          ctx.strokeStyle = "#D1D5DB";
+          ctx.strokeStyle = "rgba(157, 107, 255, 0.3)";
           ctx.lineWidth = 1;
           ctx.stroke();
           // 标签在终点外
@@ -285,19 +288,22 @@ Page({
         ctx.arc(cx, cy, Math.max(kRad, tRad), -a, a);
         ctx.lineTo(dtx, dty);
         ctx.closePath();
-        ctx.fillStyle = "rgba(79, 70, 229, 0.12)";
+        ctx.fillStyle = "rgba(157, 107, 255, 0.18)";
         ctx.fill();
 
-        // 数据点标记
+        // 数据点标记（带发光）
         const dots = [
-          { x: dkx, y: dky, color: "#0EA5E9" },
-          { x: dtx, y: dty, color: "#8B5CF6" },
+          { x: dkx, y: dky, color: "#67E8F9" },
+          { x: dtx, y: dty, color: "#C084FC" },
         ];
         for (const d of dots) {
           ctx.beginPath();
-          ctx.arc(d.x, d.y, 4, 0, Math.PI * 2);
+          ctx.arc(d.x, d.y, 5, 0, Math.PI * 2);
           ctx.fillStyle = d.color;
+          ctx.shadowColor = d.color;
+          ctx.shadowBlur = 12;
           ctx.fill();
+          ctx.shadowBlur = 0;
         }
       });
   },

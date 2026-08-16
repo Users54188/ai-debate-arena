@@ -1,41 +1,60 @@
 <scroll-view
-  id="chat-scroll-view"
+  id="cv-scroll"
+  class="cv"
   scroll-y
   scroll-top="{{scrollTop}}"
-  scroll-with-animation
-  class="chat-container"
+  scroll-with-animation="{{false}}"
+  enhanced
+  show-scrollbar="{{false}}"
 >
-  <view wx:for="{{renderMessages}}" wx:key="index" class="message-row {{item.isUser ? 'msg-right' : 'msg-left'}}">
-    <!-- AI 角色头像（圆形首字位） -->
-    <view wx:if="{{!item.isUser}}" class="avatar-circle {{item.avatarCls}}">{{item.avatarChar}}</view>
-    <view class="message-main">
-      <!-- 角色标签 -->
-      <text wx:if="{{!item.isUser}}" class="role-label">{{item.roleText}}</text>
-      <!-- 气泡 -->
-      <view class="bubble {{item.bubbleCls}}">
-        <text class="bubble-text">{{item.content}}</text>
-        <!-- 混元 note 保留（合规：不删除模型 note 字段，常驻展示） -->
-        <text wx:if="{{item.note}}" class="bubble-note">{{item.note}}</text>
+  <view class="cv-inner">
+    <view
+      wx:for="{{renderMessages}}"
+      wx:key="index"
+      class="msg {{item.isUser ? 'msg-user' : 'msg-ai'}}"
+    >
+      <!-- AI 头像（左侧固定） -->
+      <view
+        wx:if="{{item.showAvatar}}"
+        class="avatar avatar-{{item.role}}"
+        style="--role-color: var({{item.roleVar}});"
+      >{{item.avatarChar}}</view>
+
+      <!-- 消息主体 -->
+      <view class="msg-body">
+        <view wx:if="{{!item.isUser}}" class="role-label">{{item.roleText}}</view>
+        <view class="bubble {{item.isUser ? 'bubble-user' : 'bubble-ai'}}" style="--role-color: var({{item.roleVar}});">
+          <text class="bubble-text" user-select="{{!item.isUser}}">{{item.content}}</text>
+          <text wx:if="{{item.note}}" class="bubble-note">{{item.note}}</text>
+        </view>
       </view>
     </view>
-  </view>
 
-  <!-- 首帧未到达时的占位态 -->
-  <view wx:if="{{streaming && waitingFirstChunk}}" class="message-row msg-left">
-    <text class="role-label">{{waitingText}}</text>
-    <view class="bubble bubble-streaming">
-      <view class="typing-dots">
-        <view class="dot"></view>
-        <view class="dot"></view>
-        <view class="dot"></view>
+    <!-- 首帧未到达：思考中占位 -->
+    <view wx:if="{{streaming && waitingFirstChunk}}" class="msg msg-ai">
+      <view class="avatar avatar-thinking">
+        <view class="think-dots">
+          <view class="dot"></view>
+          <view class="dot"></view>
+          <view class="dot"></view>
+        </view>
+      </view>
+      <view class="msg-body">
+        <view class="role-label">{{waitingText}}</view>
+        <view class="bubble bubble-ai bubble-thinking">
+          <view class="think-line">
+            <view class="dot"></view>
+            <view class="dot"></view>
+            <view class="dot"></view>
+          </view>
+        </view>
       </view>
     </view>
-  </view>
 
-  <!-- AI 生成标识 -->
-  <view wx:if="{{showAiLabel && renderMessages.length > 0}}" class="ai-label">
-    <text>以上内容为AI生成，仅供参考</text>
+    <view id="cv-anchor" class="anchor"></view>
   </view>
-
-  <view id="chat-bottom-anchor"></view>
 </scroll-view>
+
+<view wx:if="{{showAiLabel && renderMessages.length > 0}}" class="ai-foot">
+  <text>以上内容为 AI 生成，仅供参考</text>
+</view>

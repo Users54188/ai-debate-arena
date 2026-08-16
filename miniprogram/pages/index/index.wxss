@@ -1,162 +1,264 @@
-.container {
-  padding: 24px 16px;
-  min-height: 100vh;
-}
+/* 首页 —— 星夜思辨入口 */
 
-.hero {
-  margin-bottom: 24px;
-  text-align: center;
-}
-
-.hero-logo {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 12px;
-  border-radius: 16px;
-}
-
-.hero-title {
-  display: block;
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--primary);
-  margin-bottom: 8px;
-}
-
-.hero-subtitle {
-  display: block;
-  font-size: 15px;
-  color: var(--text-secondary);
-}
-
-/* 思辨进度卡（journey-border 美工替换旧 rank-border） */
-.journey-card {
+.page {
   position: relative;
-  margin-bottom: 24px;
-  height: 160px;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--night-1) 0%, var(--night-0) 100%);
 }
 
-.journey-border {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
+.scaffold {
+  position: relative;
+  z-index: 1;
   height: 100%;
-  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  padding: 0 var(--sp-4);
 }
 
-.journey-content {
-  position: absolute;
-  inset: 0;
+/* === Hero === */
+.hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  padding: 64rpx 0 48rpx;
   text-align: center;
-  padding: 0 16px;
+}
+
+.hero-emblem {
+  position: relative;
+  width: 144rpx;
+  height: 144rpx;
+  margin-bottom: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emblem-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2rpx solid var(--star-purple);
+  box-shadow:
+    0 0 32rpx rgba(157, 107, 255, 0.45),
+    inset 0 0 32rpx rgba(157, 107, 255, 0.25);
+  animation: ring-spin 18s linear infinite;
+}
+
+.emblem-ring::after {
+  content: "";
+  position: absolute;
+  inset: 16rpx;
+  border-radius: 50%;
+  border: 1rpx dashed rgba(157, 107, 255, 0.45);
+}
+
+.emblem-core {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--star-purple), var(--star-indigo));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  box-shadow: 0 0 40rpx rgba(157, 107, 255, 0.6);
+}
+
+@keyframes ring-spin {
+  to { transform: rotate(360deg); }
+}
+
+.hero-title {
+  font-size: 56rpx;
+  font-weight: 700;
+  letter-spacing: 8rpx;
+  color: var(--text-1);
+  margin-bottom: 12rpx;
+  text-shadow: 0 0 24rpx rgba(157, 107, 255, 0.5);
+}
+
+.hero-sub {
+  font-size: var(--fs-body);
+  color: var(--text-3);
+  letter-spacing: 2rpx;
+}
+
+/* === Journey 卡 === */
+.journey {
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+
+.journey-head {
+  margin-bottom: var(--sp-3);
 }
 
 .journey-title {
   display: block;
-  font-size: 16px;
+  font-size: var(--fs-title);
   font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 8px;
+  color: var(--text-1);
+  margin-bottom: 8rpx;
+}
+
+.journey-sub {
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  letter-spacing: 1rpx;
 }
 
 .journey-stats {
   display: flex;
-  gap: 28px;
-  margin-bottom: 6px;
-}
-
-.journey-stat {
-  display: flex;
-  flex-direction: column;
   align-items: center;
 }
 
-.journey-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--primary);
-}
-
-.journey-label {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.journey-desc {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-/* 三种模式入口 */
-.mode-list {
+.stat {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  align-items: center;
+  gap: 8rpx;
 }
 
-.mode-card {
+.stat-value {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: var(--star-purple);
+  letter-spacing: 1rpx;
+  text-shadow: 0 0 16rpx rgba(157, 107, 255, 0.4);
+}
+
+.stat-label {
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  letter-spacing: 1rpx;
+}
+
+.stat-divider {
+  width: 1rpx;
+  height: 48rpx;
+  background: linear-gradient(180deg, transparent, var(--glass-border), transparent);
+}
+
+/* === Modes === */
+.section-title {
+  display: block;
+  font-size: var(--fs-label);
+  color: var(--text-3);
+  letter-spacing: 4rpx;
+  margin-bottom: var(--sp-3);
+  text-transform: uppercase;
+}
+
+.modes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.mode {
+  display: flex;
+  align-items: stretch;
+  padding: var(--sp-4);
+  transition: transform 120ms ease, border-color 200ms ease;
+}
+
+.card-hover {
+  transform: scale(0.98);
+  border-color: var(--glass-border-strong) !important;
+}
+
+.mode-side {
+  flex-shrink: 0;
+  padding-right: var(--sp-3);
+  display: flex;
+  align-items: center;
+}
+
+.mode-mark {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+  color: #FFFFFF;
   position: relative;
-  overflow: hidden;
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
 }
 
-.mode-badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-bottom: 8px;
+.mark-l1 {
+  background: linear-gradient(135deg, var(--star-indigo), #4338CA);
+  box-shadow: 0 0 24rpx rgba(99, 102, 241, 0.5);
+}
+.mark-l2 {
+  background: linear-gradient(135deg, #06B6D4, #0E7490);
+  box-shadow: 0 0 24rpx rgba(103, 232, 249, 0.45);
+}
+.mark-l3 {
+  background: linear-gradient(135deg, var(--star-violet), #9333EA);
+  box-shadow: 0 0 24rpx rgba(192, 132, 252, 0.5);
 }
 
-.badge-l1 { background: #EEF2FF; color: var(--l1-socrates); }
-.badge-l2 { background: #F0FDFA; color: var(--l2-expert); }
-.badge-l3 { background: #FAF5FF; color: var(--l3-affirmative); }
+.mode-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
 
 .mode-title {
-  display: block;
-  font-size: 17px;
+  font-size: var(--fs-title);
   font-weight: 600;
-  margin-bottom: 4px;
+  color: var(--text-1);
 }
 
 .mode-desc {
-  display: block;
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
+  font-size: var(--fs-label);
+  color: var(--text-3);
+  line-height: 1.55;
 }
 
-.mode-entrance {
-  display: inline-block;
-  font-size: 13px;
+.mode-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8rpx;
+}
+
+.chip {
+  padding: 4rpx 16rpx;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-caption);
   font-weight: 500;
-  color: var(--primary);
+  letter-spacing: 1rpx;
 }
 
-.level-badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 80px;
-  height: 80px;
-  opacity: 0.15;
-  transform: rotate(20deg);
+.chip-l1 { background: rgba(99, 102, 241, 0.18); color: #A5B4FC; }
+.chip-l2 { background: rgba(103, 232, 249, 0.16); color: #A5F3FC; }
+.chip-l3 { background: rgba(192, 132, 252, 0.18); color: #E9D5FF; }
+
+.mode-arrow {
+  font-size: var(--fs-caption);
+  color: var(--star-purple);
+  letter-spacing: 1rpx;
 }
 
-.mode-decor {
-  position: absolute;
-  bottom: 10px;
-  right: 14px;
-  width: 40px;
-  height: 40px;
-  opacity: 0.5;
+.footnote {
+  text-align: center;
+  font-size: var(--fs-caption);
+  color: var(--text-4);
+  padding: var(--sp-4) 0 var(--sp-3);
+  letter-spacing: 1rpx;
+}
+
+.bottom-spacer {
+  height: 120rpx;
 }

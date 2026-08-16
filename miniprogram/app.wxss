@@ -1,41 +1,178 @@
-/* 思辨场 — Global Design Tokens */
+/* ============================================================
+ * 思辨场 — 星夜思辨·紫调 全局设计系统
+ *
+ * 调性：深邃星空 + 紫罗兰光晕 + 玻璃态层级
+ * 严禁散落硬编码颜色，所有视觉值统一在此维护。
+ * ============================================================ */
+
 page {
-  --primary: #4F46E5;
-  --primary-light: #818CF8;
-  --bg-page: #F5F3FF;
-  --bg-card: #FFFFFF;
-  --text-primary: #1E1B4B;
-  --text-secondary: #6B7280;
-  --border: #E0E7FF;
-  --l1-socrates: #4F46E5;
-  --l2-expert: #0D9488;
-  --l3-affirmative: #7C3AED;
-  --l3-negative: #F97316;
-  --l3-judge: #6366F1;
-  --user-bubble: #EEF2FF;
-  --success: #10B981;
-  --warning: #F59E0B;
-  --error: #EF4444;
+  /* —— 夜空层级 —— */
+  --night-0: #07041F;          /* 最深（页面底色） */
+  --night-1: #0E0830;          /* 主背景 */
+  --night-2: #181142;          /* 次背景（卡片玻璃态） */
+  --night-3: #251A5C;          /* 高亮卡片 */
+  --night-4: #332574;          /* 选中/按下态 */
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  /* —— 星辰强调色 —— */
+  --star-purple: #9D6BFF;      /* 主强调（按钮/链接/重点） */
+  --star-purple-soft: #B58BFF; /* 悬浮态 */
+  --star-indigo: #6366F1;      /* 副强调（L1 苏格拉底） */
+  --star-violet: #C084FC;      /* 柔光（L3 正方） */
+  --star-amber: #FBBF24;       /* 星辰金（得分/段位点缀） */
+  --star-cyan: #67E8F9;        /* 冷光点缀 */
+  --star-rose: #FB7185;        /* 警告/反方 */
 
-  background-color: var(--bg-page);
+  /* —— 文字层级 —— */
+  --text-1: #F5F3FF;           /* 主标题/正文 */
+  --text-2: #C7CFF0;           /* 副文本 */
+  --text-3: #8B86C7;           /* 弱化说明 */
+  --text-4: #5C5688;           /* 极弱（占位/分割） */
+
+  /* —— 玻璃态 —— */
+  --glass-bg: rgba(255, 255, 255, 0.045);
+  --glass-bg-strong: rgba(255, 255, 255, 0.075);
+  --glass-border: rgba(157, 107, 255, 0.22);
+  --glass-border-strong: rgba(157, 107, 255, 0.45);
+  --glass-highlight: rgba(255, 255, 255, 0.08);
+
+  /* —— 角色色（对话气泡 / 头像） —— */
+  --role-socrates: #6366F1;    /* L1 苏格拉底 - 靛蓝 */
+  --role-expert: #67E8F9;      /* L2 专家 - 冷光 */
+  --role-affirmative: #C084FC; /* L3 正方 - 柔紫 */
+  --role-negative: #FB7185;    /* L3 反方 - 玫红 */
+  --role-judge: #FBBF24;       /* L3 裁判 - 星辰金 */
+  --role-user: #9D6BFF;        /* 用户 - 主紫 */
+
+  /* —— 圆角 —— */
+  --r-sm: 8rpx;
+  --r-md: 16rpx;
+  --r-lg: 24rpx;
+  --r-xl: 32rpx;
+  --r-pill: 999rpx;
+
+  /* —— 间距 —— */
+  --sp-1: 8rpx;
+  --sp-2: 16rpx;
+  --sp-3: 24rpx;
+  --sp-4: 32rpx;
+  --sp-5: 48rpx;
+  --sp-6: 64rpx;
+
+  /* —— 阴影 / 光晕 —— */
+  --shadow-card: 0 8rpx 32rpx rgba(0, 0, 0, 0.32);
+  --shadow-float: 0 16rpx 48rpx rgba(0, 0, 0, 0.4);
+  --glow-purple: 0 0 24rpx rgba(157, 107, 255, 0.35);
+  --glow-soft: 0 0 40rpx rgba(157, 107, 255, 0.18);
+
+  /* —— 字体 —— */
+  --fs-caption: 22rpx;
+  --fs-label: 24rpx;
+  --fs-body: 28rpx;
+  --fs-body-lg: 30rpx;
+  --fs-title: 34rpx;
+  --fs-h2: 40rpx;
+  --fs-h1: 48rpx;
+
+  background-color: var(--night-0);
+  color: var(--text-1);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
-  font-size: 15px;
-  color: var(--text-primary);
-  line-height: 1.6;
+  font-size: var(--fs-body);
+  line-height: 1.7;
 }
 
-/* Typography */
-.h1 { font-size: 20px; font-weight: 600; }
-.h2 { font-size: 17px; font-weight: 600; }
-.body { font-size: 15px; font-weight: 400; }
-.caption { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
-.label { font-size: 11px; font-weight: 500; color: var(--text-secondary); }
+/* ============================================================
+ * 通用工具类
+ * ============================================================ */
 
-/* Utility */
-.flex-center { display: flex; align-items: center; justify-content: center; }
-.flex-col { display: flex; flex-direction: column; }
-.safe-bottom { padding-bottom: constant(safe-area-inset-bottom); padding-bottom: env(safe-area-inset-bottom); }
+/* 玻璃态卡片 —— 全应用统一容器样式 */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1rpx solid var(--glass-border);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  box-shadow: var(--shadow-card);
+}
+
+.glass-card-strong {
+  background: var(--glass-bg-strong);
+  border: 1rpx solid var(--glass-border-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card), var(--glow-soft);
+}
+
+/* 主按钮 —— 紫光填充 */
+.btn-primary {
+  background: linear-gradient(135deg, var(--star-purple) 0%, var(--star-indigo) 100%);
+  color: var(--text-1);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-body-lg);
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  box-shadow: var(--glow-purple);
+  border: none;
+  height: 96rpx;
+  line-height: 96rpx;
+}
+.btn-primary[disabled] {
+  background: var(--night-3);
+  color: var(--text-3);
+  box-shadow: none;
+}
+
+/* 次按钮 —— 玻璃描边 */
+.btn-ghost {
+  background: var(--glass-bg);
+  color: var(--text-1);
+  border: 1rpx solid var(--glass-border);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-body);
+  height: 88rpx;
+  line-height: 88rpx;
+}
+
+/* 角色徽章 */
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 6rpx 18rpx;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-label);
+  font-weight: 500;
+  letter-spacing: 1rpx;
+  background: var(--glass-bg);
+  border: 1rpx solid var(--glass-border);
+}
+
+/* 排版 */
+.h1 { font-size: var(--fs-h1); font-weight: 700; letter-spacing: 2rpx; color: var(--text-1); }
+.h2 { font-size: var(--fs-h2); font-weight: 600; letter-spacing: 1rpx; color: var(--text-1); }
+.title { font-size: var(--fs-title); font-weight: 600; color: var(--text-1); }
+.body { font-size: var(--fs-body); color: var(--text-2); line-height: 1.75; }
+.caption { font-size: var(--fs-caption); color: var(--text-3); }
+.label { font-size: var(--fs-label); color: var(--text-3); letter-spacing: 1rpx; }
+
+/* 安全区域 */
+.safe-bottom {
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 渐隐分割线 */
+.divider {
+  height: 1rpx;
+  background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+}
+
+/* 浮动星点装饰（角落点缀） */
+.star-dot {
+  position: absolute;
+  width: 4rpx;
+  height: 4rpx;
+  border-radius: 50%;
+  background: var(--text-1);
+  box-shadow: 0 0 8rpx rgba(255, 255, 255, 0.8);
+  opacity: 0.6;
+  pointer-events: none;
+}

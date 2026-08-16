@@ -213,15 +213,24 @@ Page({
     const self = this;
     return new Promise((resolve, reject) => {
       let fullText = "";
+      const chat = self.selectComponent("#chat");
       streamText({
         model: config.model.chat,
         messages: apiMessages,
         mode: "L2",
         onChunk(delta) {
           fullText += delta;
-          const updated = [...self.data.messages];
-          updated[msgIndex] = displayMsg(role, fullText);
-          self.setData({ messages: updated, waitingFirstChunk: false });
+          // 性能优化：组件局部更新，避免长对话时全量 setData 卡顿
+          if (chat) {
+            chat.appendChunk(delta);
+          } else {
+            const updated = [...self.data.messages];
+            updated[msgIndex] = displayMsg(role, fullText);
+            self.setData({ messages: updated });
+          }
+          if (self.data.waitingFirstChunk) {
+            self.setData({ waitingFirstChunk: false });
+          }
         },
         onStreamEnd({ fullText: final, finishReason }) {
           const safe = finishReason === "sensitive";

@@ -1,5 +1,6 @@
 {
   "usingComponents": {
-    "onboarding": "/components/onboarding/index"
+    "onboarding": "/components/onboarding/index",
+    "star-field": "/components/star-field/index"
   }
 }

@@ -1,6 +1,8 @@
 {
   "usingComponents": {
-    "chat-stream": "/components/chat-stream/index"
+    "chat-stream": "/components/chat-stream/index",
+    "star-field": "/components/star-field/index"
   },
-  "navigationBarTitleText": "苏格拉底追问"
+  "navigationBarTitleText": "苏格拉底追问",
+  "navigationStyle": "default"
 }

@@ -1,7 +1,9 @@
+/* onboarding —— 星夜思辨引导屏 */
+
 .onboarding-mask {
   position: fixed;
   inset: 0;
-  background: #000;
+  background: linear-gradient(180deg, var(--night-1, #0E0830) 0%, var(--night-0, #07041F) 100%);
   z-index: 9999;
   display: flex;
   flex-direction: column;
@@ -18,29 +20,55 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 40rpx;
+  padding: 0 48rpx;
   box-sizing: border-box;
-  color: #fff;
+  color: var(--text-1, #F5F3FF);
   text-align: center;
+  position: relative;
+}
+
+/* 每屏背景柔光晕（覆盖原 emoji 单色背景，营造星空感） */
+.slide::before {
+  content: "";
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 480rpx;
+  height: 480rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(157, 107, 255, 0.32) 0%, transparent 65%);
+  filter: blur(20rpx);
+  pointer-events: none;
 }
 
 .slide-emoji {
+  position: relative;
+  z-index: 1;
   font-size: 160rpx;
   margin-bottom: 60rpx;
+  filter: drop-shadow(0 0 40rpx rgba(157, 107, 255, 0.6));
 }
 
 .slide-title {
-  font-size: 44rpx;
+  position: relative;
+  z-index: 1;
+  font-size: 48rpx;
   font-weight: 700;
   margin-bottom: 32rpx;
-  letter-spacing: 2rpx;
+  letter-spacing: 4rpx;
+  color: var(--text-1, #F5F3FF);
 }
 
 .slide-desc {
+  position: relative;
+  z-index: 1;
   font-size: 30rpx;
-  line-height: 1.7;
-  opacity: 0.9;
+  line-height: 1.8;
+  opacity: 0.85;
   max-width: 560rpx;
+  color: var(--text-2, #C7CFF0);
+  letter-spacing: 1rpx;
 }
 
 .onboarding-dots {
@@ -48,20 +76,20 @@
   justify-content: center;
   gap: 16rpx;
   padding: 24rpx 0 16rpx;
-  background: #000;
 }
 
 .dot {
   width: 16rpx;
   height: 16rpx;
   border-radius: 8rpx;
-  background: rgba(255, 255, 255, 0.25);
-  transition: all 0.25s;
+  background: rgba(157, 107, 255, 0.3);
+  transition: all 0.3s ease;
 }
 
 .dot-active {
-  width: 48rpx;
-  background: #fff;
+  width: 56rpx;
+  background: linear-gradient(90deg, var(--star-purple, #9D6BFF), var(--star-violet, #C084FC));
+  box-shadow: 0 0 16rpx rgba(157, 107, 255, 0.6);
 }
 
 .onboarding-actions {
@@ -69,23 +97,26 @@
   justify-content: space-between;
   align-items: center;
   padding: 20rpx 40rpx 50rpx;
-  background: #000;
 }
 
 .skip-btn {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-3, #8B86C7);
   font-size: 28rpx;
   padding: 12rpx 24rpx;
+  letter-spacing: 2rpx;
 }
 
 .next-btn {
-  background: #fff;
-  color: #4F46E5;
+  background: linear-gradient(135deg, var(--star-purple, #9D6BFF), var(--star-indigo, #6366F1));
+  color: #FFFFFF;
   font-size: 30rpx;
   font-weight: 600;
   border-radius: 999rpx;
-  padding: 18rpx 60rpx;
+  padding: 18rpx 64rpx;
   line-height: 1;
+  letter-spacing: 2rpx;
+  box-shadow: 0 0 32rpx rgba(157, 107, 255, 0.5);
+  border: none;
 }
 
 .next-btn::after {

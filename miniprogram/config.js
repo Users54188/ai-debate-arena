@@ -23,8 +23,8 @@ module.exports = {
   // 单会话轮次上限 — 测试期间临时放开
   maxRounds: 999,
 
-  // 流式渲染节流 (ms)
-  streamThrottle: 120,
+  // 流式渲染节流 (ms) —— 降低到 60ms 让首字更快到达，避免感知卡顿
+  streamThrottle: 60,
 
   // 流式调用超时配置
   streamTimeout: {

@@ -1,61 +1,91 @@
-.socrates-page {
+/* 苏格拉底对话页 —— 星夜思辨 */
+
+.page {
+  position: relative;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--night-1) 0%, var(--night-0) 100%);
+}
+
+.body {
   position: relative;
-  z-index: 0;
-  background: linear-gradient(180deg, #eef2ff 0%, #faf5ff 100%);
-}
-
-.bg-gradient {
-  display: none;
-}
-
-chat-stream {
+  z-index: 1;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
-.input-bar {
+/* === 底部输入坞 === */
+.dock {
+  position: relative;
+  z-index: 2;
+  background: rgba(14, 8, 48, 0.92);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  border-top: 1rpx solid var(--glass-border);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.dock-inner {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--bg-card, #FFFFFF);
-  border-top: 1px solid var(--border, #E0E7FF);
+  gap: var(--sp-2);
 }
 
-.msg-input {
+.dock-input {
   flex: 1;
-  height: 36px;
-  background: var(--bg-page, #F5F3FF);
-  border-radius: var(--radius-sm, 8px);
-  padding: 0 12px;
-  font-size: 14px;
+  height: 80rpx;
+  padding: 0 28rpx;
+  background: var(--glass-bg);
+  border: 1rpx solid var(--glass-border);
+  border-radius: var(--r-pill);
+  color: var(--text-1);
+  font-size: var(--fs-body);
+  letter-spacing: 1rpx;
+  box-sizing: border-box;
 }
 
-.send-btn {
+.ph {
+  color: var(--text-4);
+  font-size: var(--fs-body);
+  letter-spacing: 1rpx;
+}
+
+.dock-send {
   flex-shrink: 0;
-  background: var(--primary, #4F46E5);
-  color: white;
-  font-size: 13px;
-  border-radius: var(--radius-sm, 8px);
-  padding: 0 16px;
-  height: 36px;
-  line-height: 36px;
+  background: linear-gradient(135deg, var(--star-purple), var(--star-indigo));
+  color: #FFFFFF;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  border-radius: var(--r-pill);
+  padding: 0 32rpx;
+  height: 80rpx;
+  line-height: 80rpx;
   border: none;
+  box-shadow: 0 0 24rpx rgba(157, 107, 255, 0.4);
 }
 
-.send-btn[disabled] {
-  background: var(--border, #E0E7FF);
-  color: var(--text-secondary, #6B7280);
+.btn-hover {
+  opacity: 0.85;
+  transform: scale(0.97);
 }
 
-.quota-notice,
-.round-limit-notice {
-  padding: 10px 16px;
+.dock-send[disabled] {
+  background: var(--night-3);
+  color: var(--text-3);
+  box-shadow: none;
+}
+
+.notice {
   text-align: center;
-  font-size: 13px;
-  color: var(--warning, #F59E0B);
-  background: #FFFBEB;
+  padding: 16rpx 24rpx 4rpx;
+  font-size: var(--fs-caption);
+  color: var(--star-amber);
+  letter-spacing: 1rpx;
+}
+
+.notice-round {
+  color: var(--star-cyan);
 }

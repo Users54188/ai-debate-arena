@@ -1,4 +1,6 @@
 <view class="page">
+  <star-field />
+
   <view wx:if="{{loading}}" class="state-box">
     <empty-state mode="loading" />
   </view>
@@ -14,13 +16,16 @@
   </view>
 
   <scroll-view wx:else class="list" scroll-y>
+    <view class="list-inner">
     <view
-      class="session-card"
+      class="session-card glass-card"
       wx:for="{{sessions}}"
       wx:key="id"
       data-id="{{item.id}}"
       bindtap="goReport"
       bindlongpress="onDelete"
+      hover-class="card-hover"
+      hover-stay-time="80"
     >
       <view class="card-left">
         <view class="mode-tag tag-{{item.modeClass}}">{{item.mode}}</view>
@@ -33,6 +38,7 @@
         <text class="card-time">{{item.createdAt}}</text>
         <text class="card-arrow">›</text>
       </view>
+    </view>
     </view>
   </scroll-view>
 

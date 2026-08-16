@@ -1,6 +1,7 @@
 {
   "usingComponents": {
-    "empty-state": "/components/empty-state/index"
+    "empty-state": "/components/empty-state/index",
+    "star-field": "/components/star-field/index"
   },
   "navigationBarTitleText": "思辨报告"
 }
