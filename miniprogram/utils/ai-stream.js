@@ -83,7 +83,14 @@ async function streamText(opts) {
         data: { model, messages: safeMessages },
       });
 
-      for await (const chunk of res.textStream) {
+      // 兼容性修复：避免使用 ES2018 的 for-await-of 语法（部分真机 XWeb 内核不支持，
+      // 会导致整个文件解析失败 → require 失败 → 引用本模块的页面全部白屏）。
+      // 改用 ES2017 的 while + await iter.next()，运行时行为完全等价。
+      const textIter = res.textStream;
+      while (true) {
+        const r = await textIter.next();
+        if (r.done) break;
+        const chunk = r.value;
         fullText += chunk;
         accumulated += chunk;
         const now = Date.now();
@@ -111,8 +118,18 @@ async function streamText(opts) {
       let finishReason = "";
       try {
         const consume = (async () => {
-          for await (const event of res.eventStream) {
-            if (event.data === "[DONE]") break;
+          // 同上：避免 for-await-of 语法，改用 while + await next()
+          const evtIter = res.eventStream;
+          while (true) {
+            const r = await evtIter.next();
+            if (r.done) break;
+            const event = r.value;
+            if (event.data === "[DONE]") {
+              if (typeof evtIter.return === "function") {
+                try { await evtIter.return(); } catch (e) {}
+              }
+              break;
+            }
             // 解析 JSON payload 提取结构化字段
             try {
               const parsed = JSON.parse(event.data);
