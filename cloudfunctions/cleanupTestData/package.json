@@ -1,0 +1,13 @@
+{
+  "name": "cleanupTestData",
+  "version": "1.0.0",
+  "main": "index.js",
+  "description": "调试工具：清理测试期数据污染（不部署定时触发器，手动调用）",
+  "dependencies": {
+    "wx-server-sdk": "^4.0.2"
+  },
+  "permissions": {
+    "openapi": []
+  },
+  "timeout": 60
+}
