@@ -65,8 +65,12 @@ Page({
       });
       const q = (res.result && res.result.data) || {};
       const exhausted = !q.available && q.used >= q.limit;
-      if (exhausted !== this.data.quotaExhausted) {
+      const wasExhausted = this.data.quotaExhausted;
+      if (exhausted !== wasExhausted) {
         this.setData({ quotaExhausted: exhausted });
+        if (exhausted) {
+          wx.showToast({ title: "今日 L2 共修次数已用完，明日再会", icon: "none", duration: 2500 });
+        }
       }
     } catch (e) {
       console.error("[dual] quota check failed:", e);
@@ -79,9 +83,17 @@ Page({
       name: config.cloudFunctions.sessionStore,
       data: { action: "create", mode: "L2" },
     });
-    const data = (res.result && res.result.data) || {};
+    const result = res.result || {};
+    const data = result.data || {};
     if (!data.sessionId) {
-      throw new Error("session create failed: " + ((res.result && res.result.msg) || "unknown"));
+      if (result.code === -2) {
+        this.setData({ quotaExhausted: true });
+        const err = new Error("quota_exhausted");
+        err.code = -2;
+        err.userMsg = "今日 L2 共修次数已用完，明日再会";
+        throw err;
+      }
+      throw new Error("session create failed: " + (result.msg || "unknown"));
     }
     this.sessionId = data.sessionId;
     return this.sessionId;
@@ -209,7 +221,11 @@ Page({
       if (this.sessionId) {
         this.loadSessionContext().catch(() => {});
       }
-      wx.showToast({ title: "网络异常，请稍后重试", icon: "none", duration: 2000 });
+      // 配额耗尽时显示明确提示，避免误报为"网络异常"
+      const title = e && e.code === -2 && e.userMsg
+        ? e.userMsg
+        : "网络异常，请稍后重试";
+      wx.showToast({ title, icon: "none", duration: 2500 });
     }
   },
 
