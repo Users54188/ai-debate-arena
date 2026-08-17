@@ -74,14 +74,23 @@ async function listSessionIds(filter) {
   const batchSize = 100;
   let skip = 0;
   while (true) {
-    const res = await db
-      .collection("sessions")
-      .where(filter)
-      .skip(skip)
-      .limit(batchSize)
-      .field({ _id: true })
-      .get();
-    const batch = res.data || [];
+    let batch;
+    try {
+      const res = await db
+        .collection("sessions")
+        .where(filter)
+        .skip(skip)
+        .limit(batchSize)
+        .field({ _id: true })
+        .get();
+      batch = res.data || [];
+    } catch (e) {
+      if (e && /collection not exists|ResourceNotFound|Db or Table not exist/i.test(e.errMsg || e.message || "")) {
+        console.warn("[cleanupTestData] sessions collection not exists, treating as empty");
+        return [];
+      }
+      throw e;
+    }
     for (const d of batch) ids.push(d._id);
     if (batch.length < batchSize) break;
     skip += batchSize;
@@ -93,20 +102,43 @@ async function listSessionIds(filter) {
   return ids;
 }
 
+async function countByFilter(collection, filter) {
+  try {
+    const res = await db.collection(collection).where(filter).count();
+    return res.total || 0;
+  } catch (e) {
+    // 集合不存在（未自动创建）视为 0，不阻断清理流程
+    if (e && /collection not exists|ResourceNotFound|Db or Table not exist/i.test(e.errMsg || e.message || "")) {
+      console.warn(`[cleanupTestData] collection ${collection} not exists, treating as 0`);
+      return 0;
+    }
+    throw e;
+  }
+}
+
 async function deleteByFilter(collection, filter) {
   // 云数据库没有 deleteMany，只能先查再逐条删
   let deleted = 0;
   let skip = 0;
   const batchSize = 100;
   while (true) {
-    const res = await db
-      .collection(collection)
-      .where(filter)
-      .skip(skip)
-      .limit(batchSize)
-      .field({ _id: true })
-      .get();
-    const batch = res.data || [];
+    let batch;
+    try {
+      const res = await db
+        .collection(collection)
+        .where(filter)
+        .skip(skip)
+        .limit(batchSize)
+        .field({ _id: true })
+        .get();
+      batch = res.data || [];
+    } catch (e) {
+      if (e && /collection not exists|ResourceNotFound|Db or Table not exist/i.test(e.errMsg || e.message || "")) {
+        console.warn(`[cleanupTestData] collection ${collection} not exists, treating as 0 deletes`);
+        return 0;
+      }
+      throw e;
+    }
     if (batch.length === 0) break;
     for (const d of batch) {
       try {
@@ -167,36 +199,26 @@ exports.main = async (event = {}) => {
     summary.sessions = sessionIds.length;
 
     if (dryRun) {
-      // 预览模式：统计级联数量
+      // 预览模式：统计级联数量（容错缺失集合）
       if (sessionIds.length > 0 && requestedCollections.includes("reports")) {
-        const r = await db
-          .collection("reports")
-          .where({ sessionId: _.in(sessionIds) })
-          .count();
-        summary.reports = r.total || 0;
+        summary.reports = await countByFilter("reports", { sessionId: _.in(sessionIds) });
       }
       if (sessionIds.length > 0 && requestedCollections.includes("votes")) {
-        const v = await db
-          .collection("votes")
-          .where({ sessionId: _.in(sessionIds) })
-          .count();
-        summary.votes = v.total || 0;
+        summary.votes = await countByFilter("votes", { sessionId: _.in(sessionIds) });
       }
       if (requestedCollections.includes("token_usage")) {
         const usageFilter = Object.assign(
           { createdAt: _.gte(cutoff) },
           openidFilter ? { openid: openidFilter } : {}
         );
-        const t = await db.collection("token_usage").where(usageFilter).count();
-        summary.token_usage = t.total || 0;
+        summary.token_usage = await countByFilter("token_usage", usageFilter);
       }
       if (requestedCollections.includes("eval_runs")) {
         const eFilter = Object.assign(
           { createdAt: _.gte(cutoff) },
           openidFilter ? { openid: openidFilter } : {}
         );
-        const e = await db.collection("eval_runs").where(eFilter).count();
-        summary.eval_runs = e.total || 0;
+        summary.eval_runs = await countByFilter("eval_runs", eFilter);
       }
 
       return {
