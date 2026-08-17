@@ -97,6 +97,11 @@
         </view>
 
         <view class="anchor"></view>
+
+        <!-- 合规：AI 生成内容声明（L3 三个角色均由 AI 扮演） -->
+        <view class="debate-ai-foot">
+          <text>以上正方 / 反方 / 裁判发言均为 AI 生成，仅供参考</text>
+        </view>
       </view>
     </scroll-view>
 

@@ -122,3 +122,108 @@
 .next-btn::after {
   border: none;
 }
+
+/* 末屏协议同意 */
+.agree-row {
+  padding: 8rpx 40rpx 0;
+  display: flex;
+  justify-content: center;
+}
+
+.agree-label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 24rpx;
+  color: var(--text-2, #C7CFF0);
+  line-height: 1.6;
+}
+
+.agree-label checkbox {
+  transform: scale(0.8);
+  margin-right: 8rpx;
+}
+
+.agree-text {
+  font-size: 24rpx;
+  color: var(--text-2, #C7CFF0);
+}
+
+.agree-link {
+  font-size: 24rpx;
+  color: var(--star-purple, #9D6BFF);
+  text-decoration: underline;
+}
+
+/* 协议条款弹窗 */
+.terms-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10001;
+  display: flex;
+  align-items: flex-end;
+}
+
+.terms-sheet {
+  width: 100%;
+  max-height: 80vh;
+  background: var(--night-0, #07041F);
+  border-radius: 32rpx 32rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.terms-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 40rpx 16rpx;
+  border-bottom: 1rpx solid rgba(157, 107, 255, 0.15);
+}
+
+.terms-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-1, #F5F3FF);
+  letter-spacing: 2rpx;
+}
+
+.terms-close {
+  font-size: 48rpx;
+  color: var(--text-3, #8B86C7);
+  padding: 0 8rpx;
+  line-height: 1;
+}
+
+.terms-scroll {
+  flex: 1;
+  padding: 24rpx 40rpx;
+  box-sizing: border-box;
+  min-height: 0;
+}
+
+.terms-content {
+  display: block;
+  font-size: 26rpx;
+  line-height: 1.85;
+  color: var(--text-2, #C7CFF0);
+  white-space: pre-wrap;
+  letter-spacing: 1rpx;
+}
+
+.terms-confirm {
+  margin: 16rpx 40rpx 24rpx;
+  background: linear-gradient(135deg, var(--star-purple, #9D6BFF), var(--star-indigo, #6366F1));
+  color: #FFFFFF;
+  border-radius: 999rpx;
+  padding: 18rpx 0;
+  font-size: 30rpx;
+  letter-spacing: 2rpx;
+  border: none;
+}
+
+.terms-confirm::after {
+  border: none;
+}

@@ -9,6 +9,7 @@
  */
 
 const config = require("../../config");
+const { msgSecCheck } = require("../../utils/security");
 const app = getApp();
 
 const MODE_LABEL = { L1: "单人思辨", L2: "双人共修", L3: "辩论场" };
@@ -84,12 +85,33 @@ Page({
 
   async saveProfile() {
     const profile = this.data.profile || {};
+    const nickName = (profile.nickName || "").trim();
+
+    // 合规：昵称经 msgSecCheck（scene=1 资料）后再入库，违规拒收并提示
+    if (nickName) {
+      try {
+        const check = await msgSecCheck(nickName, 1);
+        if (!check.pass) {
+          wx.showToast({
+            title: check.degraded ? "网络繁忙，请稍后重试" : "昵称包含违规信息，未保存",
+            icon: "none", duration: 2000,
+          });
+          // 回滚前端昵称为旧值（若有）
+          return;
+        }
+      } catch (e) {
+        console.error("[profile] nickName check failed:", e);
+        wx.showToast({ title: "昵称校验失败，未保存", icon: "none", duration: 2000 });
+        return;
+      }
+    }
+
     try {
       await wx.cloud.callFunction({
         name: config.cloudFunctions.userProfile,
         data: {
           action: "updateProfile",
-          nickName: profile.nickName || "",
+          nickName: nickName,
           avatar: profile.avatar || "",
         },
       });
@@ -125,9 +147,29 @@ Page({
 
   showPrivacy() {
     wx.showModal({
-      title: "隐私说明",
+      title: "隐私协议",
       content:
-        "为提供服务并改进体验，本小程序收集：微信 openid（账号标识）、对话记录（用于会话恢复与报告生成）、头像昵称（仅在你主动设置时保存）。上述信息仅用于本小程序内功能，不对外提供。",
+        "我们收集：微信 openid（账号标识）、对话记录（用于会话恢复与报告生成）、头像/昵称（仅在你主动设置时保存）。\n\n" +
+        "信息仅用于本小程序内功能，不对外提供。数据存储于境内腾讯云开发服务器。\n\n" +
+        "保留期限：至你主动删除或注销账号。\n\n" +
+        "你的权利：可查询、更正、删除（历史页长按会话删除；可联系我们删除云端全部数据，15 个工作日内处理）。\n\n" +
+        "未成年人：请在监护人陪同下使用。\n\n" +
+        "完整《隐私协议》请通过小程序内「我的 - 隐私协议」查看；对本协议有任何疑问，可通过「我的 - 关于与合规」反馈。",
+      showCancel: false,
+      confirmText: "知道了",
+    });
+  },
+
+  showUserAgreement() {
+    wx.showModal({
+      title: "用户协议",
+      content:
+        "1. 本服务所有 AI 生成内容（思辨追问、专家讲解、辩论、报告等）均由 AI 模型生成，仅供参考，不构成任何专业建议（医疗、法律、金融、心理咨询等）。\n\n" +
+        "2. 你不得输入或传播涉政、涉黄、涉暴、涉毒、谣言、隐私、版权侵犯等内容；系统对所有输入与 AI 输出进行内容安全审核。\n\n" +
+        "3. 若你是未成年人，请在监护人陪同下使用并完成本协议确认。\n\n" +
+        "4. 你在本服务内生成的内容归你本人所有，但你授予本服务在功能范围内处理你的内容的必要权限。\n\n" +
+        "5. 开发者保留在法律法规允许范围内变更、终止服务的权利。\n\n" +
+        "完整《用户协议》请通过小程序首次启动时的引导页查看。",
       showCancel: false,
       confirmText: "知道了",
     });

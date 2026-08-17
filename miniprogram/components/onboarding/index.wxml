@@ -13,10 +13,37 @@
     <view class="dot {{current === idx ? 'dot-active' : ''}}" wx:for="{{slides}}" wx:for-index="idx" wx:key="idx"></view>
   </view>
 
+  <!-- 末屏协议同意（合规硬性要求） -->
+  <view wx:if="{{current === slides.length - 1}}" class="agree-row">
+    <checkbox-group bindchange="onAgreeChange">
+      <label class="agree-label">
+        <checkbox value="1" color="#9D6BFF" />
+        <text class="agree-text">我确认已成年，已阅读并同意</text>
+        <text class="agree-link" catchtap="onShowUserAgreement">《用户协议》</text>
+        <text class="agree-text">与</text>
+        <text class="agree-link" catchtap="onShowPrivacy">《隐私协议》</text>
+      </label>
+    </checkbox-group>
+  </view>
+
   <view class="onboarding-actions safe-bottom">
     <text class="skip-btn" bindtap="onSkip">跳过</text>
     <button class="next-btn" bindtap="onNext">
       {{current === slides.length - 1 ? '开始思辨' : '下一步'}}
     </button>
+  </view>
+
+  <!-- 协议条款弹窗 -->
+  <view wx:if="{{showTerms}}" class="terms-mask" catchtap="onTermsClose">
+    <view class="terms-sheet" catchtap="noop">
+      <view class="terms-header">
+        <text class="terms-title">{{termsTitle}}</text>
+        <text class="terms-close" bindtap="onTermsClose">×</text>
+      </view>
+      <scroll-view scroll-y class="terms-scroll">
+        <text class="terms-content">{{termsContent}}</text>
+      </scroll-view>
+      <button class="terms-confirm" bindtap="onTermsClose">已阅读</button>
+    </view>
   </view>
 </view>

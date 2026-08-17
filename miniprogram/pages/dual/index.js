@@ -204,6 +204,11 @@ Page({
         this.setData({ inputText: text });
       }
       this.setData({ streaming: false, waitingFirstChunk: false, phase: "" });
+      // 重新同步前端 round 与服务端：persist 可能已落库 user 消息并推进服务端 round，
+      // 直接重试会跳轮或重复落库。loadSessionContext 会从服务端拉最新 round 覆盖前端。
+      if (this.sessionId) {
+        this.loadSessionContext().catch(() => {});
+      }
       wx.showToast({ title: "网络异常，请稍后重试", icon: "none", duration: 2000 });
     }
   },

@@ -79,8 +79,12 @@
         <text class="menu-label">段位排行</text>
         <text class="menu-arrow">›</text>
       </view>
+      <view class="menu-item" bindtap="showUserAgreement">
+        <text class="menu-label">用户协议</text>
+        <text class="menu-arrow">›</text>
+      </view>
       <view class="menu-item" bindtap="showPrivacy">
-        <text class="menu-label">隐私说明</text>
+        <text class="menu-label">隐私协议</text>
         <text class="menu-arrow">›</text>
       </view>
       <view class="menu-item" bindtap="showAbout">
