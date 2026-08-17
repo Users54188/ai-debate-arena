@@ -55,6 +55,7 @@ Page({
     try {
       this.sessionId = null;
       this.sessionSummary = "";
+      this.shareToken = "";
       this.checkQuota();
       this.loadTopics();
     } catch (e) {
@@ -183,6 +184,8 @@ Page({
       throw new Error("session create failed: " + ((res.result && res.result.msg) || "unknown"));
     }
     this.sessionId = data.sessionId;
+    // 缓存 shareToken 用于分享链接（P1 防泄露：分享只带 token 不带 sessionId）
+    this.shareToken = data.shareToken || "";
     return this.sessionId;
   },
 
@@ -293,8 +296,9 @@ Page({
         },
         onError: (err) => {
           console.error("[debate] " + role + " stream error:", err);
+          // 失败时移除失败气泡（避免重试时本轮出现两条相同角色的气泡）
           const updated = [...this.data.messages];
-          updated[msgIndex] = displayMsg(role, "（发言失败，本轮中断）", round);
+          updated.splice(msgIndex, 1);
           this.setData({ messages: updated, streaming: false, waitingFirstChunk: false });
           reject(err);
         },
@@ -318,7 +322,19 @@ Page({
 
   async continueNextRound() {
     if (this.data.round >= MAX_ROUNDS || this.data.streaming) return;
-    await this.runRound(this.data.round + 1);
+    try {
+      await this.runRound(this.data.round + 1);
+    } catch (e) {
+      // runRound 内部某角色 streamOne 失败：失败气泡已替换为"发言失败"占位，
+      // 此处兜底防止未处理的 Promise rejection。
+      // 同时清理本轮失败气泡，避免重试时与新一轮气泡重叠。
+      console.error("[debate] continueNextRound failed:", e);
+      const messages = [...this.data.messages];
+      // 移除最后一条标记为"发言失败"的气泡（避免视觉错乱）
+      // 同时把当前轮已加入的其他角色气泡保留，以便用户感知上下文
+      this.setData({ messages, streaming: false, waitingFirstChunk: false });
+      wx.showToast({ title: "网络异常，本轮已中断，请重试", icon: "none", duration: 2000 });
+    }
   },
 
   onVote(e) {
@@ -371,6 +387,7 @@ Page({
     });
     this.sessionId = null;
     this.sessionSummary = "";
+    this.shareToken = "";
   },
 
   /** 邀请好友围观（按钮入口；实际转发走 onShareAppMessage） */
@@ -379,13 +396,13 @@ Page({
     wx.showToast({ title: "点击右上角 ··· 转发", icon: "none", duration: 2000 });
   },
 
-  /** L3 辩论分享：本人带 sessionId（好友进入只读围观），无 session 兜底回首页 */
+  /** L3 辩论分享：本人带 shareToken（好友进入只读围观），无 token 兜底回首页 */
   onShareAppMessage() {
     const topic = this.data.topic || "AI 三方辩论";
-    if (this.sessionId) {
+    if (this.shareToken) {
       return {
         title: `围观这场辩论：${topic.slice(0, 20)}`,
-        path: `/pages/report/index?sessionId=${this.sessionId}`,
+        path: `/pages/report/index?token=${this.shareToken}`,
       };
     }
     return {
@@ -398,7 +415,7 @@ Page({
   onShareTimeline() {
     return {
       title: `围观这场辩论：${(this.data.topic || "").slice(0, 20)}`,
-      query: this.sessionId ? `sessionId=${this.sessionId}` : "",
+      query: this.shareToken ? `token=${this.shareToken}` : "",
     };
   },
 });

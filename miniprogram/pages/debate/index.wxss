@@ -344,3 +344,13 @@
   color: var(--star-purple);
   letter-spacing: 1rpx;
 }
+
+/* 合规：AI 生成内容声明 */
+.debate-ai-foot {
+  text-align: center;
+  padding: var(--sp-2) var(--sp-3) var(--sp-4);
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  letter-spacing: 1rpx;
+  opacity: 0.7;
+}

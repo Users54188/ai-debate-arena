@@ -44,8 +44,8 @@ const CONTENT_MAX_CHARS = 2000; // 单条消息硬截断（防文档膨胀/拖�
 const TRANSCRIPT_ALERT_CHARS = 8000; // transcript 总长报警阈值（超限打日志，便于运维介入）
 const APPEND_MAX_RETRIES = 3; // 乐观锁冲突重试上限
 
-// 服务端配额强校验开关：测试期关闭（保持临时放开）；上线前改 true 启用。
-const ENFORCE_QUOTA = false;
+// 服务端配额强校验开关：上线值（测试期临时放开已关闭）。
+const ENFORCE_QUOTA = true;
 
 // 段位分档（与 userProfile / getQuota 保持一致）
 const TIERS = {
@@ -239,7 +239,9 @@ exports.main = async (event) => {
           };
         }
         const sessionId = await ensureSessionDoc(event);
-        return { code: 0, data: { sessionId } };
+        // 同时返回 shareToken：分享链接只带 token 不带 sessionId（P1 防泄露策略）
+        const sessionDoc = (await db.collection("sessions").doc(sessionId).get()).data || {};
+        return { code: 0, data: { sessionId, shareToken: sessionDoc.shareToken || "" } };
       } catch (e) {
         console.error("[sessionStore] create failed:", e);
         return { code: -1, msg: "create failed" };

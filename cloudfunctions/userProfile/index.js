@@ -62,6 +62,10 @@ async function ensureUser(OPENID) {
         classify: BETA_OPENIDS.includes(OPENID) ? "beta" : "new",
         nickName: "",
         avatar: "",
+        // 未成年人标记：默认未知（null）。前端引导用户确认成年后置 false；
+        // 显式标记为 true 时启用更严格的内容过滤与配额折减（I5 最小可行版）
+        isMinor: null,
+        minorConfirmedAt: null,
         updatedAt: db.serverDate(),
       },
     });
@@ -124,6 +128,9 @@ async function getProfile(OPENID) {
       avatar: user.avatar || "",
       dailyLimit: tier.daily,
       maxRounds: tier.maxRounds,
+      // 未成年人标记供前端展示与定制提示
+      isMinor: user.isMinor === true,
+      minorConfirmed: user.isMinor !== null && user.isMinor !== undefined,
     },
   };
 }
@@ -137,6 +144,18 @@ async function updateProfile(OPENID, data) {
     .doc(OPENID)
     .update({
       data: { nickName, avatar, updatedAt: db.serverDate() },
+    })
+    .catch(() => {});
+  return { code: 0 };
+}
+
+/** 用户成年确认（首次进入小程序时由前端引导后调用） */
+async function confirmNonMinor(OPENID) {
+  await db
+    .collection("users")
+    .doc(OPENID)
+    .update({
+      data: { isMinor: false, minorConfirmedAt: db.serverDate(), updatedAt: db.serverDate() },
     })
     .catch(() => {});
   return { code: 0 };
@@ -157,6 +176,10 @@ exports.main = async (event) => {
 
   if (action === "updateProfile") {
     return updateProfile(OPENID || "", event);
+  }
+
+  if (action === "confirmNonMinor") {
+    return confirmNonMinor(OPENID || "");
   }
 
   return { code: -1, msg: `Unknown action: ${action}` };

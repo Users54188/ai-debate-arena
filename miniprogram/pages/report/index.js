@@ -390,22 +390,35 @@ Page({
         ctx.fillStyle = "#9CA3AF";
         ctx.fillText("思辨得分", W / 2, H * 0.50 + 26);
 
-        // L3 海报分支：展示正反方投票分布（替代通用报告摘要）
+        // L3 海报分支：展示正反方投票分布 + 裁判点评（替代通用报告摘要）
         if (report.mode === "L3" && report.debate) {
           const d = report.debate || {};
-          const aff = (report.voteScore) || 0;
           ctx.font = "13px sans-serif";
           ctx.fillStyle = "#7C3AED";
           const affPts = (d.affirmativePoints || []).slice(0, 2);
+          let ay = H * 0.58;
           for (const p of affPts) {
-            ctx.fillText("正方：" + (p.point || "").slice(0, 24), W / 2, H * 0.58);
+            ctx.fillText("正方：" + (p.point || "").slice(0, 24), W / 2, ay);
+            ay += 20;
           }
           ctx.fillStyle = "#F97316";
           const negPts = (d.negativePoints || []).slice(0, 2);
-          let ny = H * 0.62;
           for (const p of negPts) {
-            ctx.fillText("反方：" + (p.point || "").slice(0, 24), W / 2, ny);
-            ny += 20;
+            ctx.fillText("反方：" + (p.point || "").slice(0, 24), W / 2, ay);
+            ay += 20;
+          }
+          // 裁判点评摘要
+          const judgeHl = (d.judgeHighlights || []).slice(0, 2);
+          if (judgeHl.length) {
+            ctx.fillStyle = "#F59E0B";
+            ctx.font = "12px sans-serif";
+            for (const txt of judgeHl) {
+              const lines = this.wrapText(ctx, "裁判：" + String(txt || "").slice(0, 40), W - 48, 2);
+              for (const line of lines) {
+                ctx.fillText(line, W / 2, ay);
+                ay += 18;
+              }
+            }
           }
         } else {
           const text = report.reportText || "";
@@ -423,6 +436,11 @@ Page({
         ctx.fillStyle = "#9CA3AF";
         ctx.font = "12px sans-serif";
         ctx.fillText("长按识别或打开小程序查看完整报告", W / 2, H * 0.92);
+
+        // 合规：AI 生成内容标识（微信平台对 AI 类小程序硬性要求）
+        ctx.fillStyle = "#9CA3AF";
+        ctx.font = "11px sans-serif";
+        ctx.fillText("本报告由 AI 生成，仅供参考", W / 2, H * 0.96);
 
         this.posterCanvas = canvas;
         this.setData({ "poster.ready": true });

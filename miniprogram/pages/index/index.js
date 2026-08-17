@@ -20,6 +20,13 @@ Page({
 
   onOnboardingDone() {
     app.markOnboarded();
+    // 用户已勾选"我确认已成年"，服务端记录成年确认（I5 最小可行版）
+    wx.cloud
+      .callFunction({
+        name: config.cloudFunctions.userProfile,
+        data: { action: "confirmNonMinor" },
+      })
+      .catch((e) => console.warn("[index] confirmNonMinor failed:", e));
     this.setData({ showOnboarding: false });
   },
 
