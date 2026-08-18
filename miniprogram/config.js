@@ -15,13 +15,13 @@ module.exports = {
 
   // 每日配额（单用户、跨模式独立计数）— 上线值（与 cloudfunctions/{userProfile,sessionStore,getQuota} 的 TIERS.new 档对齐）
   dailyQuota: {
-    L1: 3, // 单人苏格拉底每日最大会话数
-    L2: 2, // 双人共修
-    L3: 1, // 三方辩论
+    L1: 999, // 单人苏格拉底每日最大会话数
+    L2: 999, // 双人共修
+    L3: 999, // 三方辩论
   },
 
   // 单会话轮次上限（与 TIERS.new.maxRounds 对齐）
-  maxRounds: 10,
+  maxRounds: 5,
 
   // 流式渲染节流 (ms) —— 降低到 60ms 让首字更快到达，避免感知卡顿
   streamThrottle: 60,
