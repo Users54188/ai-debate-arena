@@ -264,12 +264,21 @@ Page({
             self.setData({ waitingFirstChunk: false });
           }
         },
+        // 重试时 ai-stream 会从头重发内容：先清空气泡旧文本，避免新旧拼接
+        onChunkReset() {
+          fullText = "";
+          const resetMessages = [...self.data.messages];
+          resetMessages[msgIndex] = displayMsg(role, "");
+          self.setData({ messages: resetMessages });
+          if (chat) chat.buildRenderMessages(resetMessages);
+        },
         onStreamEnd({ fullText: final, finishReason }) {
           const safe = finishReason === "sensitive";
           let result = safe ? SENSITIVE_FALLBACK : final;
 
           // P1 修复（输出二次审核）：finish_reason 非 sensitive 时再做一次 msgSecCheck
-          // degraded（审核服务异常）时不撤回，避免审核故障卡死对话
+          // 修复（2026-08-25）：跳过 eventStream 后 finish_reason 已失效，msgSecCheck
+          // 成为最后一道真防线——degraded 时也必须 fail-close（合规优先于体验）。
           const finalize = () => {
             const updated = [...self.data.messages];
             updated[msgIndex] = displayMsg(role, result);
@@ -280,13 +289,14 @@ Page({
           if (!safe && result) {
             msgSecCheck(result, 2)
               .then((outCheck) => {
-                if (!outCheck.pass && !outCheck.degraded) {
+                if (!outCheck.pass) {
                   result = SENSITIVE_FALLBACK;
                 }
                 finalize();
               })
               .catch((e) => {
-                console.warn(`[dual] ${role} output second-check failed:`, e);
+                console.warn(`[dual] ${role} output second-check failed; fail-close:`, e && e.message);
+                result = SENSITIVE_FALLBACK;
                 finalize();
               });
           } else {

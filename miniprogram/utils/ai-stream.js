@@ -21,6 +21,51 @@ function sleep(ms) {
 }
 
 /**
+ * 可取消的定时 Promise：避免 Promise.race 输家的 setTimeout 永远占用资源。
+ * - 调用 .cancel() 主动撤销（race 赢家退出时必须调用）
+ * - 不调用 .cancel() 时，超时后 reject 与普通 sleep 行为一致
+ * 修复 PR #14 引入的 timer 泄漏：原实现每个 chunk 累积 2 个未清理的 setTimeout，
+ * 长对话会泄漏数百个 timer 及其捕获的闭包（textIter / startedAt 等）。
+ */
+function armedTimer(ms, msg) {
+  let id;
+  const p = new Promise((_, reject) => {
+    id = setTimeout(() => reject(new Error(msg)), ms);
+  });
+  p.cancel = () => {
+    if (id !== undefined) {
+      clearTimeout(id);
+      id = undefined;
+    }
+  };
+  return p;
+}
+
+/**
+ * 敏感内容启发式检测：跳过 eventStream 后 finish_reason 永远为空，
+ * 第一道 sensitive 撤回防线失效。这里基于生成内容做兜底——
+ * 检测命中模型常见的拒绝模板（"我不能"/"无法回答"等）时标记为 sensitive，
+ * 让上层走 SENSITIVE_FALLBACK 替换。
+ *
+ * 误报代价：把正常回复替换为兜底文案（保守方向，符合"fail-close"原则）。
+ * 漏报代价：依赖第二道 msgSecCheck 兜底（已有 degraded 时不撤回的降级）。
+ * 字面字符串匹配，不引入正则避免性能/兼容问题。
+ */
+const SENSITIVE_HINTS = [
+  "我不能提供", "我无法回答", "我无法提供", "我不能回答",
+  "作为AI", "作为人工智能", "我是一个AI",
+  "这个话题我无法", "我无法参与",
+];
+function heuristicSensitive(text) {
+  if (!text || typeof text !== "string") return false;
+  // 仅对极短回复触发（正常思辨回复必然包含追问，长度不会太短），
+  // 避免误判含敏感词引用的正常回复
+  if (text.length > 80) return false;
+  const head = text.slice(0, 60);
+  return SENSITIVE_HINTS.some((hint) => head.includes(hint));
+}
+
+/**
  * 通过云函数写入 token_usage（openid 由服务端 OPENID 注入）
  * 失败静默，不影响对话主流程
  */
@@ -53,11 +98,12 @@ function createModel() {
  * @param {Array}    opts.messages     - 对话 messages（role 仅限 system/user/assistant）
  * @param {string}   opts.mode         - 模式标签: L1 / L2 / L3
  * @param {Function} opts.onChunk      - 节流后的增量文本回调 (deltaText)
+ * @param {Function} [opts.onChunkReset] - 重试时前端清空旧气泡的回调（首次下发前调用）
  * @param {Function} opts.onStreamEnd  - 结束回调 ({ fullText, usage, note, finishReason })
  * @param {Function} opts.onError      - 错误回调 ({ code, msg })
  */
 async function streamText(opts) {
-  const { model, messages, mode, onChunk, onStreamEnd, onError } = opts;
+  const { model, messages, mode, onChunk, onChunkReset, onStreamEnd, onError } = opts;
 
   // P1 修复（prompt 注入）：所有 user 消息内容用 <user_data> 标签包裹 + XML 五字符转义
   // 与服务端 evalRunner / generateReport 的注入隔离策略完全对齐——同一份 prompt，
@@ -99,6 +145,13 @@ async function streamText(opts) {
   }
 
   async function attempt() {
+    // 重试时必须清零累积态——否则第二次 attempt 的 chunk 会叠加到
+    // 第一次的 partial 文本上，输出重复错乱内容（PR #14 评审发现的 bug）
+    fullText = "";
+    accumulated = "";
+    lastFlush = Date.now();
+    let flushedOnce = false; // 是否已下发过任何 chunk：重试时需要前端清空旧气泡
+
     try {
       // createModel 放在 try 内：wx.cloud.extend.AI 不可用（基础库过低或云开发未初始化）
       // 时抛错，走统一重试/错误回调，不产生未捕获异常。
@@ -117,18 +170,23 @@ async function streamText(opts) {
       // watchdog（上线审计加固）：textIter.next() 半开挂起时原实现会永久阻塞，
       // streaming 标志无法复位导致输入框锁死（"第 N 轮后发不出去"的另一种形态）。
       // idle 超时判定服务端停止下发；total 超时兜底整条流的最大生命周期。
+      //
+      // 修复（2026-08-25）：用 armedTimer 替代 sleep，每轮 race 退出后 cancel 输家，
+      // 否则长对话累积数百个未清理的 setTimeout 及其捕获闭包。
       const textIter = res.textStream;
       const IDLE_MS = config.streamIdleTimeoutMs || 30000;
       const TOTAL_MS = config.streamTotalTimeoutMs || 90000;
       const startedAt = Date.now();
       let lastActivity = startedAt;
       while (true) {
-        const waitIdle = sleep(IDLE_MS).then(() => { throw new Error("STREAM_IDLE_TIMEOUT"); });
-        const waitTotal = sleep(Math.max(1, TOTAL_MS - (Date.now() - startedAt)))
-          .then(() => { throw new Error("STREAM_TOTAL_TIMEOUT"); });
+        const idleTimer = armedTimer(IDLE_MS, "STREAM_IDLE_TIMEOUT");
+        const totalTimer = armedTimer(
+          Math.max(1, TOTAL_MS - (Date.now() - startedAt)),
+          "STREAM_TOTAL_TIMEOUT"
+        );
         let step;
         try {
-          step = await Promise.race([textIter.next(), waitIdle, waitTotal]);
+          step = await Promise.race([textIter.next(), idleTimer, totalTimer]);
         } catch (e) {
           const msg = (e && e.message) || "";
           if (/STREAM_(IDLE|TOTAL)_TIMEOUT/.test(msg)) {
@@ -138,6 +196,11 @@ async function streamText(opts) {
               : "stream total timeout");
           }
           throw e;
+        } finally {
+          // 关键修复：race 输家必须 cancel，否则 setTimeout 持续占用，
+          // 且其 reject 无人接住会变成 unhandled rejection
+          idleTimer.cancel();
+          totalTimer.cancel();
         }
         if (step.done) break;
         const chunk = step.value;
@@ -146,16 +209,25 @@ async function streamText(opts) {
         lastActivity = Date.now();
         const now = lastActivity;
         if (now - lastFlush >= STREAM_THROTTLE) {
+          // 重试首次 flush 前，请求前端清空旧气泡（避免新旧内容拼接）
+          if (!flushedOnce && typeof onChunkReset === "function" && retries > 0) {
+            onChunkReset();
+          }
           onChunk && onChunk(accumulated);
           accumulated = "";
           lastFlush = now;
+          flushedOnce = true;
         }
       }
 
       // 尾帧 flush
       if (accumulated) {
+        if (!flushedOnce && typeof onChunkReset === "function" && retries > 0) {
+          onChunkReset();
+        }
         onChunk && onChunk(accumulated);
         accumulated = "";
+        flushedOnce = true;
       }
 
       // 从 eventStream 提取 usage / note / finish_reason
@@ -204,6 +276,17 @@ async function streamText(opts) {
 
       // usage 落库（跳过 eventStream 时 usage 为 null，trackUsage 内部直接返回）
       trackUsage(mode, model, usage);
+
+      // 修复（2026-08-25）：跳过 eventStream 时 finishReason 永远为空，
+      // 第一道 sensitive 撤回防线失效。用启发式做兜底——命中拒绝模板时
+      // 标记为 sensitive，让上层走 SENSITIVE_FALLBACK 替换。
+      // 这是 fail-close 设计：误报代价是替换为兜底文案，比漏报更安全。
+      if (!finishReason && fullText) {
+        if (heuristicSensitive(fullText)) {
+          finishReason = "sensitive";
+          console.warn("[ai-stream] sensitive heuristic matched; replace with fallback");
+        }
+      }
 
       // 正常收尾：两个迭代器均已终止，释放引用（幂等）
       releaseActiveRes();
