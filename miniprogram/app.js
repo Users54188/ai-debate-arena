@@ -12,10 +12,18 @@ App({
       console.error("CloudBase SDK not available, check base library version.");
     } else {
       console.log('onLaunch called, init cloud...');
-      wx.cloud.init({
-        env: config.envId,
-        traceUser: true,
-      }).then(()=>console.log('cloud init OK')).catch(e=>console.error('cloud init FAIL:',e));
+      // 修复：wx.cloud.init 为同步调用且不返回 Promise，
+      // 链式 .then() 会抛 TypeError 中断 onLaunch，导致后续
+      // silentRegister / 版本检查 / 隐私授权全部不执行
+      try {
+        wx.cloud.init({
+          env: config.envId,
+          traceUser: true,
+        });
+        console.log('cloud init OK');
+      } catch (e) {
+        console.error('cloud init FAIL:', e);
+      }
     }
 
     // 静默建档：首次进入即创建 users 文档（服务端 openid 稳定，无需 wx.login 换 code）

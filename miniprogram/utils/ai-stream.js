@@ -74,6 +74,31 @@ async function streamText(opts) {
   let retries = 0;
   let provider;
 
+  // 当前 attempt 已建立的流式响应；失败/结束时必须释放，
+  // 否则半开连接持续占用云 AI 单用户并发额度——累积数轮后触发
+  // EXCEED_CONCURRENT_REQUEST_LIMIT，表现为"对话几轮后 AI 永远不再回复"
+  let activeRes = null;
+
+  /** 尽力关闭流迭代器以释放底层连接。带超时防护：return() 本身挂起时不阻塞主流程 */
+  async function closeIterator(iter, timeoutMs) {
+    if (!iter || typeof iter.return !== "function") return;
+    try {
+      await Promise.race([
+        Promise.resolve(iter.return()).catch(() => {}),
+        sleep(timeoutMs || 500),
+      ]);
+    } catch (e) {}
+  }
+
+  /** 释放当前 attempt 的流（eventStream + textStream），幂等可重入 */
+  function releaseActiveRes() {
+    const r = activeRes;
+    activeRes = null;
+    if (!r) return;
+    closeIterator(r.eventStream);
+    closeIterator(r.textStream);
+  }
+
   async function attempt() {
     try {
       // createModel 放在 try 内：wx.cloud.extend.AI 不可用（基础库过低或云开发未初始化）
@@ -82,6 +107,7 @@ async function streamText(opts) {
       const res = await provider.streamText({
         data: { model, messages: safeMessages },
       });
+      activeRes = res;
 
       // 兼容性修复：避免使用 ES2018 的 for-await-of 语法（部分真机 XWeb 内核不支持，
       // 会导致整个文件解析失败 → require 失败 → 引用本模块的页面全部白屏）。
@@ -116,10 +142,10 @@ async function streamText(opts) {
       let usage = null;
       let note = "";
       let finishReason = "";
+      const evtIter = res.eventStream;
       try {
         const consume = (async () => {
           // 同上：避免 for-await-of 语法，改用 while + await next()
-          const evtIter = res.eventStream;
           while (true) {
             const r = await evtIter.next();
             if (r.done) break;
@@ -146,13 +172,26 @@ async function streamText(opts) {
       } catch (e) {
         console.warn("[ai-stream] eventStream read skipped:", e && e.message);
       }
+      // 关键修复（连接泄漏）：race 超时说明 eventStream 在 textStream 结束后挂起
+      // （不吐 [DONE]），必须主动 return() 终止挂起的迭代器释放底层 SSE 连接。
+      // 否则每轮对话泄漏一条连接，累积到云 AI 并发上限后新流全部被拒，
+      // 对话在数轮后永远无法继续。正常完成时 return() 为 no-op，无副作用。
+      await closeIterator(evtIter);
 
       // usage 落库
       trackUsage(mode, model, usage);
 
+      // 正常收尾：两个迭代器均已终止，释放引用（幂等）
+      releaseActiveRes();
+
       onStreamEnd && onStreamEnd({ fullText, usage, note, finishReason });
       return { fullText, usage, note, finishReason };
     } catch (err) {
+      // 关键修复（连接泄漏）：重试前必须释放本次已建立的流。
+      // textIter.next() 中途失败时 res 已存在，旧流若不取消，
+      // 每次重试都会再泄漏一条连接，加速触发并发上限
+      releaseActiveRes();
+
       const errMsg = (err && err.message) || String(err);
       const isConcurrentLimit = errMsg.includes("EXCEED_CONCURRENT_REQUEST_LIMIT");
 

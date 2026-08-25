@@ -40,8 +40,17 @@
     <view wx:if="{{quotaExhausted}}" class="notice">
       今日 L1 会话次数已用完，明日再会
     </view>
+    <!-- 多重判定之一：AI 认为思辨已充分（软信号，可继续追问也可结束） -->
+    <view wx:if="{{aiEndSuggested && !roundLimitReached && !streaming}}" class="ai-end-tip">
+      <text class="ai-end-text">苏格拉底认为这次思辨已经比较充分</text>
+      <button class="ai-end-btn" bindtap="promptReport" size="mini" hover-class="btn-hover">结束并查看报告</button>
+    </view>
+    <!-- 多重判定之二：用户随时可主动结束 -->
+    <view wx:if="{{!roundLimitReached && !streaming && messages.length > 0}}" class="manual-end">
+      <text class="manual-end-link" bindtap="onManualEnd">结束本次思辨</text>
+    </view>
     <view wx:if="{{roundLimitReached}}" class="notice notice-round">
-      已达 10 轮上限，可查看思辨报告
+      本次思辨已结束，可查看思辨报告
     </view>
   </view>
 </view>

@@ -47,6 +47,10 @@ const APPEND_MAX_RETRIES = 3; // 乐观锁冲突重试上限
 // 服务端配额强校验开关：测试期关闭（保持临时放开）；上线前置 true 启用。
 const ENFORCE_QUOTA = false;
 
+// 测试期配额全放开：强制按 beta 档（999）计算，与 getQuota / userProfile 的
+// 同名开关保持同步；⚠️ 上线前三处一并改回 false 还原正式配额
+const QUOTA_BYPASS = true;
+
 // 段位分档（与 userProfile / getQuota 保持一致）
 const TIERS = {
   new:      { daily: { L1: 3,  L2: 2,  L3: 1 },  maxRounds: 10 },
@@ -78,7 +82,7 @@ async function getUserClassify(OPENID) {
 async function enforceQuotaBeforeCreate(OPENID, mode) {
   if (!ENFORCE_QUOTA) return { ok: true };
   const classify = await getUserClassify(OPENID);
-  const tier = TIERS[classify] || TIERS.new;
+  const tier = QUOTA_BYPASS ? TIERS.beta : (TIERS[classify] || TIERS.new);
   const limit = tier.daily[mode] || 3;
   const maxRounds = tier.maxRounds;
   const { today, tomorrow } = bjTodayRange();
@@ -192,9 +196,11 @@ async function ensureSessionDoc(event) {
   const mode = event.mode || "L1";
   // P1 修复（分享防泄露）：一次性分享令牌，分享链接只带 token 不带 sessionId。
   // token 每会话唯一且不可枚举，仅可只读查看报告（generateReport 校验），拿不到 transcript
+  // P2 加固（上线审计 2026-08-24）：Math.random 非密码学安全，升级 crypto.randomUUID
+  // （Node 14.17+/16+ 内置），128 bit 随机熵，杜绝 token 可预测/可碰撞
   const shareToken =
     event.shareToken ||
-    Math.random().toString(36).slice(2) + Date.now().toString(36) + Math.random().toString(36).slice(2);
+    require("crypto").randomUUID().replace(/-/g, "");
   const res = await db.collection("sessions").add({
     data: {
       openid: OPENID || "",
@@ -298,6 +304,9 @@ exports.main = async (event) => {
           content: rawContent.length > CONTENT_MAX_CHARS ? rawContent.slice(0, CONTENT_MAX_CHARS) : rawContent,
           round: Math.max(1, Number(round) || 1),
         };
+        // status 权威维护（上线审计修正）：原实现仅在裁剪+摘要分支写回，
+        // 导致 status 形同虚设；现随每次 append 按轮次无条件推进
+        const sessionStatus = msg.round >= 10 ? "finished" : "active";
         const ref = db.collection("sessions").doc(sessionId);
 
         // P1 修复（并发丢消息）：recent/transcript 用 _.push 原子追加，round 用 _.max
@@ -313,7 +322,7 @@ exports.main = async (event) => {
             recent: _.push([msg]),
             transcript: _.push([msg]),
             round: _.max([msg.round]),
-            status: "active",
+            status: s.status === "finished" ? "finished" : sessionStatus,
             version: _.inc(1),
             updatedAt: db.serverDate(),
           },
@@ -448,11 +457,21 @@ exports.main = async (event) => {
         if ((s.mode || "L1") !== "L3") {
           return { code: -1, msg: "vote only for L3" };
         }
+        // P1 修复（上线审计 2026-08-24）：一轮一票防刷——原实现可对同一轮重复投票，
+        // 刷高 votes 数量直接影响报告 voteScore 评分
+        const r = Math.max(1, Number(round) || 1);
+        const dup = await db
+          .collection("votes")
+          .where({ openid: OPENID, sessionId, round: r })
+          .count();
+        if ((dup.total || 0) > 0) {
+          return { code: -1, msg: "already voted this round" };
+        }
         await db.collection("votes").add({
           data: {
             openid: OPENID,
             sessionId,
-            round: Math.max(1, Number(round) || 1),
+            round: r,
             side,
             createdAt: db.serverDate(),
           },
@@ -461,6 +480,39 @@ exports.main = async (event) => {
       } catch (e) {
         console.error("[sessionStore] trackVote failed:", e);
         return { code: -1, msg: "trackVote failed" };
+      }
+    }
+
+    case "delete": {
+      // P1 修复（上线审计 2026-08-24）：会话删除收敛到服务端。
+      // 原前端直查直删的问题：① votes 由云函数写入、创建者不是用户，
+      // 小程序端"仅创建者可读写"权限下删不掉 → 孤儿投票数据残留；
+      // ② reports 同理存在删除失败风险。统一在此归属校验后级联删除
+      try {
+        const { sessionId } = event;
+        if (!sessionId) return { code: -1, msg: "sessionId required" };
+        const { OPENID } = cloud.getWXContext();
+        const res = await db.collection("sessions").doc(sessionId).get();
+        const s = res.data || {};
+        if (!s || !s.openid || s.openid !== OPENID) {
+          return { code: -1, msg: "session not found or not owned" };
+        }
+        // 级联删 reports / votes（逐条删，量级小；单条失败不阻断整体）
+        for (const col of ["reports", "votes"]) {
+          try {
+            const sub = await db.collection(col).where({ sessionId }).get();
+            for (const d of sub.data || []) {
+              await db.collection(col).doc(d._id).remove();
+            }
+          } catch (e) {
+            console.warn(`[sessionStore] delete cascade ${col} failed:`, e && e.message);
+          }
+        }
+        await db.collection("sessions").doc(sessionId).remove();
+        return { code: 0, data: { ok: true } };
+      } catch (e) {
+        console.error("[sessionStore] delete failed:", e);
+        return { code: -1, msg: "delete failed" };
       }
     }
 
