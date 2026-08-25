@@ -193,10 +193,14 @@ Page({
 
     try {
       // 安全审核与会话创建并行，缩短首屏延迟
-      const [checkResult, sessionId] = await Promise.all([
+      // 注意：刻意不用数组解构（const [a, b] = ...）——SWC 编译产物会引用
+      // @swc/runtime/_array_with_holes 辅助模块，在灰度基础库/热重载缓存损坏的
+      // 工具组合下该模块缺失，导致整页 JS 加载失败（点击全部无反应）
+      const parallelResults = await Promise.all([
         msgSecCheck(text, 1),
         this.ensureSession(),
       ]);
+      const checkResult = parallelResults[0];
 
       // 审核不通过：撤回本轮气泡并提示（fail-close）
       if (!checkResult.pass) {
