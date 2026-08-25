@@ -159,7 +159,15 @@ Page({
 
   async sendMessage() {
     const text = this.data.inputText.trim();
-    if (!text || this.data.streaming || this.data.roundLimitReached) return;
+    if (!text || this.data.streaming || this.data.roundLimitReached) {
+      // 诊断日志：定位"点击无反应"的具体拦截点（streaming 卡死时此处会持续命中）
+      console.warn("[socrates] send blocked:", {
+        empty: !text,
+        streaming: this.data.streaming,
+        roundLimitReached: this.data.roundLimitReached,
+      });
+      return;
+    }
     // 防御性检查：配额耗尽时按钮虽然已 disabled，但仍显式提示
     // （与 dual / debate 行为一致，避免用户不知道为什么没反应）
     if (this.data.quotaExhausted) {
@@ -366,6 +374,8 @@ Page({
           streaming: false,
           waitingFirstChunk: false,
         });
+        // 明确的失败反馈：避免用户只看到气泡文案变化而误以为"点击无反应"
+        wx.showToast({ title: "AI 服务无响应，请稍后重试", icon: "none", duration: 2500 });
       },
     });
   },

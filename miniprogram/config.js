@@ -53,6 +53,11 @@ module.exports = {
   streamIdleTimeoutMs: 30000,
   streamTotalTimeoutMs: 90000,
 
+  // 建连超时（ms）：aiModel.streamText() 本身也可能被网关挂起（并发额度耗尽时
+  // 表现为半开等待而非报错），无超时则 await 永久阻塞——"第 3 次点击无反应"的
+  // 直接根因。超时后走重试（新实例）→ 仍失败 → onError 明确提示
+  streamConnectTimeoutMs: 15000,
+
   // 云函数名
   cloudFunctions: {
     sessionStore: "sessionStore",
