@@ -23,6 +23,14 @@ const config = require("../../config");
 
 const SENSITIVE_FALLBACK = "这个话题不太适合展开，我们换一个思辨话题吧。";
 
+/** AI 收尾判定标记（prompt 约定：思辨充分时模型在回复末尾另起一行输出 [[END]]） */
+const END_MARK_RE = /\[\[\s*end\s*\]\]/i;
+
+/** 剥离收尾标记（容错空格/换行），返回干净文本用于渲染与落库 */
+function stripEndMark(text) {
+  return String(text || "").replace(/\n*\s*\[\[\s*end\s*\]\]\s*/gi, "").trim();
+}
+
 /** 展示用消息（role 保留业务角色，供组件渲染头像/配色） */
 function displayMsg(role, content) {
   return { role, content };
@@ -45,6 +53,7 @@ Page({
     round: 0,
     quotaExhausted: false,
     roundLimitReached: false,
+    aiEndSuggested: false, // AI 收尾判定：认为思辨已充分（软信号，可继续追问）
     loading: true,
   },
 
@@ -68,6 +77,9 @@ Page({
   },
 
   async checkQuota() {
+    // 测试期旁路：配额放开（config.quotaBypass）时跳过查询，避免当日历史会话数
+    // 达到旧版云函数的 new 档上限后，sendMessage 被静默拦截（表现为"N 轮后点不动"）
+    if (config.quotaBypass) return;
     try {
       const res = await wx.cloud.callFunction({
         name: config.cloudFunctions.getQuota,
@@ -101,6 +113,13 @@ Page({
     if (!data.sessionId) {
       // 区分配额耗尽（code:-2）与其他错误，让前端提示更准确
       if (result.code === -2) {
+        // 测试期旁路：云端尚未部署 QUOTA_BYPASS 版云函数时，
+        // 降级为"不落库继续对话"，保证测试不中断
+        if (config.quotaBypass) {
+          this.sessionId = "";
+          wx.showToast({ title: "测试模式：本次对话暂不入库", icon: "none", duration: 2000 });
+          return "";
+        }
         this.setData({ quotaExhausted: true });
         const err = new Error("quota_exhausted");
         err.code = -2;
@@ -115,6 +134,8 @@ Page({
 
   /** 从云端恢复会话上下文（recent 8 轮 + 滚动摘要），并同步轮数 */
   async loadSessionContext() {
+    // 测试旁路降级（sessionId 为空 = 不落库模式）：跳过云端读取
+    if (!this.sessionId) return [];
     const res = await wx.cloud.callFunction({
       name: config.cloudFunctions.sessionStore,
       data: { action: "get", sessionId: this.sessionId },
@@ -148,6 +169,9 @@ Page({
 
     const newRound = this.data.round + 1;
     if (newRound > config.maxRounds) return;
+
+    // 用户无视 AI 的收尾建议继续追问：清除建议态
+    if (this.data.aiEndSuggested) this.setData({ aiEndSuggested: false });
 
     // 优化：点击立即上屏用户消息 + 思考态，避免串行云调用期间"假死"
     const msgIndex = this.data.messages.length + 1; // 苏格拉底流式气泡的位置
@@ -215,6 +239,8 @@ Page({
 
   /** 落库单条消息（user 在流式前、assistant 在流式后；入参 role 为 API 角色） */
   async persistMessage(role, content, round) {
+    // 不落库模式（测试旁路降级 / 会话不存在）：静默跳过
+    if (!this.sessionId) return;
     try {
       const res = await wx.cloud.callFunction({
         name: config.cloudFunctions.sessionStore,
@@ -235,8 +261,32 @@ Page({
 
   async runStream(apiMessages, msgIndex, newRound) {
     const self = this;
-    let streamingContent = "";
+    let streamingContent = ""; // 模型原始输出（可能含 [[END]] 收尾标记）
+    let renderedLen = 0;       // 已渲染到气泡的长度（标记扣留后）
     const chat = self.selectComponent("#chat");
+
+    // 流式防闪现：[[END]] 标记可能分片到达，从最后一个 "[" 起扣留不下发；
+    // 若最终不是标记，流结束时补发剩余部分
+    const HOLD_WINDOW = 10;
+    const flushSafe = () => {
+      let safeLen = streamingContent.length;
+      if (safeLen > renderedLen) {
+        const windowStart = Math.max(renderedLen, safeLen - HOLD_WINDOW);
+        const braceIdx = streamingContent.lastIndexOf("[", safeLen - 1);
+        if (braceIdx >= windowStart) safeLen = braceIdx;
+      }
+      if (safeLen > renderedLen) {
+        const delta = streamingContent.slice(renderedLen, safeLen);
+        renderedLen = safeLen;
+        if (chat) {
+          chat.appendChunk(delta);
+        } else {
+          const updated = [...self.data.messages];
+          updated[msgIndex] = displayMsg("socrates", streamingContent.slice(0, renderedLen));
+          self.setData({ messages: updated });
+        }
+      }
+    };
 
     await streamText({
       model: config.model.chat,
@@ -244,23 +294,22 @@ Page({
       mode: "L1",
       onChunk(delta) {
         streamingContent += delta;
-        // 性能优化：调用组件局部更新方法，避免每秒数十次全量 setData 重渲染
-        if (chat) {
-          chat.appendChunk(delta);
-        } else {
-          // 组件查询失败时回退到旧路径
-          const updated = [...self.data.messages];
-          updated[msgIndex] = displayMsg("socrates", streamingContent);
-          self.setData({ messages: updated });
-        }
+        flushSafe();
         if (self.data.waitingFirstChunk) {
           self.setData({ waitingFirstChunk: false });
         }
       },
       onStreamEnd: async ({ fullText, finishReason }) => {
-        // 输出审核未通过：撤回内容，替换兜底文案
+        // AI 收尾判定：剥离 [[END]] 标记并置建议态——多重判定之一，
+        // 属软信号：只提示"可结束"，不锁定输入，用户仍可继续追问
+        let aiSuggested = false;
         const safe = finishReason === "sensitive";
         let finalText = safe ? SENSITIVE_FALLBACK : fullText;
+
+        if (!safe && END_MARK_RE.test(finalText)) {
+          aiSuggested = true;
+          finalText = stripEndMark(finalText);
+        }
 
         // P1 修复（输出二次审核）：finish_reason 非 sensitive 时也再做一次 msgSecCheck
         // 防 finish_reason 漏报；degraded（审核服务异常）时不撤回（fail-open，
@@ -283,9 +332,11 @@ Page({
           messages: finalMessages,
           streaming: false,
           waitingFirstChunk: false,
+          aiEndSuggested: aiSuggested,
         });
 
-        // 苏格拉底回复落库（API 角色 assistant；sessionStore append 只接受 user|assistant）
+        // 苏格拉底回复落库（API 角色 assistant；sessionStore append 只接受 user|assistant）；
+        // 落库剥离标记后的干净文本，避免报告/下一轮上下文被标记污染
         await self.persistMessage("assistant", finalText, newRound);
 
         if (newRound >= config.maxRounds) {
@@ -306,11 +357,28 @@ Page({
     });
   },
 
-  /** 10 轮结束：引导进入报告页（W3 已实现；sessionId 为空时报告页显示"会话不存在"防御） */
+  /** 用户主动结束（多重判定之二）：确认后锁定输入并引导生成报告 */
+  onManualEnd() {
+    if (this.data.roundLimitReached || this.data.streaming) return;
+    if (!this.data.messages.length) return;
+    wx.showModal({
+      title: "结束思辨",
+      content: "确定现在结束并生成思辨报告吗？",
+      confirmText: "结束",
+      cancelText: "继续聊",
+      success: (res) => {
+        if (!res.confirm) return;
+        this.setData({ roundLimitReached: true, aiEndSuggested: false });
+        this.promptReport();
+      },
+    });
+  },
+
+  /** 思辨结束：引导进入报告页（三重判定共用出口；sessionId 为空时报告页显示"会话不存在"防御） */
   promptReport() {
     wx.showModal({
       title: "思辨完成",
-      content: "已达 10 轮上限，去看看你的思辨报告吧。",
+      content: "去看看你的思辨报告吧。",
       confirmText: "查看报告",
       cancelText: "再看看",
       success: (res) => {

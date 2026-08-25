@@ -35,6 +35,15 @@ const DEFAULT_RETENTION_DAYS = 30;
 const BATCH_LIMIT = 100; // 单次扫描上限，避免一次删太多导致超时
 
 exports.main = async (event = {}) => {
+  // P0 安全修复（上线审计 2026-08-24）：本函数可按 retentionDays 批量删除全站数据。
+  // 定时触发器与云开发控制台手动测试均不携带用户身份（OPENID 为空）；
+  // 小程序端调用必然携带用户身份——一律拒绝，防止攻击者传 retentionDays:1 清空全站数据
+  const { OPENID } = cloud.getWXContext();
+  if (OPENID) {
+    console.warn(`[cleanupData] user-invoked call blocked, openid=${OPENID}`);
+    return { code: -1, msg: "forbidden: this function is timer-only" };
+  }
+
   const dryRun = event.dryRun === true;
   const retentionDays = Math.max(1, Number(event.retentionDays) || DEFAULT_RETENTION_DAYS);
 

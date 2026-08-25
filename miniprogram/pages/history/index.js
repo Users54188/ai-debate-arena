@@ -84,12 +84,16 @@ Page({
       success: async (res) => {
         if (!res.confirm) return;
         try {
-          const db = wx.cloud.database();
-          await db.collection("sessions").doc(id).remove();
-          await db
-            .collection("reports")
-            .where({ sessionId: id })
-            .remove();
+          // P1 修复（上线审计 2026-08-24）：改走 sessionStore.delete 云函数，
+          // 服务端归属校验后级联删 sessions/reports/votes。
+          // 原前端直删在"仅创建者可读写"权限下删不掉云函数写入的 votes/reports（孤儿数据）
+          const delRes = await wx.cloud.callFunction({
+            name: config.cloudFunctions.sessionStore,
+            data: { action: "delete", sessionId: id },
+          });
+          if (!delRes.result || delRes.result.code !== 0) {
+            throw new Error((delRes.result && delRes.result.msg) || "delete failed");
+          }
           wx.showToast({ title: "已删除", icon: "success" });
           this.loadHistory();
         } catch (err) {

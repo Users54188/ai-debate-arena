@@ -38,8 +38,12 @@ const TIERS = {
 // 内测白名单（测试期无限配额）。TODO-上线前清空：勿在此硬编码生产账号。
 const BETA_OPENIDS = [];
 
+// 测试期配额全放开：所有用户按 beta 档（999）计算并写回 users.classify，
+// 与 getQuota / sessionStore 的同名开关保持同步；⚠️ 上线前三处一并改回 false
+const QUOTA_BYPASS = true;
+
 function computeClassify(stats) {
-  if (stats.beta) return "beta";
+  if (QUOTA_BYPASS || stats.beta) return "beta";
   const r = stats.totalRounds || 0;
   if (r >= 200) return "king";
   if (r >= 120) return "diamond";
@@ -167,7 +171,8 @@ exports.main = async (event) => {
 
   if (action === "ensure") {
     const openid = await ensureUser(OPENID || "");
-    return { code: 0, data: { openid, classify: BETA_OPENIDS.includes(openid) ? "beta" : "new" } };
+    const classify = QUOTA_BYPASS || BETA_OPENIDS.includes(openid) ? "beta" : "new";
+    return { code: 0, data: { openid, classify } };
   }
 
   if (action === "get") {
