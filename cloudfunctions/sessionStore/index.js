@@ -516,6 +516,50 @@ exports.main = async (event) => {
       }
     }
 
+    case "saveReport": {
+      // 前端降级生成的报告落库（2026-08-25）：generateReport 云函数受 3s 默认
+      // 超时限制（config.json timeout 部署不生效），模型调用必超时；前端走
+      // wx.cloud.extend.AI 同通道生成后经此落库。归属校验 + 字段白名单 + 幂等 set
+      try {
+        const { sessionId, report } = event;
+        if (!sessionId || !report || typeof report !== "object") {
+          return { code: -1, msg: "sessionId and report required" };
+        }
+        const { OPENID } = cloud.getWXContext();
+        const sessionRes = await db.collection("sessions").doc(sessionId).get();
+        const s = sessionRes.data || {};
+        if (!s || !s.openid || s.openid !== OPENID) {
+          return { code: -1, msg: "session not found or not owned" };
+        }
+        // 字段白名单：不透传客户端任意对象
+        const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, Number(n) || 0));
+        const reportDoc = {
+          openid: OPENID,
+          sessionId,
+          mode: ["L1", "L2", "L3"].includes(report.mode) ? report.mode : "L1",
+          score: clamp(report.score, 0, 100),
+          baseScore: clamp(report.baseScore, 0, 100),
+          depthScore: clamp(report.depthScore, 0, 100),
+          fixScore: clamp(report.fixScore, 0, 100),
+          strategyTags: Array.isArray(report.strategyTags) ? report.strategyTags.slice(0, 50) : [],
+          fallacies: Array.isArray(report.fallacies) ? report.fallacies.slice(0, 50) : [],
+          highlights: Array.isArray(report.highlights) ? report.highlights.slice(0, 10) : [],
+          reportText: String(report.reportText || "").slice(0, 2000),
+          degraded: report.degraded === true,
+          source: "client-fallback",
+          createdAt: db.serverDate(),
+        };
+        await db.collection("reports").doc(sessionId).set({ data: reportDoc });
+        await db.collection("sessions").doc(sessionId)
+          .update({ data: { status: "finished", updatedAt: db.serverDate() } })
+          .catch(() => {});
+        return { code: 0, data: { reportId: sessionId, report: reportDoc } };
+      } catch (e) {
+        console.error("[sessionStore] saveReport failed:", e);
+        return { code: -1, msg: "saveReport failed" };
+      }
+    }
+
     default:
       return { code: -1, msg: `Unknown action: ${action}` };
   }
