@@ -72,7 +72,6 @@ async function streamText(opts) {
   let accumulated = "";
   let lastFlush = Date.now();
   let retries = 0;
-  let provider;
 
   // 当前 attempt 已建立的流式响应；失败/结束时必须释放，
   // 否则半开连接持续占用云 AI 单用户并发额度——累积数轮后触发
@@ -102,9 +101,11 @@ async function streamText(opts) {
   async function attempt() {
     try {
       // createModel 放在 try 内：wx.cloud.extend.AI 不可用（基础库过低或云开发未初始化）
-      // 时抛错，走统一重试/错误回调，不产生未捕获异常
-      provider = provider || createModel();
-      const res = await provider.streamText({
+      // 时抛错，走统一重试/错误回调，不产生未捕获异常。
+      // 上线审计加固：每次尝试新建实例——实测 SDK 复用实例时内部连接不随迭代器
+      // return() 释放，新实例可隔离旧实例的残留连接状态
+      const aiModel = createModel();
+      const res = await aiModel.streamText({
         data: { model, messages: safeMessages },
       });
       activeRes = res;
@@ -112,14 +113,38 @@ async function streamText(opts) {
       // 兼容性修复：避免使用 ES2018 的 for-await-of 语法（部分真机 XWeb 内核不支持，
       // 会导致整个文件解析失败 → require 失败 → 引用本模块的页面全部白屏）。
       // 改用 ES2017 的 while + await iter.next()，运行时行为完全等价。
+      //
+      // watchdog（上线审计加固）：textIter.next() 半开挂起时原实现会永久阻塞，
+      // streaming 标志无法复位导致输入框锁死（"第 N 轮后发不出去"的另一种形态）。
+      // idle 超时判定服务端停止下发；total 超时兜底整条流的最大生命周期。
       const textIter = res.textStream;
+      const IDLE_MS = config.streamIdleTimeoutMs || 30000;
+      const TOTAL_MS = config.streamTotalTimeoutMs || 90000;
+      const startedAt = Date.now();
+      let lastActivity = startedAt;
       while (true) {
-        const r = await textIter.next();
-        if (r.done) break;
-        const chunk = r.value;
+        const waitIdle = sleep(IDLE_MS).then(() => { throw new Error("STREAM_IDLE_TIMEOUT"); });
+        const waitTotal = sleep(Math.max(1, TOTAL_MS - (Date.now() - startedAt)))
+          .then(() => { throw new Error("STREAM_TOTAL_TIMEOUT"); });
+        let step;
+        try {
+          step = await Promise.race([textIter.next(), waitIdle, waitTotal]);
+        } catch (e) {
+          const msg = (e && e.message) || "";
+          if (/STREAM_(IDLE|TOTAL)_TIMEOUT/.test(msg)) {
+            closeIterator(textIter);
+            throw new Error(msg === "STREAM_IDLE_TIMEOUT"
+              ? "stream idle timeout, upstream stalled"
+              : "stream total timeout");
+          }
+          throw e;
+        }
+        if (step.done) break;
+        const chunk = step.value;
         fullText += chunk;
         accumulated += chunk;
-        const now = Date.now();
+        lastActivity = Date.now();
+        const now = lastActivity;
         if (now - lastFlush >= STREAM_THROTTLE) {
           onChunk && onChunk(accumulated);
           accumulated = "";
@@ -134,51 +159,50 @@ async function streamText(opts) {
       }
 
       // 从 eventStream 提取 usage / note / finish_reason
-      // 超时防护：即使 eventStream 挂起或不可读，也不阻塞 onStreamEnd
-      // ⚠️ event.data 是 SSE 原始 payload 字符串（JSON 字符串或 "[DONE]"），
-      //    不是结构化对象。usage/finish_reason/note 在 JSON.parse(event.data) 之后。
-      //    来源：微信开放文档 extend.AI 类型声明
-      //    https://developers.weixin.qq.com/miniprogram/dev/wxcloudservice/wxcloud/reference-sdk-api/extend/ai.html
+      // ⚠️ 上线审计加固（2026-08-25）：eventStream 是连接泄漏主源——SDK 对迭代器
+      // return() 不释放底层连接，每轮泄漏一条，累积触发单用户并发上限后所有流式请求
+      // 被拒（EXCEED_CONCURRENT_REQUEST_LIMIT），表现为对话数轮后永远发不出去。
+      // 默认跳过消费（config.streamSkipEventStream=true），usage 遥测随之缺失；
+      // SDK 修复后可将该开关置 false 恢复采集
       let usage = null;
       let note = "";
       let finishReason = "";
-      const evtIter = res.eventStream;
-      try {
-        const consume = (async () => {
-          // 同上：避免 for-await-of 语法，改用 while + await next()
-          while (true) {
-            const r = await evtIter.next();
-            if (r.done) break;
-            const event = r.value;
-            if (event.data === "[DONE]") {
-              if (typeof evtIter.return === "function") {
-                try { await evtIter.return(); } catch (e) {}
+      if (!config.streamSkipEventStream && res.eventStream) {
+        const evtIter = res.eventStream;
+        try {
+          const consume = (async () => {
+            // 同上：避免 for-await-of 语法，改用 while + await next()
+            while (true) {
+              const r = await evtIter.next();
+              if (r.done) break;
+              const event = r.value;
+              if (event.data === "[DONE]") {
+                if (typeof evtIter.return === "function") {
+                  try { await evtIter.return(); } catch (e) {}
+                }
+                break;
               }
-              break;
+              // 解析 JSON payload 提取结构化字段
+              try {
+                const parsed = JSON.parse(event.data);
+                if (parsed.usage) usage = parsed.usage;
+                if (parsed.note) note = parsed.note;
+                const fr = parsed.choices && parsed.choices[0] && parsed.choices[0].finish_reason;
+                if (fr) finishReason = fr;
+              } catch {
+                // 非 JSON 的事件数据，跳过
+              }
             }
-            // 解析 JSON payload 提取结构化字段
-            try {
-              const parsed = JSON.parse(event.data);
-              if (parsed.usage) usage = parsed.usage;
-              if (parsed.note) note = parsed.note;
-              const fr = parsed.choices && parsed.choices[0] && parsed.choices[0].finish_reason;
-              if (fr) finishReason = fr;
-            } catch {
-              // 非 JSON 的事件数据，跳过
-            }
-          }
-        })();
-        await Promise.race([consume, sleep(config.streamEventTimeoutMs || 3000)]);
-      } catch (e) {
-        console.warn("[ai-stream] eventStream read skipped:", e && e.message);
+          })();
+          await Promise.race([consume, sleep(config.streamEventTimeoutMs || 3000)]);
+        } catch (e) {
+          console.warn("[ai-stream] eventStream read skipped:", e && e.message);
+        }
+        // race 超时时主动关闭迭代器尽力释放；正常完成时 return() 为 no-op
+        await closeIterator(evtIter);
       }
-      // 关键修复（连接泄漏）：race 超时说明 eventStream 在 textStream 结束后挂起
-      // （不吐 [DONE]），必须主动 return() 终止挂起的迭代器释放底层 SSE 连接。
-      // 否则每轮对话泄漏一条连接，累积到云 AI 并发上限后新流全部被拒，
-      // 对话在数轮后永远无法继续。正常完成时 return() 为 no-op，无副作用。
-      await closeIterator(evtIter);
 
-      // usage 落库
+      // usage 落库（跳过 eventStream 时 usage 为 null，trackUsage 内部直接返回）
       trackUsage(mode, model, usage);
 
       // 正常收尾：两个迭代器均已终止，释放引用（幂等）

@@ -321,6 +321,16 @@ Page({
   },
 
   promptReport() {
+    // 不入库降级模式（测试旁路下 create 被旧版云函数拒绝）：无会话可生成报告
+    if (!this.sessionId) {
+      wx.showModal({
+        title: "无法生成报告",
+        content: "本次对话未在云端保存（测试降级模式），请先部署新版 sessionStore 云函数后再试。",
+        showCancel: false,
+        confirmText: "知道了",
+      });
+      return;
+    }
     wx.showModal({
       title: "共修完成",
       content: "已达 6 轮上限，去看看你的思辨报告吧。",
@@ -329,7 +339,7 @@ Page({
       success: (res) => {
         if (res.confirm) {
           wx.navigateTo({
-            url: `/pages/report/index?sessionId=${this.sessionId || ""}`,
+            url: `/pages/report/index?sessionId=${this.sessionId}`,
           });
         }
       },
