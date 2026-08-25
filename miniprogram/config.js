@@ -7,6 +7,10 @@ module.exports = {
   // 云开发环境 ID（部署时替换）
   envId: "cloudbase-d3gvaqczs2298c253",
 
+  // 小程序 appid（与 project.config.json 一致）：多端模式下 wx.cloud.init
+  // 必须显式传入 appid，普通小程序模式下传入无害
+  appid: "wxc158769af1e2ce0a",
+
   // ⚠️ 测试期配额旁路总开关（与云函数 getQuota/sessionStore/userProfile 的 QUOTA_BYPASS 联动）
   // true  ：前端 checkQuota 直接视为可用；即使云端尚未部署新版云函数，
   //         create 被 code:-2 拒绝时也降级为"不落库继续对话"，保证随时能聊

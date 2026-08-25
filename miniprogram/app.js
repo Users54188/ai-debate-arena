@@ -18,6 +18,10 @@ App({
       try {
         wx.cloud.init({
           env: config.envId,
+          // 多端模式（wxext 运行时）下必须显式传 appid，否则云开发初始化
+          // 失败（errCode -601002），所有 callFunction 全部不可用；
+          // 普通小程序模式下 appid 从项目配置读取，传入无害
+          appid: config.appid,
           traceUser: true,
         });
         console.log('cloud init OK');
