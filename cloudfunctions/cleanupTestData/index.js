@@ -53,6 +53,12 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 const _ = db.command;
 
+// P0 安全修复（上线审计 2026-08-24）：本函数可删除真实数据，原实现仅靠硬编码
+// confirm 短语防误调用——该短语在源码/文档中公开，任何小程序用户都能直接
+// callFunction 清空全站近 N 天数据（不传 openid 即删所有用户）。
+// 现强制 openid 白名单（与 evalRunner.allowedOpenids 同机制），白名单外一律拒绝。
+const ALLOWED_OPENIDS = ["oT6sTxiwsX1eg7tIu81T5SBn5DaI"]; // 与 evalRunner/config.json 保持一致；上线前按需增删
+
 const CONFIRM_PHRASE = "DELETE_MY_TEST_DATA";
 const DEFAULT_DAYS = 30;
 const BATCH_LIMIT = 500; // 单批扫描上限（云数据库 where+get 默认 100，显式 limit 最多 1000）
@@ -159,6 +165,13 @@ async function deleteByFilter(collection, filter) {
 }
 
 exports.main = async (event = {}) => {
+  // P0 安全修复：白名单鉴权先于一切业务逻辑（含 dryRun 预览，避免向攻击者泄露数据量）
+  const { OPENID } = cloud.getWXContext();
+  if (!ALLOWED_OPENIDS.includes(OPENID || "")) {
+    console.warn(`[cleanupTestData] unauthorized call blocked, openid=${OPENID || "none"}`);
+    return { code: -1, msg: "unauthorized" };
+  }
+
   const dryRun = event.dryRun !== false;
   const days = Math.max(1, Number(event.days) || DEFAULT_DAYS);
   const confirm = String(event.confirm || "");

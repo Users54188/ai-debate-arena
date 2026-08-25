@@ -86,6 +86,8 @@ Page({
   },
 
   async checkQuota() {
+    // 测试期旁路：配额放开时跳过查询，避免旧版云函数的 new 档上限静默拦截对话
+    if (config.quotaBypass) return;
     try {
       const res = await wx.cloud.callFunction({
         name: config.cloudFunctions.getQuota,
@@ -191,6 +193,13 @@ Page({
     const data = result.data || {};
     if (!data.sessionId) {
       if (result.code === -2) {
+        // 测试期旁路：云端尚未部署 QUOTA_BYPASS 版云函数时，
+        // 降级为"不落库继续辩论"，保证测试不中断
+        if (config.quotaBypass) {
+          this.sessionId = "";
+          wx.showToast({ title: "测试模式：本次辩论暂不入库", icon: "none", duration: 2000 });
+          return "";
+        }
         this.setData({ quotaExhausted: true });
         const err = new Error("quota_exhausted");
         err.code = -2;
@@ -323,6 +332,8 @@ Page({
   },
 
   async persistMessage(role, content, round) {
+    // 不落库模式（测试旁路降级 / 会话不存在）：静默跳过
+    if (!this.sessionId) return;
     try {
       const res = await wx.cloud.callFunction({
         name: config.cloudFunctions.sessionStore,

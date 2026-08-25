@@ -545,10 +545,13 @@ exports.main = async (event) => {
     }
 
     // 评分（标注降级：深度分、修正分按 0 和 30 处理）
+    // P0 修复（上线审计 2026-08-24）：L3 路径 annotation 保持 null，
+    // 原 `annotation.strategyTags` 在参数求值时抛 TypeError → L3 报告必失败。
+    // 统一加空值防御，L3 分支实际不消费这两个参数
     const { baseScore, depthScore, fixScore, knowledgeScore, voteScore, debateDepthScore, score } = computeScore(
       round,
-      annotation.strategyTags,
-      annotation.fallacies,
+      (annotation && annotation.strategyTags) || [],
+      (annotation && annotation.fallacies) || [],
       degraded,
       mode,
       knowledge ? knowledge.knowledgeScore : undefined,
@@ -586,12 +589,22 @@ exports.main = async (event) => {
       degraded,
       createdAt: db.serverDate(),
     };
-    const addRes = await db.collection("reports").add({ data: reportDoc });
+    // P1 修复（上线审计 2026-08-24）：以 sessionId 作为 reports 文档 _id，
+    // doc().set() 天然幂等——并发双击生成时后者覆盖前者，不再产生重复报告/
+    // 重复模型调用计费（原 where 检查 + add 存在竞态窗口）
+    await db.collection("reports").doc(sessionId).set({ data: reportDoc });
+
+    // 会话终结标记：报告生成即视为对话结束（三重判定出口统一收敛于此），
+    // 使服务端 status 成为权威状态；失败不阻断报告返回
+    db.collection("sessions")
+      .doc(sessionId)
+      .update({ data: { status: "finished", updatedAt: db.serverDate() } })
+      .catch((e) => console.warn("[generateReport] mark finished failed:", e && e.message));
 
     return {
       code: 0,
       data: {
-        reportId: addRes._id,
+        reportId: sessionId,
         report: reportDoc,
         cached: false,
         degraded,

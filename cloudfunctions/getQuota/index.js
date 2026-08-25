@@ -20,6 +20,10 @@ const _ = db.command;
 // 兜底默认值（用于 classify 缺失或异常情况）
 const DAILY_LIMITS = { L1: 3, L2: 2, L3: 1 };
 
+// 测试期配额全放开：强制按 beta 档（999）计算，与 sessionStore / userProfile 的
+// 同名开关保持同步；⚠️ 上线前三处一并改回 false 还原正式配额
+const QUOTA_BYPASS = true;
+
 // 段位分档：与 userProfile / sessionStore 保持一致
 const TIERS = {
   new:      { daily: { L1: 3,  L2: 2,  L3: 1 },  maxRounds: 10 },
@@ -45,7 +49,7 @@ exports.main = async (event) => {
   const { mode = "L1" } = event;
   const { OPENID } = cloud.getWXContext();
   const classify = await getClassify(OPENID);
-  const tier = TIERS[classify] || TIERS.new;
+  const tier = QUOTA_BYPASS ? TIERS.beta : (TIERS[classify] || TIERS.new);
   const limit = tier.daily[mode] || DAILY_LIMITS[mode] || 3;
 
   // 显式计算北京时间（UTC+8）今日区间，不依赖云函数时区配置
