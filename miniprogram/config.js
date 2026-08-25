@@ -28,6 +28,8 @@ module.exports = {
   },
 
   // 单会话轮次上限（与 TIERS.new.maxRounds 对齐）
+  // 测试期临时缩短便于走通结束流程（产品值为 10）；上线前还原并与 sessionStore 的 status 阈值对齐
+
   maxRounds: 5,
 
   // 流式渲染节流 (ms) —— 降低到 60ms 让首字更快到达，避免感知卡顿
