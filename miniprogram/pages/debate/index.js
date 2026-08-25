@@ -333,6 +333,7 @@ Page({
           const updated = [...this.data.messages];
           updated.splice(msgIndex, 1);
           this.setData({ messages: updated, streaming: false, waitingFirstChunk: false });
+          wx.showToast({ title: "AI 服务无响应，请稍后重试", icon: "none", duration: 2500 });
           reject(err);
         },
       });

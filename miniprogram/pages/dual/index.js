@@ -308,6 +308,7 @@ Page({
           const updated = [...self.data.messages];
           updated[msgIndex] = displayMsg(role, "抱歉，出了点问题。请稍后重试。");
           self.setData({ messages: updated });
+          wx.showToast({ title: "AI 服务无响应，请稍后重试", icon: "none", duration: 2500 });
           reject(err);
         },
       });

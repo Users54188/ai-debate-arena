@@ -159,7 +159,15 @@ Page({
 
   async sendMessage() {
     const text = this.data.inputText.trim();
-    if (!text || this.data.streaming || this.data.roundLimitReached) return;
+    if (!text || this.data.streaming || this.data.roundLimitReached) {
+      // 诊断日志：定位"点击无反应"的具体拦截点（streaming 卡死时此处会持续命中）
+      console.warn("[socrates] send blocked:", {
+        empty: !text,
+        streaming: this.data.streaming,
+        roundLimitReached: this.data.roundLimitReached,
+      });
+      return;
+    }
     // 防御性检查：配额耗尽时按钮虽然已 disabled，但仍显式提示
     // （与 dual / debate 行为一致，避免用户不知道为什么没反应）
     if (this.data.quotaExhausted) {
@@ -185,10 +193,14 @@ Page({
 
     try {
       // 安全审核与会话创建并行，缩短首屏延迟
-      const [checkResult, sessionId] = await Promise.all([
+      // 注意：刻意不用数组解构（const [a, b] = ...）——SWC 编译产物会引用
+      // @swc/runtime/_array_with_holes 辅助模块，在灰度基础库/热重载缓存损坏的
+      // 工具组合下该模块缺失，导致整页 JS 加载失败（点击全部无反应）
+      const parallelResults = await Promise.all([
         msgSecCheck(text, 1),
         this.ensureSession(),
       ]);
+      const checkResult = parallelResults[0];
 
       // 审核不通过：撤回本轮气泡并提示（fail-close）
       if (!checkResult.pass) {
@@ -366,6 +378,8 @@ Page({
           streaming: false,
           waitingFirstChunk: false,
         });
+        // 明确的失败反馈：避免用户只看到气泡文案变化而误以为"点击无反应"
+        wx.showToast({ title: "AI 服务无响应，请稍后重试", icon: "none", duration: 2500 });
       },
     });
   },

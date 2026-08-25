@@ -156,11 +156,28 @@ async function streamText(opts) {
       // createModel 放在 try 内：wx.cloud.extend.AI 不可用（基础库过低或云开发未初始化）
       // 时抛错，走统一重试/错误回调，不产生未捕获异常。
       // 上线审计加固：每次尝试新建实例——实测 SDK 复用实例时内部连接不随迭代器
-      // return() 释放，新实例可隔离旧实例的残留连接状态
-      const aiModel = createModel();
-      const res = await aiModel.streamText({
-        data: { model, messages: safeMessages },
-      });
+      // return() 释放，新实例可隔离旧实例的残留连接状态。
+      //
+      // 建连超时（2026-08-25 二次加固）：并发额度耗尽时 streamText() 建连可能被
+      // 网关挂起（半开等待而非报错），无超时则 await 永久阻塞 → streaming 卡死
+      // → 发送按钮从此无反应。超时抛错走重试（新实例+更长退避）→ 仍失败 → onError
+      const CONNECT_MS = config.streamConnectTimeoutMs || 15000;
+      const connectTimer = armedTimer(CONNECT_MS, "STREAM_CONNECT_TIMEOUT");
+      let res;
+      try {
+        res = await Promise.race([
+          aiModel.streamText({ data: { model, messages: safeMessages } }),
+          connectTimer,
+        ]);
+      } catch (e) {
+        const msg = (e && e.message) || "";
+        if (/STREAM_CONNECT_TIMEOUT/.test(msg)) {
+          throw new Error("stream connect timeout, gateway stalled");
+        }
+        throw e;
+      } finally {
+        connectTimer.cancel();
+      }
       activeRes = res;
 
       // 兼容性修复：避免使用 ES2018 的 for-await-of 语法（部分真机 XWeb 内核不支持，
@@ -301,13 +318,16 @@ async function streamText(opts) {
 
       const errMsg = (err && err.message) || String(err);
       const isConcurrentLimit = errMsg.includes("EXCEED_CONCURRENT_REQUEST_LIMIT");
+      // 并发限制/建连超时类错误：网关侧连接释放需要更长时间（实测远超 5s），
+      // 短退避重试必然再次撞墙——改用长退避（8s、16s）给网关释放窗口
+      const isGatewayStall = isConcurrentLimit || /stream (idle|total|connect) timeout/.test(errMsg);
 
       if (retries < STREAM_TIMEOUT.maxRetries) {
         retries++;
-        const delay = isConcurrentLimit
-          ? STREAM_TIMEOUT.maxDelayMs
+        const delay = isGatewayStall
+          ? Math.min(8000 * retries, 30000)
           : Math.min(STREAM_TIMEOUT.baseDelayMs * Math.pow(2, retries), STREAM_TIMEOUT.maxDelayMs);
-        console.warn(`[ai-stream] retry ${retries}/${STREAM_TIMEOUT.maxRetries}, delay=${delay}ms`);
+        console.warn(`[ai-stream] retry ${retries}/${STREAM_TIMEOUT.maxRetries}, delay=${delay}ms, reason=${errMsg.slice(0, 80)}`);
         await sleep(delay);
         return attempt();
       }
