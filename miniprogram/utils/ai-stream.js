@@ -156,7 +156,8 @@ async function streamText(opts) {
       // createModel 放在 try 内：wx.cloud.extend.AI 不可用（基础库过低或云开发未初始化）
       // 时抛错，走统一重试/错误回调，不产生未捕获异常。
       // 上线审计加固：每次尝试新建实例——实测 SDK 复用实例时内部连接不随迭代器
-      // return() 释放，新实例可隔离旧实例的残留连接状态。
+      // return() 释放，新实例可隔离旧实例的残留连接状态
+      const aiModel = createModel();
       //
       // 建连超时（2026-08-25 二次加固）：并发额度耗尽时 streamText() 建连可能被
       // 网关挂起（半开等待而非报错），无超时则 await 永久阻塞 → streaming 卡死
