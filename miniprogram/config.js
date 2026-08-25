@@ -28,9 +28,7 @@ module.exports = {
   },
 
   // 单会话轮次上限（与 TIERS.new.maxRounds 对齐）
-  // 测试期临时缩短便于走通结束流程（产品值为 10）；上线前还原并与 sessionStore 的 status 阈值对齐
-
-  maxRounds: 5,
+  maxRounds: 10,
 
   // 流式渲染节流 (ms) —— 降低到 60ms 让首字更快到达，避免感知卡顿
   streamThrottle: 60,
@@ -44,6 +42,16 @@ module.exports = {
 
   // eventStream 读取超时防护（ms）：usage/note 提取不阻塞对话主流程
   streamEventTimeoutMs: 3000,
+
+  // ⚠️ 上线审计加固（2026-08-25）：实测微信云 AI SDK 对迭代器 return() 不释放底层
+  // 连接，eventStream 是泄漏主源——默认跳过消费（usage 遥测随之缺失，可接受）。
+  // 若 SDK 后续版本修复，可置 false 恢复 usage 采集
+  streamSkipEventStream: true,
+
+  // 流式 watchdog：相邻 chunk 空闲超过 idle 判定挂起走重试；整条流超过 total 强制终止，
+  // 避免 textIter.next() 半开挂起导致 streaming 标志永久锁死输入框
+  streamIdleTimeoutMs: 30000,
+  streamTotalTimeoutMs: 90000,
 
   // 云函数名
   cloudFunctions: {

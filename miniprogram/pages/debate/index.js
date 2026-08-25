@@ -296,20 +296,28 @@ Page({
           updated[msgIndex] = displayMsg(role, (updated[msgIndex].content || "") + delta, round);
           this.setData({ messages: updated, waitingFirstChunk: false });
         },
+        // 重试时 ai-stream 会从头重发内容：先清空气泡旧文本，避免新旧拼接
+        onChunkReset: () => {
+          const resetMessages = [...this.data.messages];
+          resetMessages[msgIndex] = displayMsg(role, "", round);
+          this.setData({ messages: resetMessages, waitingFirstChunk: false });
+        },
         onStreamEnd: async ({ fullText, finishReason }) => {
           const safe = finishReason === "sensitive";
           let finalText = safe ? SENSITIVE_FALLBACK : fullText;
 
           // P1 修复（输出二次审核）：finish_reason 非 sensitive 时再做一次 msgSecCheck
-          // degraded（审核服务异常）时不撤回
+          // 修复（2026-08-25）：跳过 eventStream 后 finish_reason 已失效，msgSecCheck
+          // 成为最后一道真防线——degraded 时也必须 fail-close（合规优先于体验）。
           if (!safe && finalText) {
             try {
               const outCheck = await msgSecCheck(finalText, 2);
-              if (!outCheck.pass && !outCheck.degraded) {
+              if (!outCheck.pass) {
                 finalText = SENSITIVE_FALLBACK;
               }
             } catch (e) {
-              console.warn(`[debate] ${role} output second-check failed:`, e);
+              console.warn(`[debate] ${role} output second-check failed; fail-close:`, e && e.message);
+              finalText = SENSITIVE_FALLBACK;
             }
           }
 
@@ -387,6 +395,16 @@ Page({
   },
 
   promptReport() {
+    // 不入库降级模式（测试旁路下 create 被旧版云函数拒绝）：无会话可生成报告
+    if (!this.sessionId) {
+      wx.showModal({
+        title: "无法生成报告",
+        content: "本次辩论未在云端保存（测试降级模式），请先部署新版 sessionStore 云函数后再试。",
+        showCancel: false,
+        confirmText: "知道了",
+      });
+      return;
+    }
     wx.showModal({
       title: "辩论结束",
       content: "4 轮辩论已完成，去看看思辨报告吧。",
@@ -395,7 +413,7 @@ Page({
       success: (res) => {
         if (res.confirm) {
           wx.navigateTo({
-            url: "/pages/report/index?sessionId=" + (this.sessionId || ""),
+            url: "/pages/report/index?sessionId=" + this.sessionId,
           });
         }
       },

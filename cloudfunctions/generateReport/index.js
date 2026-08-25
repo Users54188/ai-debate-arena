@@ -117,6 +117,31 @@ ${escapeXml(annotationJson)}
 ${escapeXml(summary || "（无）")}
 </summary>`;
 
+/** 单次模型调用超时（ms）：hy3 偶发挂起会拖满云函数 60s 被强杀导致前端收到
+ *  网络错误（"手动结束后报告生成失败"的根因之一）。race 超时后抛错，
+ *  由各阶段既有的 try/catch 走降级路径，报告仍可产出 fallback 版本。
+ *
+ * 修复（2026-08-25）：原实现 Promise.race 输家的 setTimeout 永远不会被 clearTimeout，
+ *  且其 reject 在云函数实例复用场景下变成 unhandled rejection 累积。用 .finally 清理。
+ *  正常路径下 model 调用 5s 内返回，原实现会留下 40s 的悬挂 timer；修复后立刻撤销。
+ */
+const MODEL_CALL_TIMEOUT_MS = 45000;
+function withTimeout(promise, label, ms = MODEL_CALL_TIMEOUT_MS) {
+  let id;
+  const timeout = new Promise((_, reject) => {
+    id = setTimeout(
+      () => reject(new Error(`model call timeout: ${label}`)),
+      ms
+    );
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    // 关键修复：无论谁赢，输家的 setTimeout 必须撤销，否则：
+    //   1) 云函数实例复用时悬挂 timer 累积成内存泄漏
+    //   2) timer 到点触发 reject 时已无人接住，变成 unhandled rejection
+    if (id !== undefined) clearTimeout(id);
+  });
+}
+
 async function recordUsage(mode, model, usage) {
   try {
     const u = usage || {};
@@ -177,7 +202,8 @@ function extractJson(text) {
 async function annotate(transcriptText, summary, temperature) {
   const ai = cloud.ai();
   const model = ai.createModel("cloudbase");
-  const res = await model.generateText({
+  const gen = (o) => withTimeout(model.generateText(o), "generateText");
+  const res = await gen({
     model: MODEL_ANNOTATE,
     temperature: temperature || 0.2,
     messages: [
@@ -204,7 +230,8 @@ async function annotate(transcriptText, summary, temperature) {
 async function composeReport(annotationJson, summary) {
   const ai = cloud.ai();
   const model = ai.createModel("cloudbase");
-  const res = await model.generateText({
+  const gen = (o) => withTimeout(model.generateText(o), "generateText");
+  const res = await gen({
     model: MODEL_REPORT,
     messages: [
       { role: "system", content: REPORT_PROMPT(annotationJson, summary) },
@@ -222,7 +249,8 @@ async function composeReport(annotationJson, summary) {
 async function assessKnowledge(transcriptText, summary) {
   const ai = cloud.ai();
   const model = ai.createModel("cloudbase");
-  const res = await model.generateText({
+  const gen = (o) => withTimeout(model.generateText(o), "generateText");
+  const res = await gen({
     model: KNOWLEDGE_MODEL,
     temperature: 0.2,
     messages: [
@@ -249,7 +277,8 @@ async function assessKnowledge(transcriptText, summary) {
 async function annotateDebate(transcriptText, summary, temperature) {
   const ai = cloud.ai();
   const model = ai.createModel("cloudbase");
-  const res = await model.generateText({
+  const gen = (o) => withTimeout(model.generateText(o), "generateText");
+  const res = await gen({
     model: MODEL_ANNOTATE,
     temperature: temperature || 0.2,
     messages: [
@@ -276,7 +305,8 @@ async function annotateDebate(transcriptText, summary, temperature) {
 async function composeDebateReport(annotationJson, voteSummary) {
   const ai = cloud.ai();
   const model = ai.createModel("cloudbase");
-  const res = await model.generateText({
+  const gen = (o) => withTimeout(model.generateText(o), "generateText");
+  const res = await gen({
     model: MODEL_REPORT,
     messages: [
       { role: "system", content: L3_REPORT_PROMPT(annotationJson, voteSummary) },

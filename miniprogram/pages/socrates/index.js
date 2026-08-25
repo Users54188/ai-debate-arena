@@ -299,6 +299,15 @@ Page({
           self.setData({ waitingFirstChunk: false });
         }
       },
+      // 重试时 ai-stream 会从头重发内容：先清空气泡旧文本，避免新旧拼接
+      onChunkReset() {
+        streamingContent = "";
+        renderedLen = 0;
+        const resetMessages = [...self.data.messages];
+        resetMessages[msgIndex] = displayMsg("socrates", "");
+        self.setData({ messages: resetMessages });
+        if (chat) chat.buildRenderMessages(resetMessages);
+      },
       onStreamEnd: async ({ fullText, finishReason }) => {
         // AI 收尾判定：剥离 [[END]] 标记并置建议态——多重判定之一，
         // 属软信号：只提示"可结束"，不锁定输入，用户仍可继续追问
@@ -312,16 +321,20 @@ Page({
         }
 
         // P1 修复（输出二次审核）：finish_reason 非 sensitive 时也再做一次 msgSecCheck
-        // 防 finish_reason 漏报；degraded（审核服务异常）时不撤回（fail-open，
-        // 已经过第一道 sensitive 检测，不应让审核服务故障卡死用户）
+        // 修复（2026-08-25）：跳过 eventStream 后 finish_reason 已失效（仅启发式兜底），
+        // msgSecCheck 成为最后一道真防线——degraded（审核服务异常）时也必须 fail-close，
+        // 否则违规内容会在审核故障窗口期内无任何阻挡漏给用户。
+        // 代价：审核服务偶发抖动时用户看到兜底文案而非真回复——合规优先。
         if (!safe && finalText) {
           try {
             const outCheck = await msgSecCheck(finalText, 2);
-            if (!outCheck.pass && !outCheck.degraded) {
+            if (!outCheck.pass) {
               finalText = SENSITIVE_FALLBACK;
             }
           } catch (e) {
-            console.warn("[socrates] output second-check failed:", e);
+            // 异常（含网络层失败）：同样 fail-close，避免任何意外漏过
+            console.warn("[socrates] output second-check failed; fail-close:", e && e.message);
+            finalText = SENSITIVE_FALLBACK;
           }
         }
 
@@ -374,8 +387,18 @@ Page({
     });
   },
 
-  /** 思辨结束：引导进入报告页（三重判定共用出口；sessionId 为空时报告页显示"会话不存在"防御） */
+  /** 思辨结束：引导进入报告页（三重判定共用出口） */
   promptReport() {
+    // 不入库降级模式（测试旁路下 create 被旧版云函数拒绝）：无会话可生成报告
+    if (!this.sessionId) {
+      wx.showModal({
+        title: "无法生成报告",
+        content: "本次对话未在云端保存（测试降级模式），请先部署新版 sessionStore 云函数后再试。",
+        showCancel: false,
+        confirmText: "知道了",
+      });
+      return;
+    }
     wx.showModal({
       title: "思辨完成",
       content: "去看看你的思辨报告吧。",
@@ -384,7 +407,7 @@ Page({
       success: (res) => {
         if (res.confirm) {
           wx.navigateTo({
-            url: `/pages/report/index?sessionId=${this.sessionId || ""}`,
+            url: `/pages/report/index?sessionId=${this.sessionId}`,
           });
         }
       },
