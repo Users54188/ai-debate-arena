@@ -125,7 +125,7 @@ ${escapeXml(summary || "（无）")}
  *  且其 reject 在云函数实例复用场景下变成 unhandled rejection 累积。用 .finally 清理。
  *  正常路径下 model 调用 5s 内返回，原实现会留下 40s 的悬挂 timer；修复后立刻撤销。
  */
-const MODEL_CALL_TIMEOUT_MS = 45000;
+const MODEL_CALL_TIMEOUT_MS = 25000;
 function withTimeout(promise, label, ms = MODEL_CALL_TIMEOUT_MS) {
   let id;
   const timeout = new Promise((_, reject) => {
