@@ -55,16 +55,41 @@ Page({
     roundLimitReached: false,
     aiEndSuggested: false, // AI 收尾判定：认为思辨已充分（软信号，可继续追问）
     loading: true,
+    debugLogs: [], // 临时诊断：浮层日志
+  },
+
+  /** 临时诊断：把日志同时输出到 Console 和顶部浮层（修复后删除） */
+  _dLog(msg, level) {
+    const lv = level || "info";
+    if (lv === "error") console.error(msg);
+    else if (lv === "warn") console.warn(msg);
+    else console.log(msg);
+    const ts = new Date();
+    const stamp = ("0" + ts.getHours()).slice(-2) + ":" +
+                  ("0" + ts.getMinutes()).slice(-2) + ":" +
+                  ("0" + ts.getSeconds()).slice(-2) + "." +
+                  ("00" + ts.getMilliseconds()).slice(-3);
+    const entry = { msg: "[" + stamp + "] " + msg, level: lv };
+    const next = (this.data.debugLogs || []).concat([entry]).slice(-30);
+    this.setData({ debugLogs: next });
+  },
+
+  /** 临时诊断：清空浮层日志 */
+  onDebugClear() {
+    this.setData({ debugLogs: [] });
   },
 
   onLoad() {
+    this._dLog("onLoad entered", "step");
     try {
       this.sessionId = null;
       this.sessionSummary = "";
+      this._dLog("onLoad calling checkQuota, quotaBypass=" + config.quotaBypass, "step");
       this.checkQuota();
       this.setData({ loading: false });
+      this._dLog("onLoad done, loading=false", "step");
     } catch (e) {
-      console.error("[socrates] onLoad failed:", e);
+      this._dLog("onLoad FAILED: " + (e && e.message), "error");
       this.setData({ loading: false });
     }
   },
@@ -79,13 +104,18 @@ Page({
   async checkQuota() {
     // 测试期旁路：配额放开（config.quotaBypass）时跳过查询，避免当日历史会话数
     // 达到旧版云函数的 new 档上限后，sendMessage 被静默拦截（表现为"N 轮后点不动"）
-    if (config.quotaBypass) return;
+    if (config.quotaBypass) {
+      this._dLog("checkQuota: quotaBypass=true, 跳过", "info");
+      return;
+    }
+    this._dLog("checkQuota: 调用 getQuota 云函数", "step");
     try {
       const res = await wx.cloud.callFunction({
         name: config.cloudFunctions.getQuota,
         data: { mode: "L1" },
       });
       const q = (res.result && res.result.data) || {};
+      this._dLog("checkQuota 返回: used=" + q.used + " limit=" + q.limit + " available=" + q.available, "info");
       const exhausted = !q.available && q.used >= q.limit;
       const wasExhausted = this.data.quotaExhausted;
       if (exhausted !== wasExhausted) {
@@ -96,13 +126,17 @@ Page({
         }
       }
     } catch (e) {
-      console.error("[socrates] quota check failed:", e);
+      this._dLog("checkQuota 失败: " + ((e && e.message) || e), "error");
     }
   },
 
   /** 首轮时创建会话（配额按 sessions 表 openid+mode+当日统计） */
   async ensureSession() {
-    if (this.sessionId) return this.sessionId;
+    if (this.sessionId) {
+      this._dLog("ensureSession: 已有 sessionId=" + this.sessionId, "info");
+      return this.sessionId;
+    }
+    this._dLog("ensureSession: 调用 sessionStore.create", "step");
 
     const res = await wx.cloud.callFunction({
       name: config.cloudFunctions.sessionStore,
@@ -110,32 +144,41 @@ Page({
     });
     const result = res.result || {};
     const data = result.data || {};
+    this._dLog("ensureSession 返回 code=" + result.code + " sessionId=" + (data.sessionId || "空"), "info");
     if (!data.sessionId) {
       // 区分配额耗尽（code:-2）与其他错误，让前端提示更准确
       if (result.code === -2) {
         // 测试期旁路：云端尚未部署 QUOTA_BYPASS 版云函数时，
         // 降级为"不落库继续对话"，保证测试不中断
         if (config.quotaBypass) {
+          this._dLog("ensureSession: code=-2 + quotaBypass,降级为空 sessionId", "warn");
           this.sessionId = "";
           wx.showToast({ title: "测试模式：本次对话暂不入库", icon: "none", duration: 2000 });
           return "";
         }
+        this._dLog("ensureSession: 配额耗尽,抛错", "error");
         this.setData({ quotaExhausted: true });
         const err = new Error("quota_exhausted");
         err.code = -2;
         err.userMsg = "今日 L1 会话次数已用完，明日再会";
         throw err;
       }
+      this._dLog("ensureSession: 创建失败,抛错: " + (result.msg || "unknown"), "error");
       throw new Error("session create failed: " + (result.msg || "unknown"));
     }
     this.sessionId = data.sessionId;
+    this._dLog("ensureSession 成功, sessionId=" + this.sessionId, "info");
     return this.sessionId;
   },
 
   /** 从云端恢复会话上下文（recent 8 轮 + 滚动摘要），并同步轮数 */
   async loadSessionContext() {
     // 测试旁路降级（sessionId 为空 = 不落库模式）：跳过云端读取
-    if (!this.sessionId) return [];
+    if (!this.sessionId) {
+      this._dLog("loadSessionContext: sessionId 空,返回空数组", "info");
+      return [];
+    }
+    this._dLog("loadSessionContext: 调用 sessionStore.get", "step");
     const res = await wx.cloud.callFunction({
       name: config.cloudFunctions.sessionStore,
       data: { action: "get", sessionId: this.sessionId },
@@ -143,9 +186,11 @@ Page({
     const session = (res.result && res.result.data && res.result.data.session) || {};
     this.sessionSummary = session.summary || "";
     const round = session.round || 0;
+    this._dLog("loadSessionContext 返回: round=" + round + " recent=" + ((session.recent || []).length) + "条 status=" + (session.status || "空"), "info");
 
     // 云端已完成 10 轮（例如上次会话已结束）→ 直接封顶
     if (round >= config.maxRounds) {
+      this._dLog("loadSessionContext: round(" + round + ") >= maxRounds(" + config.maxRounds + "),封顶", "warn");
       this.setData({ roundLimitReached: true, round: round });
       return null;
     }
@@ -159,24 +204,26 @@ Page({
 
   async sendMessage() {
     const text = this.data.inputText.trim();
+    this._dLog("sendMessage 入口 text=" + (text ? "Y" : "N") + " streaming=" + this.data.streaming + " roundLimit=" + this.data.roundLimitReached + " round=" + this.data.round, "step");
     if (!text || this.data.streaming || this.data.roundLimitReached) {
       // 诊断日志：定位"点击无反应"的具体拦截点（streaming 卡死时此处会持续命中）
-      console.warn("[socrates] send blocked:", {
-        empty: !text,
-        streaming: this.data.streaming,
-        roundLimitReached: this.data.roundLimitReached,
-      });
+      this._dLog("BLOCKED: text=" + (!text ? "空" : "Y") + " streaming=" + this.data.streaming + " roundLimit=" + this.data.roundLimitReached, "warn");
       return;
     }
     // 防御性检查：配额耗尽时按钮虽然已 disabled，但仍显式提示
     // （与 dual / debate 行为一致，避免用户不知道为什么没反应）
     if (this.data.quotaExhausted) {
+      this._dLog("BLOCKED: quotaExhausted", "warn");
       wx.showToast({ title: "今日 L1 会话次数已用完，明日再会", icon: "none", duration: 2500 });
       return;
     }
 
     const newRound = this.data.round + 1;
-    if (newRound > config.maxRounds) return;
+    this._dLog("newRound=" + newRound + " maxRounds=" + config.maxRounds, "info");
+    if (newRound > config.maxRounds) {
+      this._dLog("BLOCKED: newRound > maxRounds", "warn");
+      return;
+    }
 
     // 用户无视 AI 的收尾建议继续追问：清除建议态
     if (this.data.aiEndSuggested) this.setData({ aiEndSuggested: false });
@@ -190,6 +237,7 @@ Page({
       waitingFirstChunk: true,
       round: newRound,
     });
+    this._dLog("UI 更新完成,准备 msgSecCheck + ensureSession 并行", "step");
 
     try {
       // 安全审核与会话创建并行，缩短首屏延迟
@@ -201,9 +249,11 @@ Page({
         this.ensureSession(),
       ]);
       const checkResult = parallelResults[0];
+      this._dLog("并行调用完成,checkResult.pass=" + checkResult.pass + " degraded=" + checkResult.degraded + " sessionId=" + (this.sessionId || "空"), "info");
 
       // 审核不通过：撤回本轮气泡并提示（fail-close）
       if (!checkResult.pass) {
+        this._dLog("审核不通过,撤回气泡", "warn");
         const restored = this.data.messages.slice();
         restored.splice(msgIndex - 1, 2);
         this.setData({ messages: restored, inputText: text, streaming: false, waitingFirstChunk: false });
@@ -215,13 +265,17 @@ Page({
         return;
       }
 
+      this._dLog("调用 loadSessionContext", "step");
       const recent = await this.loadSessionContext();
+      this._dLog("loadSessionContext 返回 recent=" + (recent === null ? "null(满上限)" : Array.isArray(recent) ? recent.length + "条" : "其他"), "info");
       if (recent === null) {
         this.setData({ streaming: false, waitingFirstChunk: false });
+        this._dLog("recent=null,已满上限,退出", "warn");
         return; // 已满上限
       }
 
       // 用户消息落库与流式生成并行（落库不阻塞首字渲染）
+      this._dLog("调用 persistMessage(user)", "step");
       this.persistMessage("user", text, newRound);
 
       // 组装 API context：system + 滚动摘要 + 历史（role 已映射）+ 本轮用户输入
@@ -233,10 +287,11 @@ Page({
         ...recentToApi(recent),
         { role: "user", content: text },
       ];
+      this._dLog("组装 apiMessages 完成,共 " + apiMessages.length + " 条,准备 runStream", "step");
 
       await this.runStream(apiMessages, msgIndex, newRound);
     } catch (e) {
-      console.error("[socrates] send failed:", e);
+      this._dLog("sendMessage 异常: " + ((e && e.message) || e) + " code=" + (e && e.code), "error");
       // 清除本轮已 push 的用户气泡与空回复气泡，恢复输入框
       const restored = this.data.messages.slice();
       restored.splice(msgIndex - 1, 2);
@@ -276,6 +331,7 @@ Page({
     let streamingContent = ""; // 模型原始输出（可能含 [[END]] 收尾标记）
     let renderedLen = 0;       // 已渲染到气泡的长度（标记扣留后）
     const chat = self.selectComponent("#chat");
+    self._dLog("runStream 入口 newRound=" + newRound + " chat=" + (chat ? "Y" : "N"), "step");
 
     // 流式防闪现：[[END]] 标记可能分片到达，从最后一个 "[" 起扣留不下发；
     // 若最终不是标记，流结束时补发剩余部分
@@ -300,6 +356,7 @@ Page({
       }
     };
 
+    self._dLog("调用 streamText", "step");
     await streamText({
       model: config.model.chat,
       messages: apiMessages,
@@ -308,11 +365,13 @@ Page({
         streamingContent += delta;
         flushSafe();
         if (self.data.waitingFirstChunk) {
+          self._dLog("首帧到达 len=" + streamingContent.length, "info");
           self.setData({ waitingFirstChunk: false });
         }
       },
       // 重试时 ai-stream 会从头重发内容：先清空气泡旧文本，避免新旧拼接
       onChunkReset() {
+        self._dLog("onChunkReset: 重试,清空气泡", "warn");
         streamingContent = "";
         renderedLen = 0;
         const resetMessages = [...self.data.messages];
@@ -321,6 +380,7 @@ Page({
         if (chat) chat.buildRenderMessages(resetMessages);
       },
       onStreamEnd: async ({ fullText, finishReason }) => {
+        self._dLog("onStreamEnd: finishReason=" + finishReason + " textLen=" + (fullText || "").length, "step");
         // AI 收尾判定：剥离 [[END]] 标记并置建议态——多重判定之一，
         // 属软信号：只提示"可结束"，不锁定输入，用户仍可继续追问
         let aiSuggested = false;
@@ -330,6 +390,7 @@ Page({
         if (!safe && END_MARK_RE.test(finalText)) {
           aiSuggested = true;
           finalText = stripEndMark(finalText);
+          self._dLog("检出 [[END]] 收尾标记", "info");
         }
 
         // P1 修复（输出二次审核）：finish_reason 非 sensitive 时也再做一次 msgSecCheck
@@ -339,13 +400,16 @@ Page({
         // 代价：审核服务偶发抖动时用户看到兜底文案而非真回复——合规优先。
         if (!safe && finalText) {
           try {
+            self._dLog("调用输出二次审核 msgSecCheck", "step");
             const outCheck = await msgSecCheck(finalText, 2);
+            self._dLog("二次审核结果 pass=" + outCheck.pass + " degraded=" + outCheck.degraded, "info");
             if (!outCheck.pass) {
+              self._dLog("二次审核不通过,替换为兜底文案", "warn");
               finalText = SENSITIVE_FALLBACK;
             }
           } catch (e) {
             // 异常（含网络层失败）：同样 fail-close，避免任何意外漏过
-            console.warn("[socrates] output second-check failed; fail-close:", e && e.message);
+            self._dLog("二次审核异常 fail-close: " + ((e && e.message) || e), "error");
             finalText = SENSITIVE_FALLBACK;
           }
         }
@@ -359,18 +423,23 @@ Page({
           waitingFirstChunk: false,
           aiEndSuggested: aiSuggested,
         });
+        self._dLog("UI 更新完毕 streaming=false round=" + newRound, "info");
 
         // 苏格拉底回复落库（API 角色 assistant；sessionStore append 只接受 user|assistant）；
         // 落库剥离标记后的干净文本，避免报告/下一轮上下文被标记污染
+        self._dLog("调用 persistMessage(assistant)", "step");
         await self.persistMessage("assistant", finalText, newRound);
 
         if (newRound >= config.maxRounds) {
+          self._dLog("达到 maxRounds 上限,置 roundLimitReached", "warn");
           self.setData({ roundLimitReached: true });
           self.promptReport();
+        } else {
+          self._dLog("本轮回合结束,等待下一轮", "info");
         }
       },
       onError(err) {
-        console.error("[socrates] stream error:", err);
+        self._dLog("onError: " + ((err && err.msg) || (err && err.message) || err), "error");
         const errorMessages = [...self.data.messages];
         errorMessages[msgIndex] = displayMsg("socrates", "抱歉，出了点问题。请稍后重试。");
         self.setData({

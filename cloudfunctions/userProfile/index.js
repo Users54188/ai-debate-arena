@@ -165,6 +165,36 @@ async function confirmNonMinor(OPENID) {
   return { code: 0 };
 }
 
+/**
+ * 列出本人 reports（P0 修复 2026-08-27）：前端直查 reports 在"仅创建者可读写"
+ * 权限下读不到云函数写入的报告。通过云函数读取，按 OPENID 过滤后返回字段白名单
+ */
+async function listReports(OPENID, limit) {
+  try {
+    const res = await db
+      .collection("reports")
+      .where({ openid: OPENID || "" })
+      .orderBy("createdAt", "desc")
+      .limit(Math.min(Math.max(Number(limit) || 50, 1), 100))
+      .get();
+    const reports = (res.data || []).map((r) => ({
+      id: r._id,
+      sessionId: r.sessionId,
+      mode: r.mode || "L1",
+      score: r.score || 0,
+      baseScore: r.baseScore || 0,
+      depthScore: r.depthScore || 0,
+      fixScore: r.fixScore || 0,
+      degraded: r.degraded === true,
+      createdAt: r.createdAt,
+    }));
+    return { code: 0, data: { reports } };
+  } catch (e) {
+    console.error("[userProfile] listReports failed:", e);
+    return { code: -1, msg: "listReports failed" };
+  }
+}
+
 exports.main = async (event) => {
   const { action } = event;
   const { OPENID } = cloud.getWXContext();
@@ -185,6 +215,10 @@ exports.main = async (event) => {
 
   if (action === "confirmNonMinor") {
     return confirmNonMinor(OPENID || "");
+  }
+
+  if (action === "listReports") {
+    return listReports(OPENID || "", event.limit);
   }
 
   return { code: -1, msg: `Unknown action: ${action}` };

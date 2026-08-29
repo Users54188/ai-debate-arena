@@ -463,78 +463,101 @@ Page({
         const H = node.height;
 
         // 背景（美工 poster-bg.jpeg；加载失败退化为渐变）
-        const bg = await this.loadImage("/images/poster-bg.jpeg");
-        ctx.drawImage(bg, 0, 0, W, H);
+        let bgLoaded = false;
+        try {
+          const bg = await this.loadImage("/images/poster-bg.jpeg", canvas);
+          if (bg) {
+            ctx.drawImage(bg, 0, 0, W, H);
+            bgLoaded = true;
+          }
+        } catch (e) {
+          console.warn("[report] poster bg load failed, fallback to gradient:", e && e.message);
+        }
+        if (!bgLoaded) {
+          const grad = ctx.createLinearGradient(0, 0, 0, H);
+          grad.addColorStop(0, "#3B1F8F");
+          grad.addColorStop(0.6, "#7C3AED");
+          grad.addColorStop(1, "#F5F3FF");
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, W, H);
+        }
 
         ctx.fillStyle = "rgba(255,255,255,0.94)";
         ctx.fillRect(0, H * 0.30, W, H * 0.70);
 
+        // 海报字体大小用 H 的百分比缩放，避免不同手机宽度下文字溢出/重叠
+        // （原绝对像素值在 H=400px 海报上 56px 分数字体顶部到 y=144 与标题 y=144 重叠）
+        const F = (pct) => Math.round(H * pct);
         ctx.textAlign = "center";
+
+        // 标题
         ctx.fillStyle = "#4F46E5";
-        ctx.font = "bold 34px sans-serif";
-        ctx.fillText("AI 思辨场", W / 2, H * 0.36);
-        ctx.font = "16px sans-serif";
+        ctx.font = "bold " + F(0.052) + "px sans-serif";
+        ctx.fillText("AI 思辨场", W / 2, H * 0.38);
+        // 副标题（拉开间距避免与标题/分数重叠）
+        ctx.font = F(0.035) + "px sans-serif";
         ctx.fillStyle = "#6B7280";
         const modeLabel = report.mode === "L3" ? "辩论场" : this.data.isL2 ? "双人共修" : "苏格拉底追问";
-        ctx.fillText(modeLabel + " · 思辨报告", W / 2, H * 0.36 + 30);
+        ctx.fillText(modeLabel + " · 思辨报告", W / 2, H * 0.44);
 
+        // 分数（大字下移到 0.58，避免与副标题重叠）
         ctx.fillStyle = "#111827";
-        ctx.font = "bold 56px sans-serif";
-        ctx.fillText(String(report.score || 0), W / 2, H * 0.50);
-        ctx.font = "14px sans-serif";
+        ctx.font = "bold " + F(0.12) + "px sans-serif";
+        ctx.fillText(String(report.score || 0), W / 2, H * 0.58);
+        ctx.font = F(0.032) + "px sans-serif";
         ctx.fillStyle = "#9CA3AF";
-        ctx.fillText("思辨得分", W / 2, H * 0.50 + 26);
+        ctx.fillText("思辨得分", W / 2, H * 0.64);
 
         // L3 海报分支：展示正反方投票分布 + 裁判点评（替代通用报告摘要）
         if (report.mode === "L3" && report.debate) {
           const d = report.debate || {};
-          ctx.font = "13px sans-serif";
+          ctx.font = F(0.03) + "px sans-serif";
           ctx.fillStyle = "#7C3AED";
           const affPts = (d.affirmativePoints || []).slice(0, 2);
-          let ay = H * 0.58;
+          let ay = H * 0.70;
           for (const p of affPts) {
             ctx.fillText("正方：" + (p.point || "").slice(0, 24), W / 2, ay);
-            ay += 20;
+            ay += F(0.04);
           }
           ctx.fillStyle = "#F97316";
           const negPts = (d.negativePoints || []).slice(0, 2);
           for (const p of negPts) {
             ctx.fillText("反方：" + (p.point || "").slice(0, 24), W / 2, ay);
-            ay += 20;
+            ay += F(0.04);
           }
           // 裁判点评摘要
           const judgeHl = (d.judgeHighlights || []).slice(0, 2);
           if (judgeHl.length) {
             ctx.fillStyle = "#F59E0B";
-            ctx.font = "12px sans-serif";
+            ctx.font = F(0.028) + "px sans-serif";
             for (const txt of judgeHl) {
               const lines = this.wrapText(ctx, "裁判：" + String(txt || "").slice(0, 40), W - 48, 2);
               for (const line of lines) {
                 ctx.fillText(line, W / 2, ay);
-                ay += 18;
+                ay += F(0.036);
               }
             }
           }
         } else {
           const text = report.reportText || "";
-          ctx.font = "15px sans-serif";
+          ctx.font = F(0.034) + "px sans-serif";
           ctx.fillStyle = "#374151";
           const maxWidth = W - 48;
           const lines = this.wrapText(ctx, text, maxWidth, 5);
-          let y = H * 0.58;
+          let y = H * 0.72;
           for (const line of lines) {
             ctx.fillText(line, W / 2, y);
-            y += 22;
+            y += F(0.045);
           }
         }
 
         ctx.fillStyle = "#9CA3AF";
-        ctx.font = "12px sans-serif";
+        ctx.font = F(0.028) + "px sans-serif";
         ctx.fillText("长按识别或打开小程序查看完整报告", W / 2, H * 0.92);
 
         // 合规：AI 生成内容标识（微信平台对 AI 类小程序硬性要求）
         ctx.fillStyle = "#9CA3AF";
-        ctx.font = "11px sans-serif";
+        ctx.font = F(0.025) + "px sans-serif";
         ctx.fillText("本报告由 AI 生成，仅供参考", W / 2, H * 0.96);
 
         this.posterCanvas = canvas;
@@ -548,9 +571,9 @@ Page({
   },
 
   /** 加载本地图片（返回 canvas 可绘制的对象） */
-  loadImage(src) {
+  loadImage(src, canvas) {
     return new Promise((resolve, reject) => {
-      const img = wx.createImage();
+      const img = canvas.createImage();
       img.onload = () => resolve(img);
       img.onerror = () => reject(new Error("image load failed"));
       img.src = src;
