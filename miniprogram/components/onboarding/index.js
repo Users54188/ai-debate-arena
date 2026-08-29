@@ -48,6 +48,11 @@ Component({
       this.setData({ current: e.detail.current });
     },
 
+    onDotTap(e) {
+      const idx = e.currentTarget.dataset.idx;
+      this.setData({ current: idx });
+    },
+
     onNext() {
       const { current, slides } = this.data;
       if (current < slides.length - 1) {

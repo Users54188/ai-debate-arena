@@ -10,7 +10,7 @@
   </swiper>
 
   <view class="onboarding-dots">
-    <view class="dot {{current === idx ? 'dot-active' : ''}}" wx:for="{{slides}}" wx:for-index="idx" wx:key="idx"></view>
+    <view class="dot {{current === idx ? 'dot-active' : ''}}" wx:for="{{slides}}" wx:for-index="idx" wx:key="idx" bindtap="onDotTap" data-idx="{{idx}}"></view>
   </view>
 
   <!-- 末屏协议同意（合规硬性要求） -->
@@ -28,9 +28,9 @@
 
   <view class="onboarding-actions safe-bottom">
     <text class="skip-btn" bindtap="onSkip">跳过</text>
-    <button class="next-btn" bindtap="onNext">
+    <view class="next-btn" bindtap="onNext" hover-class="next-btn-hover" hover-stay-time="100">
       {{current === slides.length - 1 ? '开始思辨' : '下一步'}}
-    </button>
+    </view>
   </view>
 
   <!-- 协议条款弹窗 -->
