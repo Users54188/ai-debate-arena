@@ -516,6 +516,37 @@ exports.main = async (event) => {
       }
     }
 
+    case "list": {
+      // P0 修复（2026-08-27）：前端直查 sessions 在"仅创建者可读写"权限下读不到
+      // 云函数创建的文档（_openid 是云函数身份，不是用户）。新增此 action 让前端
+      // 通过云函数读取自己的会话列表（云函数以自身身份读取，再用 OPENID 过滤）。
+      try {
+        const { OPENID } = cloud.getWXContext();
+        const { mode, limit = 50 } = event;
+        const where = { openid: OPENID || "" };
+        if (mode) where.mode = mode;
+        const res = await db
+          .collection("sessions")
+          .where(where)
+          .orderBy("createdAt", "desc")
+          .limit(Math.min(Math.max(Number(limit) || 50, 1), 100))
+          .get();
+        const sessions = (res.data || []).map((s) => ({
+          id: s._id,
+          mode: s.mode || "L1",
+          topic: s.topic || "",
+          round: s.round || 0,
+          status: s.status || "active",
+          createdAt: s.createdAt,
+          shareToken: s.shareToken || "",
+        }));
+        return { code: 0, data: { sessions } };
+      } catch (e) {
+        console.error("[sessionStore] list failed:", e);
+        return { code: -1, msg: "list failed" };
+      }
+    }
+
     case "saveReport": {
       // 前端降级生成的报告落库（2026-08-25）：generateReport 云函数受 3s 默认
       // 超时限制（config.json timeout 部署不生效），模型调用必超时；前端走

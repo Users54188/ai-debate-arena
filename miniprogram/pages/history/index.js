@@ -25,16 +25,21 @@ Page({
   async loadHistory() {
     this.setData({ loading: true, empty: false });
     try {
-      const db = wx.cloud.database();
-      const res = await db
-        .collection("sessions")
-        .orderBy("createdAt", "desc")
-        .limit(50)
-        .get();
-      const sessions = (res.data || []).map((s) => {
+      // P0 修复（2026-08-27）：原 db.collection("sessions").get() 前端直查在
+      // "仅创建者可读写"权限下读不到云函数写入的文档（_openid 是云函数身份）。
+      // 改走 sessionStore.list 云函数，由云函数身份读取后按 OPENID 过滤返回
+      const res = await wx.cloud.callFunction({
+        name: config.cloudFunctions.sessionStore,
+        data: { action: "list", limit: 50 },
+      });
+      const result = res.result || {};
+      if (result.code !== 0) {
+        throw new Error(result.msg || "list failed");
+      }
+      const sessions = (result.data.sessions || []).map((s) => {
         const round = s.round || 0;
         return {
-          id: s._id,
+          id: s.id,
           mode: s.mode || "L1",
           modeClass: String(s.mode || "L1").toLowerCase(),
           modeLabel: MODE_LABEL[s.mode] || s.mode,

@@ -30,12 +30,20 @@ Page({
     this.setData({ showOnboarding: false });
   },
 
-  /** 聚合本人 reports：完成场次 / 最佳得分 / 最近模式（纯前端统计） */
+  /** 聚合本人 reports：完成场次 / 最佳得分 / 最近模式（走云函数） */
   async loadJourney() {
     try {
-      const db = wx.cloud.database();
-      const res = await db.collection("reports").orderBy("createdAt", "desc").limit(50).get();
-      const reports = res.data || [];
+      // P0 修复（2026-08-27）：原 db.collection("reports").get() 前端直查在
+      // "仅创建者可读写"权限下读不到云函数写入的报告。改走 userProfile.listReports
+      const res = await wx.cloud.callFunction({
+        name: config.cloudFunctions.userProfile,
+        data: { action: "listReports", limit: 50 },
+      });
+      const result = res.result || {};
+      if (result.code !== 0) {
+        throw new Error(result.msg || "listReports failed");
+      }
+      const reports = (result.data.reports) || [];
       let best = 0;
       let latestMode = "-";
       if (reports.length) {

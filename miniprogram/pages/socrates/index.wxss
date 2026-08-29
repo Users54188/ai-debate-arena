@@ -1,5 +1,59 @@
 /* 苏格拉底对话页 —— 星夜思辨 */
 
+/* === 临时诊断浮层 === */
+.debug-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  max-height: 50vh;
+  background: rgba(0, 0, 0, 0.88);
+  border-bottom: 2rpx solid #FFD700;
+  display: flex;
+  flex-direction: column;
+}
+
+.debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8rpx 16rpx;
+  background: rgba(255, 215, 0, 0.15);
+  color: #FFD700;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.debug-clear {
+  color: #FF6B6B;
+  padding: 4rpx 12rpx;
+  border: 1rpx solid #FF6B6B;
+  border-radius: 8rpx;
+}
+
+.debug-list {
+  flex: 1;
+  max-height: 45vh;
+  padding: 8rpx 16rpx;
+  box-sizing: border-box;
+}
+
+.debug-line {
+  font-size: 20rpx;
+  font-family: monospace;
+  line-height: 1.4;
+  padding: 4rpx 0;
+  color: #FFFFFF;
+  word-break: break-all;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.dbg-error { color: #FF6B6B; }
+.dbg-warn { color: #FFD700; }
+.dbg-info { color: #6BFFB5; }
+.dbg-step { color: #6Bd4FF; }
+
 .page {
   position: relative;
   height: 100vh;
