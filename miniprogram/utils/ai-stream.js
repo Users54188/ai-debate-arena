@@ -248,6 +248,18 @@ async function streamText(opts) {
         flushedOnce = true;
       }
 
+      // 空流检测：流正常结束但 fullText 为空，通常是前序连接未释放导致
+      // 并发上限被触发，服务端返回空流（不报错）。视为异常触发重试，
+      // 重试前额外等待让旧连接释放
+      if (!fullText && retries < STREAM_TIMEOUT.maxRetries) {
+        releaseActiveRes();
+        retries++;
+        const delay = Math.min(3000 * retries, 10000);
+        console.warn(`[ai-stream] 空流响应,等待 ${delay}ms 后重试 (可能并发连接未释放)`);
+        await sleep(delay);
+        return attempt();
+      }
+
       // 从 eventStream 提取 usage / note / finish_reason
       // ⚠️ 上线审计加固（2026-08-25）：eventStream 是连接泄漏主源——SDK 对迭代器
       // return() 不释放底层连接，每轮泄漏一条，累积触发单用户并发上限后所有流式请求
