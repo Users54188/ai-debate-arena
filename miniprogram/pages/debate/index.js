@@ -359,7 +359,7 @@ Page({
   async continueNextRound() {
     if (this.data.round >= MAX_ROUNDS || this.data.streaming) return;
     try {
-      await this.runRound(this.data.round + 1);
+      await this.runRound(Number(this.data.round) + 1);
     } catch (e) {
       // runRound 内部某角色 streamOne 失败：失败气泡已替换为"发言失败"占位，
       // 此处兜底防止未处理的 Promise rejection。

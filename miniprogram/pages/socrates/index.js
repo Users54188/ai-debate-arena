@@ -185,7 +185,7 @@ Page({
     });
     const session = (res.result && res.result.data && res.result.data.session) || {};
     this.sessionSummary = session.summary || "";
-    const round = session.round || 0;
+    const round = Number(session.round) || 0;
     this._dLog("loadSessionContext 返回: round=" + round + " recent=" + ((session.recent || []).length) + "条 status=" + (session.status || "空"), "info");
 
     // 云端已完成 10 轮（例如上次会话已结束）→ 直接封顶
@@ -218,7 +218,7 @@ Page({
       return;
     }
 
-    const newRound = this.data.round + 1;
+    const newRound = Number(this.data.round) + 1;
     this._dLog("newRound=" + newRound + " maxRounds=" + config.maxRounds, "info");
     if (newRound > config.maxRounds) {
       this._dLog("BLOCKED: newRound > maxRounds", "warn");

@@ -117,7 +117,7 @@ Page({
     });
     const session = (res.result && res.result.data && res.result.data.session) || {};
     this.sessionSummary = session.summary || "";
-    const round = session.round || 0;
+    const round = Number(session.round) || 0;
     if (round >= MAX_USER_ROUNDS) {
       this.setData({ roundLimitReached: true, round: round });
       return null;
@@ -146,7 +146,7 @@ Page({
       return;
     }
 
-    const newRound = this.data.round + 1;
+    const newRound = Number(this.data.round) + 1;
     if (newRound > MAX_USER_ROUNDS) return;
 
     // 首轮匹配专家类型
