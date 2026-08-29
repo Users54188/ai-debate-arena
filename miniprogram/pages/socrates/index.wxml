@@ -1,22 +1,6 @@
 <view class="page">
   <star-field />
 
-  <!-- 临时诊断浮层：排查 L1 卡 2 轮问题。修复后删除 -->
-  <view class="debug-panel" wx:if="{{debugLogs.length}}">
-    <view class="debug-header">
-      <text>诊断日志 ({{debugLogs.length}})</text>
-      <text class="debug-clear" bindtap="onDebugClear">清空</text>
-    </view>
-    <scroll-view scroll-y class="debug-list" scroll-into-view="dbg-{{debugLogs.length - 1}}">
-      <view
-        wx:for="{{debugLogs}}"
-        wx:key="index"
-        id="dbg-{{index}}"
-        class="debug-line dbg-{{item.level}}"
-      >{{item.msg}}</view>
-    </scroll-view>
-  </view>
-
   <view class="body">
     <chat-stream
       id="chat"

@@ -51,13 +51,16 @@
     <!-- 策略覆盖 -->
     <view wx:if="{{strategyRows.length}}" class="glass-card">
       <text class="card-title">追问策略覆盖</text>
-      <view class="strategy-row" wx:for="{{strategyRows}}" wx:key="key">
-        <text class="strategy-label">{{item.label}}</text>
-        <view class="strategy-track">
-          <view class="strategy-bar {{item.covered ? 'on' : 'off'}}" style="width: {{item.pct}}%"></view>
+      <view wx:if="{{report.degraded}}" class="degraded-tip">策略标注降级，本次未覆盖</view>
+      <block wx:else>
+        <view class="strategy-row" wx:for="{{strategyRows}}" wx:key="key">
+          <text class="strategy-label">{{item.label}}</text>
+          <view class="strategy-track">
+            <view class="strategy-bar {{item.covered ? 'on' : 'off'}}" style="width: {{item.pct}}%"></view>
+          </view>
+          <text class="strategy-mark {{item.covered ? 'on' : 'off'}}">{{item.covered ? '✓' : '○'}}</text>
         </view>
-        <text class="strategy-mark {{item.covered ? 'on' : 'off'}}">{{item.covered ? '✓' : '○'}}</text>
-      </view>
+      </block>
     </view>
 
     <!-- 谬误列表 -->
