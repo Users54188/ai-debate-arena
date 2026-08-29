@@ -321,7 +321,7 @@ exports.main = async (event) => {
           data: {
             recent: _.push([msg]),
             transcript: _.push([msg]),
-            round: _.max([msg.round]),
+            round: _.max(msg.round),
             status: s.status === "finished" ? "finished" : sessionStatus,
             version: _.inc(1),
             updatedAt: db.serverDate(),
