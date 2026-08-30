@@ -19,6 +19,7 @@
   justify-content: center;
   padding: 0 60rpx;
   padding-top: env(safe-area-inset-top);
+  padding-bottom: 160rpx;
 }
 
 /* === Logo 区 === */
@@ -26,7 +27,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 80rpx;
+  margin-bottom: 60rpx;
 }
 
 .logo-emblem {
@@ -128,7 +129,7 @@
 .nickname-row {
   width: 100%;
   max-width: 480rpx;
-  margin-bottom: 64rpx;
+  margin-bottom: 48rpx;
 }
 
 .nickname-input {
