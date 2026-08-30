@@ -124,6 +124,6 @@ Page({
   },
 
   gotoHome() {
-    wx.redirectTo({ url: "/pages/index/index" });
+    wx.switchTab({ url: "/pages/index/index" });
   },
 });
