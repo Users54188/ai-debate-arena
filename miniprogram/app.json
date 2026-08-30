@@ -30,12 +30,6 @@
         "selectedIconPath": "images/home_sel.png"
       },
       {
-        "pagePath": "pages/socrates/index",
-        "text": "思辨",
-        "iconPath": "images/practice.png",
-        "selectedIconPath": "images/practice_sel.png"
-      },
-      {
         "pagePath": "pages/history/index",
         "text": "历史",
         "iconPath": "images/history.png",
