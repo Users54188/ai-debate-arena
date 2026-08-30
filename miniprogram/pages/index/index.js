@@ -7,7 +7,15 @@ Page({
     showOnboarding: false,
   },
 
-  onLoad() {
+  async onLoad() {
+    // 确保静默建档完成（兼容从 login 页跳转来的场景）
+    if (app.globalData.loginReady) {
+      try {
+        await app.globalData.loginReady;
+      } catch (e) {
+        console.error("[index] login failed:", e);
+      }
+    }
     // 首启未引导 → 弹 onboarding
     if (!app.globalData.onboarded) {
       this.setData({ showOnboarding: true });
@@ -66,7 +74,7 @@ Page({
   },
 
   goSocrates() {
-    wx.switchTab({ url: "/pages/socrates/index" });
+    wx.navigateTo({ url: "/pages/socrates/index" });
   },
 
   goDual() {

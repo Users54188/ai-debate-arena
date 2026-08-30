@@ -49,6 +49,7 @@
   color: var(--text-3);
   letter-spacing: 4rpx;
   margin-bottom: var(--sp-2);
+  margin-right: -4rpx;
   text-transform: uppercase;
 }
 

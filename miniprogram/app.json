@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/login/index",
     "pages/index/index",
     "pages/socrates/index",
     "pages/history/index",
@@ -28,12 +29,6 @@
         "text": "首页",
         "iconPath": "images/home.png",
         "selectedIconPath": "images/home_sel.png"
-      },
-      {
-        "pagePath": "pages/socrates/index",
-        "text": "思辨",
-        "iconPath": "images/practice.png",
-        "selectedIconPath": "images/practice_sel.png"
       },
       {
         "pagePath": "pages/history/index",

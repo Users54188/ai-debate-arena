@@ -5,6 +5,7 @@ App({
     openid: "",
     classify: "new",
     onboarded: false,
+    loginReady: null, // 登录就绪 Promise，页面 await 它确保 openid 已拿到
   },
 
   onLaunch() {
@@ -18,6 +19,10 @@ App({
       try {
         wx.cloud.init({
           env: config.envId,
+          // 多端模式（wxext 运行时）下必须显式传 appid，否则云开发初始化
+          // 失败（errCode -601002），所有 callFunction 全部不可用；
+          // 普通小程序模式下 appid 从项目配置读取，传入无害
+          appid: config.appid,
           traceUser: true,
         });
         console.log('cloud init OK');
@@ -27,7 +32,8 @@ App({
     }
 
     // 静默建档：首次进入即创建 users 文档（服务端 openid 稳定，无需 wx.login 换 code）
-    this.silentRegister();
+    // 存为 Promise 供页面 await，确保进入功能前 openid 已拿到，避免多用户数据混杂
+    this.globalData.loginReady = this.silentRegister();
 
     // 引导态：从本地存储读是否已通过 onboarding
     this.globalData.onboarded = !!wx.getStorageSync("onboarded");

@@ -55,28 +55,14 @@ Page({
     roundLimitReached: false,
     aiEndSuggested: false, // AI 收尾判定：认为思辨已充分（软信号，可继续追问）
     loading: true,
-    debugLogs: [], // 临时诊断：浮层日志
   },
 
-  /** 临时诊断：把日志同时输出到 Console 和顶部浮层（修复后删除） */
+  /** 调试日志：仅输出到 Console（保留调用点便于将来排查） */
   _dLog(msg, level) {
     const lv = level || "info";
     if (lv === "error") console.error(msg);
     else if (lv === "warn") console.warn(msg);
     else console.log(msg);
-    const ts = new Date();
-    const stamp = ("0" + ts.getHours()).slice(-2) + ":" +
-                  ("0" + ts.getMinutes()).slice(-2) + ":" +
-                  ("0" + ts.getSeconds()).slice(-2) + "." +
-                  ("00" + ts.getMilliseconds()).slice(-3);
-    const entry = { msg: "[" + stamp + "] " + msg, level: lv };
-    const next = (this.data.debugLogs || []).concat([entry]).slice(-30);
-    this.setData({ debugLogs: next });
-  },
-
-  /** 临时诊断：清空浮层日志 */
-  onDebugClear() {
-    this.setData({ debugLogs: [] });
   },
 
   onLoad() {
@@ -185,7 +171,7 @@ Page({
     });
     const session = (res.result && res.result.data && res.result.data.session) || {};
     this.sessionSummary = session.summary || "";
-    const round = session.round || 0;
+    const round = Number(session.round) || 0;
     this._dLog("loadSessionContext 返回: round=" + round + " recent=" + ((session.recent || []).length) + "条 status=" + (session.status || "空"), "info");
 
     // 云端已完成 10 轮（例如上次会话已结束）→ 直接封顶
@@ -218,7 +204,7 @@ Page({
       return;
     }
 
-    const newRound = this.data.round + 1;
+    const newRound = Number(this.data.round) + 1;
     this._dLog("newRound=" + newRound + " maxRounds=" + config.maxRounds, "info");
     if (newRound > config.maxRounds) {
       this._dLog("BLOCKED: newRound > maxRounds", "warn");
