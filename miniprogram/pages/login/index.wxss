@@ -156,6 +156,11 @@
   width: 100%;
   max-width: 480rpx;
   height: 96rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  padding: 0;
   background: linear-gradient(135deg, var(--star-purple, #9D6BFF), var(--star-indigo, #6366F1));
   color: #FFFFFF;
   font-size: 32rpx;
@@ -163,8 +168,6 @@
   letter-spacing: 4rpx;
   border-radius: 999rpx;
   border: none;
-  line-height: 96rpx;
-  text-align: center;
   box-shadow: 0 0 40rpx rgba(157, 107, 255, 0.5);
 }
 
