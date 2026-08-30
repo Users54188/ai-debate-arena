@@ -153,6 +153,7 @@
   color: var(--text-3);
   letter-spacing: 4rpx;
   margin: var(--sp-3) 0 var(--sp-2);
+  margin-right: -4rpx;
   text-transform: uppercase;
 }
 

@@ -63,12 +63,14 @@
   letter-spacing: 8rpx;
   color: var(--text-1, #F5F3FF);
   margin-bottom: 12rpx;
+  margin-right: -8rpx;
 }
 
 .logo-sub {
   font-size: 26rpx;
   color: var(--text-3, #8B86C7);
   letter-spacing: 2rpx;
+  margin-right: -2rpx;
 }
 
 /* === 头像选择 === */
@@ -161,6 +163,7 @@
   border-radius: 999rpx;
   border: none;
   line-height: 96rpx;
+  text-align: center;
   box-shadow: 0 0 40rpx rgba(157, 107, 255, 0.5);
 }
 
@@ -180,6 +183,7 @@
   color: var(--text-4, #8B86C7);
   letter-spacing: 2rpx;
   padding: 16rpx 32rpx;
+  margin-right: -2rpx;
 }
 
 /* === 底部说明 === */

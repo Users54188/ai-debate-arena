@@ -77,6 +77,7 @@
   letter-spacing: 8rpx;
   color: var(--text-1);
   margin-bottom: 12rpx;
+  margin-right: -8rpx;
   text-shadow: 0 0 24rpx rgba(157, 107, 255, 0.5);
 }
 
@@ -84,6 +85,7 @@
   font-size: var(--fs-body);
   color: var(--text-3);
   letter-spacing: 2rpx;
+  margin-right: -2rpx;
 }
 
 /* === Journey 卡 === */
@@ -151,6 +153,7 @@
   color: var(--text-3);
   letter-spacing: 4rpx;
   margin-bottom: var(--sp-3);
+  margin-right: -4rpx;
   text-transform: uppercase;
 }
 
