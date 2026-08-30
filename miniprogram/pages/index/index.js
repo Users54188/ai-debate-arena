@@ -5,11 +5,10 @@ Page({
   data: {
     journey: { title: "思辨之旅", count: 0, best: 0, mode: "-" },
     showOnboarding: false,
-    loggingIn: true, // 登录加载态：openid 拿到前阻止用户操作
   },
 
   async onLoad() {
-    // 等待静默建档完成，确保 globalData.openid 已拿到（避免多用户数据混杂）
+    // 确保静默建档完成（兼容从 login 页跳转来的场景）
     if (app.globalData.loginReady) {
       try {
         await app.globalData.loginReady;
@@ -17,7 +16,6 @@ Page({
         console.error("[index] login failed:", e);
       }
     }
-    this.setData({ loggingIn: false });
     // 首启未引导 → 弹 onboarding
     if (!app.globalData.onboarded) {
       this.setData({ showOnboarding: true });

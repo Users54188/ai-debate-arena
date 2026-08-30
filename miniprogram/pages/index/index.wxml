@@ -1,12 +1,6 @@
 <view class="page">
   <star-field />
 
-  <!-- 登录加载遮罩：openid 拿到前阻止用户操作 -->
-  <view wx:if="{{loggingIn}}" class="login-mask">
-    <view class="login-spinner"></view>
-    <text class="login-text">正在登录...</text>
-  </view>
-
   <scroll-view scroll-y class="scaffold">
     <!-- Hero 区：星夜中的思辨者 -->
     <view class="hero">

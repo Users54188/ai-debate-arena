@@ -1,0 +1,194 @@
+/* 登录页 —— 星夜思辨入口 */
+
+.page {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--night-1) 0%, var(--night-0) 100%);
+  overflow: hidden;
+}
+
+.login-container {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 60rpx;
+  padding-top: env(safe-area-inset-top);
+}
+
+/* === Logo 区 === */
+.logo-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 80rpx;
+}
+
+.logo-emblem {
+  position: relative;
+  width: 140rpx;
+  height: 140rpx;
+  margin-bottom: 32rpx;
+}
+
+.emblem-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3rpx solid rgba(157, 107, 255, 0.4);
+  box-shadow: 0 0 40rpx rgba(157, 107, 255, 0.3);
+}
+
+.emblem-core {
+  position: absolute;
+  inset: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(157, 107, 255, 0.2), rgba(99, 102, 241, 0.15));
+  font-size: 56rpx;
+  font-weight: 700;
+  color: var(--text-1, #F5F3FF);
+}
+
+.logo-title {
+  font-size: 52rpx;
+  font-weight: 700;
+  letter-spacing: 8rpx;
+  color: var(--text-1, #F5F3FF);
+  margin-bottom: 12rpx;
+}
+
+.logo-sub {
+  font-size: 26rpx;
+  color: var(--text-3, #8B86C7);
+  letter-spacing: 2rpx;
+}
+
+/* === 头像选择 === */
+.avatar-area {
+  width: 160rpx;
+  height: 160rpx;
+  padding: 0;
+  margin: 0 0 40rpx;
+  border-radius: 50%;
+  background: transparent;
+  line-height: 1;
+}
+
+.avatar-area::after {
+  border: none;
+}
+
+.avatar-hover {
+  opacity: 0.85;
+}
+
+.avatar-img {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  border: 3rpx solid rgba(157, 107, 255, 0.5);
+  box-shadow: 0 0 32rpx rgba(157, 107, 255, 0.4);
+}
+
+.avatar-placeholder {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 50%;
+  border: 3rpx dashed rgba(157, 107, 255, 0.4);
+  background: rgba(157, 107, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-plus {
+  font-size: 56rpx;
+  color: var(--star-purple, #9D6BFF);
+  line-height: 1;
+}
+
+.avatar-tip {
+  font-size: 20rpx;
+  color: var(--text-3, #8B86C7);
+  margin-top: 4rpx;
+}
+
+/* === 昵称输入 === */
+.nickname-row {
+  width: 100%;
+  max-width: 480rpx;
+  margin-bottom: 64rpx;
+}
+
+.nickname-input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 32rpx;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.06));
+  border: 2rpx solid var(--glass-border, rgba(157, 107, 255, 0.2));
+  border-radius: 999rpx;
+  color: var(--text-1, #F5F3FF);
+  font-size: 30rpx;
+  letter-spacing: 1rpx;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.nickname-ph {
+  color: var(--text-4, rgba(139, 134, 199, 0.6));
+  font-size: 28rpx;
+}
+
+/* === 进入按钮 === */
+.enter-btn {
+  width: 100%;
+  max-width: 480rpx;
+  height: 96rpx;
+  background: linear-gradient(135deg, var(--star-purple, #9D6BFF), var(--star-indigo, #6366F1));
+  color: #FFFFFF;
+  font-size: 32rpx;
+  font-weight: 600;
+  letter-spacing: 4rpx;
+  border-radius: 999rpx;
+  border: none;
+  line-height: 96rpx;
+  box-shadow: 0 0 40rpx rgba(157, 107, 255, 0.5);
+}
+
+.enter-btn::after {
+  border: none;
+}
+
+.enter-hover {
+  opacity: 0.88;
+  transform: scale(0.98);
+}
+
+/* === 跳过 === */
+.skip-link {
+  margin-top: 40rpx;
+  font-size: 26rpx;
+  color: var(--text-4, #8B86C7);
+  letter-spacing: 2rpx;
+  padding: 16rpx 32rpx;
+}
+
+/* === 底部说明 === */
+.footnote {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  font-size: var(--fs-caption, 22rpx);
+  color: var(--text-4, rgba(139, 134, 199, 0.5));
+  padding: 0 0 calc(env(safe-area-inset-bottom) + 40rpx);
+  letter-spacing: 1rpx;
+}

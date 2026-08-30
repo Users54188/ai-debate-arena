@@ -1,0 +1,47 @@
+<view class="page">
+  <star-field />
+
+  <view class="login-container">
+    <!-- Logo 区 -->
+    <view class="logo-block">
+      <view class="logo-emblem">
+        <view class="emblem-ring"></view>
+        <view class="emblem-core">思</view>
+      </view>
+      <text class="logo-title">思辨场</text>
+      <text class="logo-sub">在星辰之间，与 AI 共思考</text>
+    </view>
+
+    <!-- 头像选择 -->
+    <button class="avatar-area" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar" hover-class="avatar-hover">
+      <image wx:if="{{avatar}}" class="avatar-img" src="{{avatar}}" mode="aspectFill" />
+      <view wx:else class="avatar-placeholder">
+        <text class="avatar-plus">+</text>
+        <text class="avatar-tip">点击选头像</text>
+      </view>
+    </button>
+
+    <!-- 昵称输入 -->
+    <view class="nickname-row">
+      <input
+        class="nickname-input"
+        type="nickname"
+        value="{{nickName}}"
+        bindinput="onNickNameInput"
+        placeholder="点击输入昵称"
+        placeholder-class="nickname-ph"
+        maxlength="16"
+      />
+    </view>
+
+    <!-- 进入按钮 -->
+    <button class="enter-btn" bindtap="onEnter" hover-class="enter-hover" disabled="{{entering}}">
+      {{entering ? '正在进入...' : '进入思辨场'}}
+    </button>
+
+    <!-- 跳过 -->
+    <text class="skip-link" bindtap="onSkip">跳过，先逛逛</text>
+  </view>
+
+  <view class="footnote">AI 生成内容仅供参考</view>
+</view>
