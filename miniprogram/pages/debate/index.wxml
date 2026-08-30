@@ -38,7 +38,7 @@
     <button
       class="btn-primary start-btn"
       bindtap="startDebate"
-      disabled="{{!topic.trim() || quotaExhausted}}"
+      disabled="{{topic.length === 0 || quotaExhausted}}"
     >开始辩论</button>
 
     <view wx:if="{{quotaExhausted}}" class="notice">
