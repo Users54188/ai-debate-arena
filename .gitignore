@@ -1,0 +1,29 @@
+# 依赖与构建产物
+node_modules/
+dist/
+
+# 系统文件
+.DS_Store
+*.log
+Thumbs.db
+*.swp
+*.swo
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.code-workspace
+
+# 微信小程序私密配置（含本地 appid / 项目私有设置）
+project.private.config.json
+
+# 临时与 PR 工作产物
+pr-body.md
+pr-body-*.md
+work/
+_unused-images-backup/
+
+# 临时调试脚本与本地数据
+*.local
+*.tmp
+

@@ -1,0 +1,265 @@
+/* 首页 —— 星夜思辨入口 */
+
+.page {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--night-1) 0%, var(--night-0) 100%);
+}
+
+.scaffold {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0 var(--sp-4);
+}
+
+/* === Hero === */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48rpx 0 32rpx;
+  text-align: center;
+}
+
+.hero-emblem {
+  width: 560rpx;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.hero-sub {
+  font-size: var(--fs-body);
+  color: var(--text-3);
+  letter-spacing: 2rpx;
+}
+
+/* === Journey 卡 === */
+.journey {
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+
+.journey-head {
+  margin-bottom: var(--sp-3);
+}
+
+/* 段位徽章条（恢复 + 强化 2026-09-02） */
+.rank-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-3);
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(157, 107, 255, 0.18));
+  border: 1rpx solid rgba(251, 191, 36, 0.35);
+  border-radius: var(--r-md);
+  box-shadow: 0 0 24rpx rgba(251, 191, 36, 0.18) inset;
+}
+
+.rank-emblem {
+  width: 88rpx;
+  height: 88rpx;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.25), transparent 70%);
+  filter: drop-shadow(0 0 12rpx rgba(251, 191, 36, 0.5));
+}
+
+.rank-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+}
+
+.rank-tag {
+  display: block;
+  font-size: 20rpx;
+  color: var(--text-3);
+  letter-spacing: 2rpx;
+}
+
+.rank-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #FBBF24;
+  letter-spacing: 2rpx;
+  text-shadow: 0 0 16rpx rgba(251, 191, 36, 0.55);
+}
+
+.rank-next {
+  display: block;
+  font-size: 22rpx;
+  color: var(--text-2);
+  letter-spacing: 1rpx;
+}
+
+.journey-title {
+  display: block;
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 8rpx;
+}
+
+.journey-sub {
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  letter-spacing: 1rpx;
+}
+
+.journey-stats {
+  display: flex;
+  align-items: center;
+}
+
+.stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.stat-value {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: var(--star-purple);
+  letter-spacing: 1rpx;
+  text-shadow: 0 0 16rpx rgba(157, 107, 255, 0.4);
+}
+
+.stat-label {
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  letter-spacing: 1rpx;
+}
+
+.stat-divider {
+  width: 1rpx;
+  height: 48rpx;
+  background: linear-gradient(180deg, transparent, var(--glass-border), transparent);
+}
+
+/* === Modes === */
+.section-title {
+  display: block;
+  font-size: var(--fs-label);
+  color: var(--text-3);
+  letter-spacing: 4rpx;
+  margin-bottom: var(--sp-3);
+  margin-right: -4rpx;
+  text-transform: uppercase;
+}
+
+.modes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.mode {
+  display: flex;
+  align-items: stretch;
+  padding: var(--sp-4);
+  transition: transform 120ms ease, border-color 200ms ease;
+}
+
+.card-hover {
+  transform: scale(0.98);
+  border-color: var(--glass-border-strong) !important;
+}
+
+.mode-side {
+  flex-shrink: 0;
+  padding-right: var(--sp-3);
+  display: flex;
+  align-items: center;
+}
+
+.mode-mark {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: var(--r-md);
+  display: block;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* L1/L2/L3 段位徽章视觉差异（P1-3 误删恢复 + 强化 2026-09-02）：
+   三个徽章在 l1/l2/l3-badge.jpeg 自带发光基础上，外加一段微弱的
+   段位色光环，让用户一眼区分难度递进 */
+.mark-l1 {
+  filter: drop-shadow(0 0 8rpx rgba(139, 134, 199, 0.35)); /* 弱紫：基础 */
+}
+
+.mark-l2 {
+  filter: drop-shadow(0 0 10rpx rgba(157, 107, 255, 0.45)); /* 中紫：进阶 */
+}
+
+.mark-l3 {
+  filter: drop-shadow(0 0 12rpx rgba(251, 191, 36, 0.45));   /* 星辰金：最高 */
+}
+
+.mode-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.mode-title {
+  font-size: var(--fs-title);
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.mode-desc {
+  font-size: var(--fs-label);
+  color: var(--text-3);
+  line-height: 1.55;
+}
+
+.mode-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8rpx;
+}
+
+.chip {
+  padding: 4rpx 16rpx;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  letter-spacing: 1rpx;
+}
+
+.chip-l1 { background: rgba(99, 102, 241, 0.18); color: #A5B4FC; }
+.chip-l2 { background: rgba(103, 232, 249, 0.16); color: #A5F3FC; }
+.chip-l3 { background: rgba(192, 132, 252, 0.18); color: #E9D5FF; }
+
+.mode-arrow {
+  font-size: var(--fs-caption);
+  color: var(--star-purple);
+  letter-spacing: 1rpx;
+}
+
+.footnote {
+  text-align: center;
+  font-size: var(--fs-caption);
+  color: var(--text-4);
+  padding: var(--sp-4) 0 var(--sp-3);
+  letter-spacing: 1rpx;
+}
+
+.bottom-spacer {
+  height: 120rpx;
+}

@@ -1,0 +1,356 @@
+/**
+ * L2 双人共修 — 用户 × 专家 × 苏格拉底 交替对话
+ *
+ * 流程：进入页面 → 校验 L2 配额（≤2 次/日）→ 用户输入 → msgSecCheck
+ *       → 专家 router 匹配话题 → 创建会话（mode="L2"）
+ *       → 轮次编排：用户 → 专家讲解 → 苏格拉底追问 → 用户 → ...
+ *       → 6 用户轮（12 条消息）→ 跳转报告页
+ *
+ * 状态机由页面侧控制（不依赖云函数编排），实时路径不经云函数。
+ * 复用 sessionStore.append（已有归属校验 + 原子追加 + 裁剪）。
+ */
+
+const { streamText } = require("../../utils/ai-stream");
+const { msgSecCheck } = require("../../utils/security");
+const { prompts } = require("../../utils/prompts");
+const { route } = require("../../utils/expert-router");
+const config = require("../../config");
+
+const MAX_USER_ROUNDS = 6; // L2 封顶：6 用户轮 × 2 角色 = 12 条消息
+const SENSITIVE_FALLBACK = "这个话题不太适合展开，我们换一个思辨话题吧。";
+
+function displayMsg(role, content) {
+  return { role, content };
+}
+
+function recentToApi(recent) {
+  return (recent || []).map((m) => ({
+    role: m.role === "user" ? "user" : "assistant",
+    content: m.content,
+  }));
+}
+
+Page({
+  data: {
+    messages: [],
+    inputText: "",
+    streaming: false,
+    waitingFirstChunk: false,
+    phase: "", // "expert" | "socrates" | ""
+    round: 0,
+    quotaExhausted: false,
+    roundLimitReached: false,
+  },
+
+  onLoad() {
+    try {
+      this.sessionId = null;
+      this.sessionSummary = "";
+      this.expertPrompt = null;
+      this.checkQuota();
+    } catch (e) {
+      console.error("[dual] onLoad failed:", e);
+    }
+  },
+
+  onShow() {
+    if (!this.data.streaming) this.checkQuota();
+  },
+
+  async checkQuota() {
+    // 测试期旁路：配额放开时跳过查询，避免旧版云函数的 new 档上限静默拦截对话
+    if (config.quotaBypass) return;
+    try {
+      const res = await wx.cloud.callFunction({
+        name: config.cloudFunctions.getQuota,
+        data: { mode: "L2" },
+      });
+      const q = (res.result && res.result.data) || {};
+      const exhausted = !q.available && q.used >= q.limit;
+      const wasExhausted = this.data.quotaExhausted;
+      if (exhausted !== wasExhausted) {
+        this.setData({ quotaExhausted: exhausted });
+        if (exhausted) {
+          wx.showToast({ title: "今日 L2 共修次数已用完，明日再会", icon: "none", duration: 2500 });
+        }
+      }
+    } catch (e) {
+      console.error("[dual] quota check failed:", e);
+    }
+  },
+
+  async ensureSession() {
+    if (this.sessionId) return this.sessionId;
+    const res = await wx.cloud.callFunction({
+      name: config.cloudFunctions.sessionStore,
+      data: { action: "create", mode: "L2" },
+    });
+    const result = res.result || {};
+    const data = result.data || {};
+    if (!data.sessionId) {
+      if (result.code === -2) {
+        // 测试期旁路：云端尚未部署 QUOTA_BYPASS 版云函数时，
+        // 降级为"不落库继续对话"，保证测试不中断
+        if (config.quotaBypass) {
+          this.sessionId = "";
+          wx.showToast({ title: "测试模式：本次对话暂不入库", icon: "none", duration: 2000 });
+          return "";
+        }
+        this.setData({ quotaExhausted: true });
+        const err = new Error("quota_exhausted");
+        err.code = -2;
+        err.userMsg = "今日 L2 共修次数已用完，明日再会";
+        throw err;
+      }
+      throw new Error("session create failed: " + (result.msg || "unknown"));
+    }
+    this.sessionId = data.sessionId;
+    return this.sessionId;
+  },
+
+  async loadSessionContext() {
+    // 测试旁路降级（sessionId 为空 = 不落库模式）：跳过云端读取
+    if (!this.sessionId) return [];
+    const res = await wx.cloud.callFunction({
+      name: config.cloudFunctions.sessionStore,
+      data: { action: "get", sessionId: this.sessionId },
+    });
+    const session = (res.result && res.result.data && res.result.data.session) || {};
+    this.sessionSummary = session.summary || "";
+    const round = Number(session.round) || 0;
+    if (round >= MAX_USER_ROUNDS) {
+      this.setData({ roundLimitReached: true, round: round });
+      return null;
+    }
+    this.setData({ round: round });
+    return session.recent || [];
+  },
+
+  async sendMessage() {
+    const text = this.data.inputText.trim();
+    if (!text || this.data.streaming || this.data.roundLimitReached) return;
+    if (this.data.quotaExhausted) return;
+    await this.checkQuota();
+    if (this.data.quotaExhausted) return;
+
+    const checkResult = await msgSecCheck(text, 1);
+    if (!checkResult.pass) {
+      wx.showToast({
+        title: checkResult.degraded ? "网络繁忙，请稍后重试" : "内容包含违规信息，请修改后重试",
+        icon: "none", duration: 2000,
+      });
+      return;
+    }
+
+    const newRound = Number(this.data.round) + 1;
+    if (newRound > MAX_USER_ROUNDS) return;
+
+    // 首轮匹配专家类型
+    if (!this.expertPrompt) {
+      const expert = route(text);
+      this.expertPrompt = expert.prompt;
+    }
+
+    const messages = [...this.data.messages, displayMsg("user", text)];
+    const userIdx = messages.length - 1;
+
+    try {
+      await this.ensureSession();
+      const recent = await this.loadSessionContext();
+      if (recent === null) return;
+
+      // 显示用户气泡 + 专家占位气泡
+      this.setData({
+        messages: [...messages, displayMsg("expert", "")],
+        inputText: "",
+        streaming: true,
+        waitingFirstChunk: true,
+        round: newRound,
+        phase: "expert",
+      });
+      const expertIdx = this.data.messages.length - 1;
+
+      await this.persistMessage("user", text, newRound);
+
+      // 阶段一：专家讲解
+      const expertText = await this.doStream({
+        role: "expert",
+        msgIndex: expertIdx,
+        apiMessages: [
+          { role: "system", content: this.expertPrompt },
+          ...(this.sessionSummary ? [{ role: "system", content: `更早的对话摘要：${this.sessionSummary}` }] : []),
+          ...recentToApi(recent),
+          { role: "user", content: text },
+        ],
+      });
+      await this.persistMessage("assistant", expertText, newRound);
+
+      // 阶段二：苏格拉底追问（能看到专家上一轮原话）
+      const updatedMessages = [...this.data.messages, displayMsg("socrates", "")];
+      this.setData({ messages: updatedMessages, waitingFirstChunk: true, phase: "socrates" });
+      const socIdx = updatedMessages.length - 1;
+
+      const socratesText = await this.doStream({
+        role: "socrates",
+        msgIndex: socIdx,
+        apiMessages: [
+          { role: "system", content: prompts.socrates },
+          ...(this.sessionSummary ? [{ role: "system", content: `更早的对话摘要：${this.sessionSummary}` }] : []),
+          ...recentToApi(recent),
+          { role: "user", content: text },
+          { role: "assistant", content: expertText },
+          { role: "user", content: "专家刚才讲解了上面的内容。请就专家的讲解逻辑或用户原来的观点，追问一个具体的问题。" },
+        ],
+      });
+      await this.persistMessage("assistant", socratesText, newRound);
+
+      this.setData({ streaming: false, waitingFirstChunk: false, phase: "" });
+
+      if (newRound >= MAX_USER_ROUNDS) {
+        this.setData({ roundLimitReached: true });
+        this.promptReport();
+      }
+    } catch (e) {
+      console.error("[dual] send failed:", e);
+      if (this.data.streaming) {
+        const restored = this.data.messages.slice();
+        // 失败时回滚本轮新增气泡：expert 阶段只多了 user+expert 共 2 条；
+        // socrates 阶段多了 user+expert+socrates 共 3 条
+        const trimCount = this.data.phase === "socrates" ? 3 : 2;
+        restored.splice(userIdx, trimCount);
+        this.setData({ messages: restored, inputText: text });
+      } else {
+        this.setData({ inputText: text });
+      }
+      this.setData({ streaming: false, waitingFirstChunk: false, phase: "" });
+      // 重新同步前端 round 与服务端：persist 可能已落库 user 消息并推进服务端 round，
+      // 直接重试会跳轮或重复落库。loadSessionContext 会从服务端拉最新 round 覆盖前端。
+      if (this.sessionId) {
+        this.loadSessionContext().catch(() => {});
+      }
+      // 配额耗尽时显示明确提示，避免误报为"网络异常"
+      const title = e && e.code === -2 && e.userMsg
+        ? e.userMsg
+        : "网络异常，请稍后重试";
+      wx.showToast({ title, icon: "none", duration: 2500 });
+    }
+  },
+
+  /** 单次流式调用（Promise 化，串行编排用） */
+  doStream({ role, msgIndex, apiMessages }) {
+    const self = this;
+    return new Promise((resolve, reject) => {
+      let fullText = "";
+      const chat = self.selectComponent("#chat");
+      streamText({
+        model: config.model.chat,
+        messages: apiMessages,
+        mode: "L2",
+        sessionId: self.sessionId || "",
+        onChunk(delta) {
+          fullText += delta;
+          // 性能优化：组件局部更新，避免长对话时全量 setData 卡顿
+          if (chat) {
+            chat.appendChunk(delta);
+          } else {
+            const updated = [...self.data.messages];
+            updated[msgIndex] = displayMsg(role, fullText);
+            self.setData({ messages: updated });
+          }
+          if (self.data.waitingFirstChunk) {
+            self.setData({ waitingFirstChunk: false });
+          }
+        },
+        // 重试时 ai-stream 会从头重发内容：先清空气泡旧文本，避免新旧拼接
+        onChunkReset() {
+          fullText = "";
+          const resetMessages = [...self.data.messages];
+          resetMessages[msgIndex] = displayMsg(role, "");
+          self.setData({ messages: resetMessages });
+          if (chat) chat.buildRenderMessages(resetMessages);
+        },
+        onStreamEnd({ fullText: final, finishReason }) {
+          const safe = finishReason === "sensitive";
+          let result = safe ? SENSITIVE_FALLBACK : final;
+
+          // P1 修复（输出二次审核）：finish_reason 非 sensitive 时再做一次 msgSecCheck
+          // 修复（2026-08-25）：跳过 eventStream 后 finish_reason 已失效，msgSecCheck
+          // 成为最后一道真防线——degraded 时也必须 fail-close（合规优先于体验）。
+          const finalize = () => {
+            const updated = [...self.data.messages];
+            updated[msgIndex] = displayMsg(role, result);
+            self.setData({ messages: updated });
+            resolve(result);
+          };
+
+          if (!safe && result) {
+            msgSecCheck(result, 2)
+              .then((outCheck) => {
+                if (!outCheck.pass) {
+                  result = SENSITIVE_FALLBACK;
+                }
+                finalize();
+              })
+              .catch((e) => {
+                console.warn(`[dual] ${role} output second-check failed; fail-close:`, e && e.message);
+                result = SENSITIVE_FALLBACK;
+                finalize();
+              });
+          } else {
+            finalize();
+          }
+        },
+        onError(err) {
+          console.error(`[dual] ${role} stream error:`, err);
+          const updated = [...self.data.messages];
+          updated[msgIndex] = displayMsg(role, "抱歉，出了点问题。请稍后重试。");
+          self.setData({ messages: updated });
+          wx.showToast({ title: "AI 服务无响应，请稍后重试", icon: "none", duration: 2500 });
+          reject(err);
+        },
+      });
+    });
+  },
+
+  async persistMessage(role, content, round) {
+    // 不落库模式（测试旁路降级 / 会话不存在）：静默跳过
+    if (!this.sessionId) return;
+    try {
+      const res = await wx.cloud.callFunction({
+        name: config.cloudFunctions.sessionStore,
+        data: { action: "append", sessionId: this.sessionId, role, content, round },
+      });
+      if (!res.result || res.result.code !== 0) {
+        console.error("[dual] persist rejected:", (res.result && res.result.msg) || "unknown error");
+      }
+    } catch (e) {
+      console.error("[dual] persist failed:", e);
+    }
+  },
+
+  promptReport() {
+    // 不入库降级模式（测试旁路下 create 被旧版云函数拒绝）：无会话可生成报告
+    if (!this.sessionId) {
+      wx.showModal({
+        title: "无法生成报告",
+        content: "本次对话未在云端保存（测试降级模式），请先部署新版 sessionStore 云函数后再试。",
+        showCancel: false,
+        confirmText: "知道了",
+      });
+      return;
+    }
+    wx.showModal({
+      title: "共修完成",
+      content: "已达 6 轮上限，去看看你的思辨报告吧。",
+      confirmText: "查看报告",
+      cancelText: "再看看",
+      success: (res) => {
+        if (res.confirm) {
+          wx.navigateTo({
+            url: `/pages/report/index?sessionId=${this.sessionId}`,
+          });
+        }
+      },
+    });
+  },
+});

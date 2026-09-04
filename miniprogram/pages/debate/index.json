@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "star-field": "/components/star-field/index",
+    "chat-stream": "/components/chat-stream/index"
+  },
+  "navigationBarTitleText": "辩论场"
+}

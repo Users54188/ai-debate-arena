@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "star-field": "/components/star-field/index"
+  },
+  "navigationStyle": "custom"
+}

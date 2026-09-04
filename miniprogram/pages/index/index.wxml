@@ -1,0 +1,99 @@
+<view class="page">
+  <star-field />
+
+  <scroll-view scroll-y class="scaffold">
+    <!-- Hero 区：星空主题装饰图 -->
+    <view class="hero">
+      <image class="hero-emblem" src="/images/header-logo.png" mode="widthFix" />
+      <text class="hero-sub">在星辰之间，与 AI 共思考</text>
+    </view>
+
+    <!-- 思辨之旅卡（玻璃态 + 段位展示 + 数据） -->
+    <view class="journey glass-card">
+      <view class="journey-head">
+        <!-- 段位徽章（恢复 + 强化 2026-09-02）：左侧段位图标 + 当前段位名 + 距离下一段位 -->
+        <view class="rank-bar">
+          <image wx:if="{{journey.rankImage}}" class="rank-emblem" src="{{journey.rankImage}}" mode="aspectFit" />
+          <view class="rank-text">
+            <text class="rank-tag">当前段位</text>
+            <text class="rank-title">{{journey.rankName || '新手'}}</text>
+            <text wx:if="{{journey.nextRank}}" class="rank-next">距 {{journey.nextRank}} · {{journey.progress}}%</text>
+          </view>
+        </view>
+        <text class="journey-title">{{journey.title}}</text>
+        <text class="journey-sub">完成更多思辨，点亮你的星空</text>
+      </view>
+      <view class="journey-stats">
+        <view class="stat">
+          <text class="stat-value">{{journey.count}}</text>
+          <text class="stat-label">完成场次</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat">
+          <text class="stat-value">{{journey.best}}</text>
+          <text class="stat-label">最佳得分</text>
+        </view>
+        <view class="stat-divider"></view>
+        <view class="stat">
+          <text class="stat-value">{{journey.mode}}</text>
+          <text class="stat-label">最近模式</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 三种深度 -->
+    <view class="modes">
+      <text class="section-title">选择思辨深度</text>
+
+      <!-- L1 -->
+      <view class="mode glass-card" bindtap="goSocrates" hover-class="card-hover" hover-stay-time="80">
+        <view class="mode-side">
+          <image class="mode-mark mark-l1" src="/images/l1-badge.jpeg" mode="aspectFit" />
+        </view>
+        <view class="mode-main">
+          <text class="mode-title">苏格拉底追问</text>
+          <text class="mode-desc">AI 用反问帮你检验信念，不给答案</text>
+          <view class="mode-foot">
+            <text class="chip chip-l1">入门</text>
+            <text class="mode-arrow">进入 ›</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- L2 -->
+      <view class="mode glass-card" bindtap="goDual" hover-class="card-hover" hover-stay-time="80">
+        <view class="mode-side">
+          <image class="mode-mark mark-l2" src="/images/l2-badge.jpeg" mode="aspectFit" />
+        </view>
+        <view class="mode-main">
+          <text class="mode-title">双人共修</text>
+          <text class="mode-desc">专家讲解 + 苏格拉底追问，交替进行</text>
+          <view class="mode-foot">
+            <text class="chip chip-l2">进阶</text>
+            <text class="mode-arrow">进入 ›</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- L3 -->
+      <view class="mode glass-card" bindtap="goDebate" hover-class="card-hover" hover-stay-time="80">
+        <view class="mode-side">
+          <image class="mode-mark mark-l3" src="/images/l3-badge.jpeg" mode="aspectFit" />
+        </view>
+        <view class="mode-main">
+          <text class="mode-title">三方辩论</text>
+          <text class="mode-desc">正方 · 反方 · 裁判，你围观投票</text>
+          <view class="mode-foot">
+            <text class="chip chip-l3">高阶</text>
+            <text class="mode-arrow">进入 ›</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="footnote">AI 生成内容仅供参考</view>
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <onboarding wx:if="{{showOnboarding}}" bind:done="onOnboardingDone" />
+</view>

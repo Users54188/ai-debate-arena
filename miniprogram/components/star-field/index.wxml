@@ -1,0 +1,14 @@
+<view class="star-field" aria-hidden="true">
+  <!-- 顶部紫色星云光晕 -->
+  <view class="nebula-top"></view>
+  <!-- 远景星点（慢闪烁） -->
+  <view class="stars-far">
+    <view class="star" wx:for="{{28}}" wx:key="*this" style="--x: {{(item * 37) % 100}}; --y: {{(item * 53) % 60}}; --d: {{(item % 5) + 2}}s; --o: {{(item % 3) * 0.2 + 0.3}};"></view>
+  </view>
+  <!-- 近景星点（静止高亮） -->
+  <view class="stars-near">
+    <view class="star" wx:for="{{12}}" wx:key="*this" style="--x: {{(item * 71) % 100}}; --y: {{(item * 31) % 70}};"></view>
+  </view>
+  <!-- 底部柔光地平线 -->
+  <view class="horizon-glow"></view>
+</view>

@@ -1,0 +1,51 @@
+<scroll-view
+  id="cv-scroll"
+  class="cv"
+  scroll-y
+  scroll-top="{{scrollTop}}"
+  scroll-with-animation="{{false}}"
+  enhanced
+  show-scrollbar="{{false}}"
+>
+  <view class="cv-inner">
+    <view
+      wx:for="{{renderMessages}}"
+      wx:key="index"
+      class="msg {{item.isUser ? 'msg-user' : 'msg-ai'}} {{item.isThinking ? 'msg-thinking' : ''}}"
+    >
+      <!-- AI 头像（左侧固定）：思考中显示图片，否则显示默认头像 -->
+      <view
+        wx:if="{{item.showAvatar}}"
+        class="avatar avatar-{{item.role}}"
+        style="--role-color: var({{item.roleVar}});"
+      >
+        <image wx:if="{{item.avatarImage && !item.isThinking}}" src="{{item.avatarImage}}" mode="aspectFill" class="avatar-img" />
+        <image wx:elif="{{item.isThinking}}" src="{{item.avatarImage || '/images/socrates-avatar.jpeg'}}" mode="aspectFill" class="avatar-img-placeholder" />
+        <text wx:else>{{item.avatarChar}}</text>
+      </view>
+
+      <!-- 消息主体 -->
+      <view class="msg-body">
+        <view wx:if="{{!item.isUser && !item.isThinking}}" class="role-label">
+          <text>{{item.roleText}}</text>
+          <text wx:if="{{item.round}}" class="round-tag">第 {{item.round}} 轮</text>
+        </view>
+        <view class="bubble {{item.isUser ? 'bubble-user' : (item.isThinking ? 'bubble-ai bubble-thinking' : 'bubble-ai')}}" style="--role-color: var({{item.roleVar}});">
+          <text wx:if="{{!item.isThinking}}" class="bubble-text" user-select="{{!item.isUser}}">{{item.content}}</text>
+          <view wx:if="{{item.isThinking}}" class="think-line">
+            <view class="dot"></view>
+            <view class="dot"></view>
+            <view class="dot"></view>
+          </view>
+          <text wx:if="{{item.note}}" class="bubble-note">{{item.note}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view id="cv-anchor" class="anchor"></view>
+  </view>
+</scroll-view>
+
+<view wx:if="{{showAiLabel && renderMessages.length > 0}}" class="ai-foot">
+  <text>以上内容为 AI 生成，仅供参考</text>
+</view>

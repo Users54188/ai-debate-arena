@@ -1,0 +1,233 @@
+/* onboarding —— 星夜思辨引导屏 */
+
+.onboarding-mask {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, var(--night-1, #0E0830) 0%, var(--night-0, #07041F) 100%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+}
+
+.onboarding-swiper {
+  flex: 1;
+  width: 100%;
+}
+
+.slide {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 48rpx;
+  box-sizing: border-box;
+  color: var(--text-1, #F5F3FF);
+  text-align: center;
+  position: relative;
+}
+
+/* 每屏背景柔光晕（覆盖原 emoji 单色背景，营造星空感） */
+.slide::before {
+  content: "";
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 480rpx;
+  height: 480rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(157, 107, 255, 0.32) 0%, transparent 65%);
+  filter: blur(20rpx);
+  pointer-events: none;
+}
+
+.slide-emoji {
+  position: relative;
+  z-index: 1;
+  font-size: 160rpx;
+  margin-bottom: 60rpx;
+  filter: drop-shadow(0 0 40rpx rgba(157, 107, 255, 0.6));
+}
+
+.slide-title {
+  position: relative;
+  z-index: 1;
+  font-size: 48rpx;
+  font-weight: 700;
+  margin-bottom: 32rpx;
+  letter-spacing: 4rpx;
+  color: var(--text-1, #F5F3FF);
+}
+
+.slide-desc {
+  position: relative;
+  z-index: 1;
+  font-size: 30rpx;
+  line-height: 1.8;
+  opacity: 0.85;
+  max-width: 560rpx;
+  color: var(--text-2, #C7CFF0);
+  letter-spacing: 1rpx;
+}
+
+.onboarding-dots {
+  display: flex;
+  justify-content: center;
+  gap: 16rpx;
+  padding: 24rpx 0 16rpx;
+}
+
+.dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 8rpx;
+  background: rgba(157, 107, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.dot-active {
+  width: 56rpx;
+  background: linear-gradient(90deg, var(--star-purple, #9D6BFF), var(--star-violet, #C084FC));
+  box-shadow: 0 0 16rpx rgba(157, 107, 255, 0.6);
+}
+
+.onboarding-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 40rpx 50rpx;
+}
+
+.skip-btn {
+  color: var(--text-3, #8B86C7);
+  font-size: 28rpx;
+  padding: 12rpx 24rpx;
+  letter-spacing: 2rpx;
+}
+
+.next-btn {
+  background: linear-gradient(135deg, var(--star-purple, #9D6BFF), var(--star-indigo, #6366F1));
+  color: #FFFFFF;
+  font-size: 30rpx;
+  font-weight: 600;
+  border-radius: 999rpx;
+  padding: 18rpx 64rpx;
+  line-height: 1;
+  letter-spacing: 2rpx;
+  box-shadow: 0 0 32rpx rgba(157, 107, 255, 0.5);
+  border: none;
+}
+
+.next-btn::after {
+  border: none;
+}
+
+.next-btn-hover {
+  opacity: 0.85;
+}
+
+/* 末屏协议同意 */
+.agree-row {
+  padding: 8rpx 40rpx 0;
+  display: flex;
+  justify-content: center;
+}
+
+.agree-label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 24rpx;
+  color: var(--text-2, #C7CFF0);
+  line-height: 1.6;
+}
+
+.agree-label checkbox {
+  transform: scale(0.8);
+  margin-right: 8rpx;
+}
+
+.agree-text {
+  font-size: 24rpx;
+  color: var(--text-2, #C7CFF0);
+}
+
+.agree-link {
+  font-size: 24rpx;
+  color: var(--star-purple, #9D6BFF);
+  text-decoration: underline;
+}
+
+/* 协议条款弹窗 */
+.terms-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10001;
+  display: flex;
+  align-items: flex-end;
+}
+
+.terms-sheet {
+  width: 100%;
+  max-height: 80vh;
+  background: var(--night-0, #07041F);
+  border-radius: 32rpx 32rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.terms-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx 40rpx 16rpx;
+  border-bottom: 1rpx solid rgba(157, 107, 255, 0.15);
+}
+
+.terms-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-1, #F5F3FF);
+  letter-spacing: 2rpx;
+}
+
+.terms-close {
+  font-size: 48rpx;
+  color: var(--text-3, #8B86C7);
+  padding: 0 8rpx;
+  line-height: 1;
+}
+
+.terms-scroll {
+  flex: 1;
+  padding: 24rpx 40rpx;
+  box-sizing: border-box;
+  min-height: 0;
+}
+
+.terms-content {
+  display: block;
+  font-size: 26rpx;
+  line-height: 1.85;
+  color: var(--text-2, #C7CFF0);
+  white-space: pre-wrap;
+  letter-spacing: 1rpx;
+}
+
+.terms-confirm {
+  margin: 16rpx 40rpx 24rpx;
+  background: linear-gradient(135deg, var(--star-purple, #9D6BFF), var(--star-indigo, #6366F1));
+  color: #FFFFFF;
+  border-radius: 999rpx;
+  padding: 18rpx 0;
+  font-size: 30rpx;
+  letter-spacing: 2rpx;
+  border: none;
+}
+
+.terms-confirm::after {
+  border: none;
+}

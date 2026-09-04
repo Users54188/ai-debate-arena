@@ -1,0 +1,138 @@
+/* 苏格拉底对话页 —— 星夜思辨 */
+
+.page {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--night-1) 0%, var(--night-0) 100%);
+}
+
+.body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* === 底部输入坞 === */
+.dock {
+  position: relative;
+  z-index: 2;
+  background: rgba(14, 8, 48, 0.92);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  border-top: 1rpx solid var(--glass-border);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.dock-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.dock-input {
+  flex: 1;
+  height: 80rpx;
+  padding: 0 28rpx;
+  background: var(--glass-bg);
+  border: 1rpx solid var(--glass-border);
+  border-radius: var(--r-pill);
+  color: var(--text-1);
+  font-size: var(--fs-body);
+  letter-spacing: 1rpx;
+  box-sizing: border-box;
+}
+
+.ph {
+  color: var(--text-4);
+  font-size: var(--fs-body);
+  letter-spacing: 1rpx;
+}
+
+.dock-send {
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--star-purple), var(--star-indigo));
+  color: #FFFFFF;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  border-radius: var(--r-pill);
+  padding: 0 32rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border: none;
+  box-shadow: 0 0 24rpx rgba(157, 107, 255, 0.4);
+}
+
+.btn-hover {
+  opacity: 0.85;
+  transform: scale(0.97);
+}
+
+.dock-send[disabled] {
+  background: var(--night-3);
+  color: var(--text-3);
+  box-shadow: none;
+}
+
+.notice {
+  text-align: center;
+  padding: 16rpx 24rpx 4rpx;
+  font-size: var(--fs-caption);
+  color: var(--star-amber);
+  letter-spacing: 1rpx;
+}
+
+.notice-round {
+  color: var(--star-cyan);
+}
+
+/* === 多重判定 UI === */
+/* AI 收尾建议条（软信号） */
+.ai-end-tip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-top: 12rpx;
+  padding: 16rpx 24rpx;
+  background: rgba(181, 139, 255, 0.12);
+  border: 1rpx solid var(--glass-border);
+  border-radius: var(--r-md);
+}
+
+.ai-end-text {
+  flex: 1;
+  font-size: var(--fs-caption);
+  color: #c7cff0;
+  letter-spacing: 1rpx;
+}
+
+.ai-end-btn {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0 20rpx;
+  height: 52rpx;
+  line-height: 52rpx;
+  background: linear-gradient(135deg, var(--star-purple), var(--star-indigo));
+  color: #ffffff;
+  font-size: var(--fs-caption);
+  border-radius: var(--r-pill);
+  border: none;
+}
+
+/* 用户主动结束入口 */
+.manual-end {
+  text-align: center;
+  padding: 10rpx 24rpx 2rpx;
+}
+
+.manual-end-link {
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  text-decoration: underline;
+  letter-spacing: 1rpx;
+}

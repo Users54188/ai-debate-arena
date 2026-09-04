@@ -1,0 +1,134 @@
+<view class="page">
+  <star-field />
+
+  <view wx:if="{{loading}}" class="state-wrap">
+    <empty-state mode="loading" title="报告生成中..." />
+  </view>
+
+  <view wx:elif="{{loadError}}" class="state-wrap">
+    <empty-state
+      mode="error"
+      title="{{loadError}}"
+      desc="{{notFound ? '可能链接已失效或会话被删除' : '网络异常或服务繁忙'}}"
+      cta="{{notFound ? '回首页' : '重试'}}"
+      bind:tap="onStateCta"
+    />
+  </view>
+
+  <scroll-view wx:else scroll-y class="scaffold">
+    <view wx:if="{{isShareView}}" class="share-hint">分享视图：仅展示报告内容，对话原文仅分享者可见</view>
+
+    <!-- 合规：AI 生成内容声明（小程序硬性要求，常驻首屏可见） -->
+    <view class="report-ai-banner">
+      <text class="ai-banner-text">本报告由 AI 基于对话记录生成，仅供思辨练习参考</text>
+    </view>
+
+    <!-- 评分环 -->
+    <view class="glass-card score-card">
+      <canvas type="2d" id="scoreRing" class="score-ring"></canvas>
+      <view class="score-meta">
+        <view class="meta-item">
+          <text class="meta-label">基础</text>
+          <text class="meta-value">{{report.baseScore}}</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-label">深度</text>
+          <text class="meta-value">{{report.depthScore}}</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-label">修正</text>
+          <text class="meta-value">{{report.fixScore}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- L2 双维度雷达 -->
+    <view wx:if="{{isL2}}" class="glass-card radar-card">
+      <text class="card-title">双维评估</text>
+      <canvas type="2d" id="radarChart" class="radar-canvas"></canvas>
+      <view class="radar-labels">
+        <view class="rl-item"><text class="dot-k"></text>知识掌握：{{report.knowledgeScore || 0}}分</view>
+        <view class="rl-item"><text class="dot-d"></text>思辨深度：{{report['思辨深度分'] || report.score || 0}}分</view>
+      </view>
+      <view wx:if="{{report.knowledgeDegraded}}" class="degraded-tip">知识评估降级，仅供参考</view>
+    </view>
+
+    <!-- 策略覆盖 -->
+    <view wx:if="{{strategyRows.length}}" class="glass-card">
+      <text class="card-title">追问策略覆盖</text>
+      <view wx:if="{{report.degraded}}" class="degraded-tip">策略标注降级，本次未覆盖</view>
+      <block wx:else>
+        <view class="strategy-row" wx:for="{{strategyRows}}" wx:key="key">
+          <text class="strategy-label">{{item.label}}</text>
+          <view class="strategy-track">
+            <view class="strategy-bar {{item.covered ? 'on' : 'off'}}" style="width: {{item.pct}}%"></view>
+          </view>
+          <text class="strategy-mark {{item.covered ? 'on' : 'off'}}">{{item.covered ? '✓' : '○'}}</text>
+        </view>
+      </block>
+    </view>
+
+    <!-- 谬误列表 -->
+    <view wx:if="{{fallacyItems.length}}" class="glass-card">
+      <text class="card-title">论证谬误（点击定位原话）</text>
+      <view
+        class="fallacy-item"
+        wx:for="{{fallacyItems}}"
+        wx:key="index"
+        data-index="{{index}}"
+        bindtap="onFallacyTap"
+        hover-class="item-hover"
+      >
+        <text class="fallacy-type">{{item.type}}</text>
+        <text class="fallacy-quote">「{{item.quote}}」</text>
+        <text class="fallacy-round">第 {{item.round}} 轮</text>
+      </view>
+    </view>
+
+    <!-- 高光原话 -->
+    <view wx:if="{{report.highlights.length}}" class="glass-card">
+      <text class="card-title">你的精彩原话</text>
+      <view class="highlight-item" wx:for="{{report.highlights}}" wx:key="index">
+        <text>「{{item}}」</text>
+      </view>
+    </view>
+
+    <!-- 报告正文 -->
+    <view class="glass-card">
+      <text class="card-title">思辨报告</text>
+      <view wx:if="{{report.degraded}}" class="degraded-tip">本次分析部分降级，评分仅为基础分</view>
+      <text class="report-text" user-select>{{report.reportText}}</text>
+    </view>
+
+    <!-- 对话回溯 -->
+    <view wx:if="{{transcript.length}}" class="glass-card">
+      <text class="card-title">对话回溯</text>
+      <scroll-view scroll-y class="transcript-scroll" scroll-into-view="{{scrollTarget}}">
+        <view
+          wx:for="{{transcript}}"
+          wx:key="index"
+          id="msg-{{index}}"
+          class="msg-row {{item.role === 'user' ? 'msg-user' : 'msg-ai'}} {{highlightIndex === index ? 'highlight' : ''}}"
+        >
+          <text class="msg-role">{{item.role === 'user' ? '我' : '苏格拉底'}}</text>
+          <text class="msg-content">{{item.content}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <button class="btn-primary poster-btn" bindtap="onPoster">生成分享海报</button>
+
+    <view class="bottom-spacer"></view>
+  </scroll-view>
+
+  <!-- 海报弹层 -->
+  <view wx:if="{{poster.show}}" class="poster-overlay" bindtap="onPosterClose">
+    <view class="poster-sheet" catchtap="noop">
+      <canvas type="2d" id="posterCanvas" class="poster-canvas"></canvas>
+      <view class="poster-actions">
+        <button class="btn-primary poster-save" bindtap="onPosterSave">保存到相册</button>
+        <button class="btn-ghost poster-close" bindtap="onPosterClose">关闭</button>
+      </view>
+    </view>
+  </view>
+</view>

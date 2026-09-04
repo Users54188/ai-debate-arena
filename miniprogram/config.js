@@ -1,0 +1,93 @@
+/**
+ * 思辨场 — 全局配置
+ * 所有模型、环境、配额常量统一在此维护，禁止散落硬编码。
+ */
+
+module.exports = {
+  // 云开发环境 ID（部署时替换）
+  envId: "cloudbase-d3gvaqczs2298c253",
+
+  // 小程序 appid（与 project.config.json 一致）：多端模式下 wx.cloud.init
+  // 必须显式传入 appid，普通小程序模式下传入无害
+  appid: "wxc158769af1e2ce0a",
+
+  // 配额旁路总开关（与云函数 getQuota/sessionStore/userProfile 的 QUOTA_BYPASS 联动）
+  // true  ：前端 checkQuota 直接视为可用；云端拒绝时降级为"不落库继续对话"
+  // false ：正式配额拦截（上线恒为 false；调试时本地修改勿提交）
+  // 正式上线版（2026-09-02 已还原）
+  quotaBypass: false,
+
+  // 是否强制微信官方手机号验证（getPhoneNumber）后才能进入。
+  // 该接口仅「非个人主体 + 已认证」小程序可用；个人主体必须保持 false，
+  // 此时登录以 openid 区分用户、手机号入口隐藏。升级为企业/个体户主体并开通
+  // 「手机号」接口、部署 userProfile 云函数后，再改为 true 开启一键手机号验证。
+  requirePhoneVerification: false,
+
+  // 模型配置
+  model: {
+    chat: "hy3-preview", // 实时对话流式调用
+    report: "hy3",       // 报告生成 / 评测裁判
+  },
+
+  // 每日配额（单用户、跨模式独立计数）— 正式档（与云函数 getQuota / sessionStore /
+  // userProfile 的 TIERS.new 档同源）；放宽版（2026-09-02 上线）：体验优先，
+  // 兼顾微信 AI 免费额度与防滥用
+  dailyQuota: {
+    L1: 8,  // 单人苏格拉底每日最大会话数（new 档）
+    L2: 5,  // 双人共修（new 档）
+    L3: 3,  // 三方辩论（new 档）
+  },
+
+  // 单会话轮次上限（与 TIERS.new.maxRounds 对齐）
+  maxRounds: 30,
+
+  // 流式渲染节流 (ms) —— 降低到 60ms 让首字更快到达，避免感知卡顿
+  streamThrottle: 60,
+
+  // 流式调用超时配置
+  streamTimeout: {
+    maxRetries: 2,
+    baseDelayMs: 1000,
+    maxDelayMs: 5000,
+  },
+
+  // eventStream 读取超时防护（ms）：usage/note 提取不阻塞对话主流程
+  streamEventTimeoutMs: 3000,
+
+  // ⚠️ 上线审计加固（2026-08-25）：实测微信云 AI SDK 对迭代器 return() 不释放底层
+  // 连接，eventStream 是泄漏主源——默认跳过消费（usage 遥测随之缺失，可接受）。
+  // 若 SDK 后续版本修复，可置 false 恢复 usage 采集
+  streamSkipEventStream: true,
+
+  // 流式 watchdog：相邻 chunk 空闲超过 idle 判定挂起走重试；整条流超过 total 强制终止，
+  // 避免 textIter.next() 半开挂起导致 streaming 标志永久锁死输入框
+  streamIdleTimeoutMs: 30000,
+  streamTotalTimeoutMs: 90000,
+
+  // 建连超时（ms）：aiModel.streamText() 本身也可能被网关挂起（并发额度耗尽时
+  // 表现为半开等待而非报错），无超时则 await 永久阻塞——"第 3 次点击无反应"的
+  // 直接根因。超时后走重试（新实例）→ 仍失败 → onError 明确提示
+  streamConnectTimeoutMs: 15000,
+
+  // 云函数名
+  cloudFunctions: {
+    sessionStore: "sessionStore",
+    securityCheck: "securityCheck",
+    userProfile: "userProfile",
+    getQuota: "getQuota",
+    generateReport: "generateReport",
+    topics: "topics",
+  },
+
+  // 数据库集合名
+  collections: {
+    sessions: "sessions",
+    reports: "reports",
+    users: "users",
+    userQuota: "user_quota",
+    topics: "topics_v1",
+    tokenUsage: "token_usage",
+    votes: "votes",
+    evalRuns: "eval_runs",
+  },
+};

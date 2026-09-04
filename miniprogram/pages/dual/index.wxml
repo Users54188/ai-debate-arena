@@ -1,0 +1,45 @@
+<view class="page">
+  <star-field />
+
+  <view class="body">
+    <chat-stream
+      id="chat"
+      messages="{{messages}}"
+      streaming="{{streaming}}"
+      waitingFirstChunk="{{waitingFirstChunk}}"
+      showAiLabel="{{true}}"
+    />
+  </view>
+
+  <view class="dock safe-bottom">
+    <view class="dock-inner">
+      <input
+        class="dock-input"
+        model:value="{{inputText}}"
+        bindconfirm="sendMessage"
+        placeholder="说出你的话题，专家会为你讲解…"
+        placeholder-class="ph"
+        confirm-type="send"
+        confirm-hold="true"
+        hold-keyboard="true"
+        adjust-position="{{true}}"
+        cursor-spacing="28"
+        disabled="{{streaming || quotaExhausted}}"
+      />
+      <button
+        class="dock-send"
+        bindtap="sendMessage"
+        disabled="{{inputText.length === 0 || streaming || quotaExhausted}}"
+        size="mini"
+        hover-class="btn-hover"
+      >发送</button>
+    </view>
+
+    <view wx:if="{{quotaExhausted}}" class="notice">
+      今日 L2 共修次数已用完，明日再会
+    </view>
+    <view wx:if="{{roundLimitReached}}" class="notice notice-round">
+      已达 6 轮上限，可查看思辨报告
+    </view>
+  </view>
+</view>

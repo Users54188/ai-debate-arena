@@ -1,0 +1,82 @@
+/* 星空背景层 —— 固定铺满父容器，z-index 极低 */
+
+.star-field {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 顶部紫色星云 —— 大半径径向渐变营造宇宙感 */
+.nebula-top {
+  position: absolute;
+  top: -30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140%;
+  height: 70%;
+  background:
+    radial-gradient(ellipse 50% 60% at 50% 50%, rgba(157, 107, 255, 0.28) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 45% at 30% 30%, rgba(99, 102, 241, 0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 30% 40% at 75% 40%, rgba(192, 132, 252, 0.18) 0%, transparent 70%);
+  filter: blur(20rpx);
+}
+
+/* 底部柔光地平线 —— 紫光从底部上升 */
+.horizon-glow {
+  position: absolute;
+  bottom: -20%;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(157, 107, 255, 0.06) 50%,
+    rgba(99, 102, 241, 0.12) 100%
+  );
+}
+
+/* 星点通用 */
+.stars-far,
+.stars-near {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.star {
+  position: absolute;
+  left: calc(var(--x, 50) * 1%);
+  top: calc(var(--y, 50) * 1%);
+  border-radius: 50%;
+  background: #FFFFFF;
+}
+
+/* 远景星点 —— 小、慢闪烁 */
+.stars-far .star {
+  width: 3rpx;
+  height: 3rpx;
+  opacity: var(--o, 0.4);
+  animation: star-twinkle var(--d, 3s) ease-in-out infinite;
+}
+
+/* 近景星点 —— 大、静止、带光晕 */
+.stars-near .star {
+  width: 5rpx;
+  height: 5rpx;
+  opacity: 0.85;
+  background: #F5F3FF;
+  box-shadow: 0 0 8rpx rgba(255, 255, 255, 0.9), 0 0 16rpx rgba(157, 107, 255, 0.4);
+}
+
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 0.9; transform: scale(1.15); }
+}

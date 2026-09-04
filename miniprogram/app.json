@@ -1,0 +1,51 @@
+{
+  "pages": [
+    "pages/login/index",
+    "pages/index/index",
+    "pages/socrates/index",
+    "pages/history/index",
+    "pages/profile/index",
+    "pages/dual/index",
+    "pages/debate/index",
+    "pages/report/index",
+    "pages/ranking/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#07041F",
+    "navigationBarTitleText": "思辨场",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#07041F",
+    "backgroundColorTop": "#07041F",
+    "backgroundColorBottom": "#07041F"
+  },
+  "tabBar": {
+    "color": "#8B86C7",
+    "selectedColor": "#B58BFF",
+    "backgroundColor": "#0E0830",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/home.png",
+        "selectedIconPath": "images/home_sel.png"
+      },
+      {
+        "pagePath": "pages/history/index",
+        "text": "历史",
+        "iconPath": "images/history.png",
+        "selectedIconPath": "images/history_sel.png"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "iconPath": "images/profile.png",
+        "selectedIconPath": "images/profile_sel.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "__usePrivacyCheck__": true
+}

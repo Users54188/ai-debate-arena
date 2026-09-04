@@ -1,0 +1,141 @@
+/* 段位排行页 —— 星夜思辨 */
+
+.page {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--night-1) 0%, var(--night-0) 100%);
+}
+
+.scaffold {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  padding: var(--sp-4) var(--sp-4) 0;
+  box-sizing: border-box;
+}
+
+.state-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-5) 0;
+}
+
+/* === 段位卡 === */
+.rank-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--sp-5) var(--sp-4);
+  margin-bottom: var(--sp-4);
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(157, 107, 255, 0.15));
+  border: 1rpx solid var(--glass-border-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--glow-purple);
+  text-align: center;
+}
+
+.rank-trophy {
+  width: 160rpx;
+  height: 160rpx;
+  margin-bottom: var(--sp-2);
+  filter: drop-shadow(0 0 32rpx rgba(251, 191, 36, 0.6));
+}
+
+.rank-name {
+  display: block;
+  font-size: 56rpx;
+  font-weight: 700;
+  letter-spacing: 4rpx;
+  color: var(--star-amber);
+  text-shadow: 0 0 32rpx rgba(251, 191, 36, 0.6);
+  margin-bottom: 8rpx;
+}
+
+.rank-next {
+  display: block;
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  letter-spacing: 1rpx;
+  margin-bottom: var(--sp-2);
+}
+
+.rank-progress {
+  width: 80%;
+  height: 14rpx;
+  background: rgba(157, 107, 255, 0.12);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.rank-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--star-purple), var(--star-amber));
+  box-shadow: 0 0 16rpx rgba(251, 191, 36, 0.5);
+  border-radius: var(--r-pill);
+  transition: width 600ms ease;
+}
+
+/* === 区段 === */
+.section-title {
+  display: block;
+  font-size: var(--fs-label);
+  color: var(--text-3);
+  letter-spacing: 4rpx;
+  margin-bottom: var(--sp-2);
+  text-transform: uppercase;
+}
+
+/* === 最佳成绩行 === */
+.row-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.row-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: var(--glass-bg);
+  border: 1rpx solid var(--glass-border);
+  border-radius: var(--r-md);
+}
+
+.row-mode {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, var(--star-purple), var(--star-indigo));
+  box-shadow: 0 0 16rpx rgba(157, 107, 255, 0.4);
+  flex-shrink: 0;
+}
+
+.row-label {
+  flex: 1;
+  font-size: var(--fs-body);
+  color: var(--text-1);
+  letter-spacing: 1rpx;
+}
+
+.row-score {
+  font-size: var(--fs-title);
+  font-weight: 700;
+  color: var(--star-amber);
+  letter-spacing: 1rpx;
+}
+
+.row-time {
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+}
+
+.bottom-spacer { height: 120rpx; }

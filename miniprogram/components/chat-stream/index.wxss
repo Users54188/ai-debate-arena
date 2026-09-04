@@ -1,0 +1,208 @@
+/* chat-stream —— 星夜思辨对话流样式
+ *
+ * 关键修复点对应注释，详见组件 index.js 头部说明。
+ */
+
+.cv {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.cv-inner {
+  padding: var(--sp-4) var(--sp-3) var(--sp-2);
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* === 消息行：AI 左 / 用户右 —— 不用 row-reverse，避免方向反转造成头像错位 === */
+.msg {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.msg-ai {
+  align-self: flex-start;
+  max-width: 86%;
+}
+
+.msg-user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+  max-width: 86%;
+  margin-left: auto;
+}
+
+/* === 头像：圆形带角色光晕 === */
+.avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+  flex-shrink: 0;
+  background: var(--role-color, var(--star-purple));
+  box-shadow:
+    0 0 0 2rpx rgba(255, 255, 255, 0.06) inset,
+    0 0 20rpx color-mix(in srgb, var(--role-color, var(--star-purple)) 50%, transparent);
+  letter-spacing: 0;
+  overflow: hidden;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+}
+
+.avatar-img-placeholder {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 20rpx rgba(99, 102, 241, 0.5);
+}
+
+/* === 消息主体 === */
+.msg-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.msg-user .msg-body {
+  align-items: flex-end;
+}
+
+.role-label {
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  margin-bottom: 8rpx;
+  padding-left: 8rpx;
+  letter-spacing: 1rpx;
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+}
+
+.role-label .round-tag {
+  font-size: var(--fs-caption);
+  color: var(--text-4);
+  letter-spacing: 1rpx;
+}
+
+/* === 气泡 —— 修复跳动：固定 max-width + min-width === */
+.bubble {
+  position: relative;
+  padding: 18rpx 28rpx;
+  border-radius: var(--r-lg);
+  font-size: var(--fs-body-lg);
+  line-height: 1.7;
+  word-break: break-word;
+  max-width: 100%;
+  min-width: 120rpx;
+  box-sizing: border-box;
+}
+
+.bubble-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* AI 气泡 —— 玻璃态 + 角色色左边光条 */
+.bubble-ai {
+  background: var(--glass-bg);
+  border: 1rpx solid var(--glass-border);
+  border-bottom-left-radius: var(--r-sm);
+  color: var(--text-1);
+}
+
+.bubble-ai::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 16rpx;
+  bottom: 16rpx;
+  width: 3rpx;
+  background: var(--role-color, var(--star-purple));
+  border-radius: 3rpx;
+  box-shadow: 0 0 8rpx var(--role-color, var(--star-purple));
+}
+
+/* 用户气泡 —— 紫色填充发光 */
+.bubble-user {
+  background: linear-gradient(135deg, rgba(157, 107, 255, 0.95), rgba(99, 102, 241, 0.92));
+  color: #FFFFFF;
+  border-bottom-right-radius: var(--r-sm);
+  box-shadow: 0 8rpx 24rpx rgba(99, 102, 241, 0.35);
+}
+
+/* 混元 note 弱化展示 */
+.bubble-note {
+  display: block;
+  margin-top: 12rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx dashed var(--glass-border);
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  opacity: 0.8;
+}
+
+.bubble-user .bubble-note {
+  border-top-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* === 思考中占位 === */
+.bubble-thinking {
+  background: var(--glass-bg);
+  border: 1rpx solid var(--glass-border);
+  padding: 24rpx 32rpx;
+}
+
+.think-line {
+  display: flex;
+  gap: 10rpx;
+  align-items: center;
+}
+
+.dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  background: var(--star-purple);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.dot:nth-child(1) { animation-delay: 0s; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.7); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* === AI 生成标识底部 === */
+.ai-foot {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16rpx var(--sp-3) var(--sp-2);
+  text-align: center;
+  font-size: var(--fs-caption);
+  color: var(--text-4);
+  pointer-events: none;
+}
+
+.anchor {
+  height: 1rpx;
+  width: 100%;
+}

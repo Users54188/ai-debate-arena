@@ -1,0 +1,9 @@
+{
+  "name": "topics",
+  "version": "1.0.0",
+  "description": "辩题白名单查询（L3 输入侧合规门）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "^4.0.2"
+  }
+}
