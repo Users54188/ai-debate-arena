@@ -335,9 +335,11 @@ Page({
         if (chat) {
           chat.appendChunk(delta);
         } else {
-          const updated = [...self.data.messages];
-          updated[msgIndex] = displayMsg("socrates", streamingContent.slice(0, renderedLen));
-          self.setData({ messages: updated });
+          // P1 性能优化（2026-09-05）：path-based setData 只推送单条消息差量，
+          // 避免长对话每帧重建+序列化整个 messages 数组
+          self.setData({
+            [`messages[${msgIndex}]`]: displayMsg("socrates", streamingContent.slice(0, renderedLen))
+          });
         }
       }
     };
@@ -360,10 +362,15 @@ Page({
         self._dLog("onChunkReset: 重试,清空气泡", "warn");
         streamingContent = "";
         renderedLen = 0;
-        const resetMessages = [...self.data.messages];
-        resetMessages[msgIndex] = displayMsg("socrates", "");
-        self.setData({ messages: resetMessages });
-        if (chat) chat.buildRenderMessages(resetMessages);
+        // P1 性能优化：path-based 单条更新（仍构造全量数组传给 chat 组件做 rebuild）
+        self.setData({
+          [`messages[${msgIndex}]`]: displayMsg("socrates", "")
+        });
+        if (chat) {
+          const resetMessages = [...self.data.messages];
+          resetMessages[msgIndex] = displayMsg("socrates", "");
+          chat.buildRenderMessages(resetMessages);
+        }
       },
       onStreamEnd: async ({ fullText, finishReason }) => {
         self._dLog("onStreamEnd: finishReason=" + finishReason + " textLen=" + (fullText || "").length, "step");

@@ -292,15 +292,33 @@ Page({
         messages: apiMessages,
         mode: "L3",
         onChunk: (delta) => {
-          const updated = [...this.data.messages];
-          updated[msgIndex] = displayMsg(role, (updated[msgIndex].content || "") + delta, round);
-          this.setData({ messages: updated, waitingFirstChunk: false });
+        onChunk: (delta) => {
+          if (chat) {
+            chat.appendChunk(delta);
+          } else {
+            // P1 性能优化：path-based 单条差量推送
+            const cur = this.data.messages[msgIndex];
+            this.setData({
+              [`messages[${msgIndex}]`]: displayMsg(role, (cur && cur.content || "") + delta, round)
+            });
+          }
+          if (this.data.waitingFirstChunk) {
+            this.setData({ waitingFirstChunk: false });
+          }
         },
         // 重试时 ai-stream 会从头重发内容：先清空气泡旧文本，避免新旧拼接
         onChunkReset: () => {
-          const resetMessages = [...this.data.messages];
-          resetMessages[msgIndex] = displayMsg(role, "", round);
-          this.setData({ messages: resetMessages, waitingFirstChunk: false });
+          // P1 性能优化：path-based 单条更新（合并其他字段一次调用）
+          this.setData({
+            [`messages[${msgIndex}]`]: displayMsg(role, "", round),
+            waitingFirstChunk: false
+          });
+          if (chat) {
+            const resetMessages = [...this.data.messages];
+            resetMessages[msgIndex] = displayMsg(role, "", round);
+            chat.buildRenderMessages(resetMessages);
+          }
+        },
         },
         onStreamEnd: async ({ fullText, finishReason }) => {
           const safe = finishReason === "sensitive";
@@ -321,9 +339,12 @@ Page({
             }
           }
 
-          const updated = [...this.data.messages];
-          updated[msgIndex] = displayMsg(role, finalText, round);
-          this.setData({ messages: updated, streaming: false, waitingFirstChunk: false });
+          // P1 性能优化：path-based 单条更新 + 合并状态字段一次调用
+          this.setData({
+            [`messages[${msgIndex}]`]: displayMsg(role, finalText, round),
+            streaming: false,
+            waitingFirstChunk: false
+          });
           await this.persistMessage(role, finalText, round);
           resolve(finalText);
         },
