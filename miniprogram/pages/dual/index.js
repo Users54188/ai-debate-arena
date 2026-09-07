@@ -249,13 +249,13 @@ Page({
         sessionId: self.sessionId || "",
         onChunk(delta) {
           fullText += delta;
-          // 性能优化：组件局部更新，避免长对话时全量 setData 卡顿
+          // 性能优化：path-based setData 只推送单条差量（2026-09-05）
           if (chat) {
             chat.appendChunk(delta);
           } else {
-            const updated = [...self.data.messages];
-            updated[msgIndex] = displayMsg(role, fullText);
-            self.setData({ messages: updated });
+            self.setData({
+              [`messages[${msgIndex}]`]: displayMsg(role, fullText)
+            });
           }
           if (self.data.waitingFirstChunk) {
             self.setData({ waitingFirstChunk: false });
@@ -264,10 +264,15 @@ Page({
         // 重试时 ai-stream 会从头重发内容：先清空气泡旧文本，避免新旧拼接
         onChunkReset() {
           fullText = "";
-          const resetMessages = [...self.data.messages];
-          resetMessages[msgIndex] = displayMsg(role, "");
-          self.setData({ messages: resetMessages });
-          if (chat) chat.buildRenderMessages(resetMessages);
+          // P1 性能优化：path-based 单条更新
+          self.setData({
+            [`messages[${msgIndex}]`]: displayMsg(role, "")
+          });
+          if (chat) {
+            const resetMessages = [...self.data.messages];
+            resetMessages[msgIndex] = displayMsg(role, "");
+            chat.buildRenderMessages(resetMessages);
+          }
         },
         onStreamEnd({ fullText: final, finishReason }) {
           const safe = finishReason === "sensitive";
@@ -277,9 +282,10 @@ Page({
           // 修复（2026-08-25）：跳过 eventStream 后 finish_reason 已失效，msgSecCheck
           // 成为最后一道真防线——degraded 时也必须 fail-close（合规优先于体验）。
           const finalize = () => {
-            const updated = [...self.data.messages];
-            updated[msgIndex] = displayMsg(role, result);
-            self.setData({ messages: updated });
+            // P1 性能优化：path-based 单条更新
+            self.setData({
+              [`messages[${msgIndex}]`]: displayMsg(role, result)
+            });
             resolve(result);
           };
 
@@ -302,9 +308,10 @@ Page({
         },
         onError(err) {
           console.error(`[dual] ${role} stream error:`, err);
-          const updated = [...self.data.messages];
-          updated[msgIndex] = displayMsg(role, "抱歉，出了点问题。请稍后重试。");
-          self.setData({ messages: updated });
+          // P1 性能优化：path-based 单条更新
+          self.setData({
+            [`messages[${msgIndex}]`]: displayMsg(role, "抱歉，出了点问题。请稍后重试。")
+          });
           wx.showToast({ title: "AI 服务无响应，请稍后重试", icon: "none", duration: 2500 });
           reject(err);
         },

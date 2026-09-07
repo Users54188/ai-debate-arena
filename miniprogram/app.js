@@ -1,4 +1,6 @@
 const config = require("./config");
+const cache = require("./utils/cache");
+const fmt = require("./utils/format");
 
 App({
   globalData: {
@@ -6,6 +8,7 @@ App({
     classify: "new",
     onboarded: false,
     loginReady: null, // 登录就绪 Promise，页面 await 它确保 openid 已拿到
+    lastTabIndex: null, // 上一次所在 tab 序号，用于 tab 切换方向动画
   },
 
   onLaunch() {
@@ -56,6 +59,59 @@ App({
         fail: () => console.warn("[privacy] not authorized or no declaration"),
       });
     }
+
+    // B 方案：后台预取 —— 用户进首页浏览时悄悄拉好 history / profile 数据写入缓存，
+    // 用户点 tab 时大概率已就绪，秒开（不阻塞 onLaunch，不 await，失败静默）
+    this.prefetchTabData();
+  },
+
+  /**
+   * 后台预取 tab 数据（B 方案）
+   * - 等 silentRegister 完成后再发请求（依赖 openid 在服务端就绪）
+   * - 仅写缓存，不更新 globalData（避免污染页面状态机）
+   * - 失败静默（首次冷启动云函数慢或失败时，页面会按原有流程兜底）
+   */
+  async prefetchTabData() {
+    try {
+      if (this.globalData.loginReady) {
+        try { await this.globalData.loginReady; } catch (e) {}
+      }
+    } catch (e) {}
+
+    // 并行预取，互不阻塞
+    const prefetchHistory = wx.cloud
+      .callFunction({
+        name: config.cloudFunctions.sessionStore,
+        data: { action: "list", limit: 50 },
+      })
+      .then((res) => {
+        const result = (res && res.result) || {};
+        if (result.code === 0 && result.data && result.data.sessions) {
+          const sessions = fmt.formatSessions(result.data.sessions);
+          if (sessions.length > 0) cache.set("history:sessions", sessions);
+        }
+      })
+      .catch((e) => console.warn("[app] prefetch history failed:", e && e.message));
+
+    const prefetchProfile = wx.cloud
+      .callFunction({
+        name: config.cloudFunctions.userProfile,
+        data: { action: "get" },
+      })
+      .then((res) => {
+        const result = (res && res.result) || {};
+        if (result.code === 0 && result.data) {
+          const d = result.data;
+          // 与 profile 页一致的内测档兼容处理
+          if (d.classify === "beta") d.classify = "new";
+          if (d.rank === "内测") d.rank = "新手";
+          cache.set("profile:info", d);
+        }
+      })
+      .catch((e) => console.warn("[app] prefetch profile failed:", e && e.message));
+
+    // 不 await —— 后台并行执行，不阻塞 onLaunch 返回
+    Promise.all([prefetchHistory, prefetchProfile]).catch(() => {});
   },
 
   /** 静默建档 + 段位拉取，写入 globalData 与本地存储供前端页面读 */

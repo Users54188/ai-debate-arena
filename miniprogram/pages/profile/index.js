@@ -9,7 +9,9 @@
  */
 
 const config = require("../../config");
+const cache = require("../../utils/cache");
 const { msgSecCheck } = require("../../utils/security");
+const { playTabEnter } = require("../../utils/pageMotion");
 const app = getApp();
 
 const MODE_LABEL = { L1: "单人思辨", L2: "双人共修", L3: "辩论场" };
@@ -21,17 +23,34 @@ Page({
     loading: true,
     loadError: "",
     rankAnimClass: "",
+    tabAnim: "tab-enter tab-enter--idle",
   },
 
   onShow() {
+    playTabEnter(this, "/pages/profile/index");
     this.setData({
       openid: app.globalData.openid || wx.getStorageSync("openid") || "",
     });
+    // A 方案：缓存秒开 —— 先用本地缓存立即渲染（loading=false），后台再调云函数刷新
+    // 命中缓存后 this.data.profile 不为空，下面 loadProfile 的 firstLoad 自然为 false
+    if (!this.data.profile) {
+      const cached = cache.get("profile:info");
+      if (cached) {
+        this.setData({
+          profile: cached,
+          loading: false,
+          loadError: "",
+          tabAnim: "content-reveal",
+        });
+      }
+    }
     this.loadProfile();
   },
 
   async loadProfile() {
-    this.setData({ loading: true, loadError: "" });
+    // 已有资料（含缓存预填）时后台静默刷新，避免每次切 tab 闪骨架屏
+    const firstLoad = !this.data.profile;
+    this.setData({ loading: firstLoad, loadError: "" });
     try {
       const res = await wx.cloud.callFunction({
         name: config.cloudFunctions.userProfile,
@@ -39,8 +58,12 @@ Page({
       });
       const d = (res.result && res.result.data) || null;
       if (!d) {
-        // 服务端返回空数据：视为错误而非空状态（profile 必有数据，除非服务异常）
-        this.setData({ loading: false, loadError: "暂时无法加载你的资料，请稍后重试" });
+        // 服务端返回空数据：首次加载视为错误；已有缓存则保留旧内容不打断
+        if (!this.data.profile) {
+          this.setData({ loading: false, loadError: "暂时无法加载你的资料，请稍后重试" });
+        } else {
+          this.setData({ loading: false });
+        }
         return;
       }
       // 兼容测试期遗留的内测档：正式环境按新手展示，避免出现"内测"段位
@@ -50,6 +73,8 @@ Page({
       const prevName = this.data.profile && this.data.profile.rank;
       const newName = d && d.rank;
       const rankAnimClass = newName && prevName && newName !== prevName ? "rank-up-anim" : "";
+      // A 方案：写入缓存供下次秒开
+      cache.set("profile:info", d);
       this.setData({ profile: d, loading: false, loadError: "", rankAnimClass });
       if (rankAnimClass) {
         if (wx.vibrateShort) wx.vibrateShort({ type: "medium" });
@@ -58,10 +83,15 @@ Page({
     } catch (e) {
       console.error("[profile] load failed:", e);
       // P1 修复：错误态独立化，不再静默吞掉错误让 UI 渲染 0 值
-      this.setData({
-        loading: false,
-        loadError: "网络异常，资料加载失败，下拉刷新或返回重试",
-      });
+      if (!this.data.profile) {
+        this.setData({
+          loading: false,
+          loadError: "网络异常，资料加载失败，下拉刷新或返回重试",
+        });
+      } else {
+        // 已有资料（含缓存）时后台刷新失败：保留旧内容，不打断浏览
+        this.setData({ loading: false });
+      }
     }
   },
 
@@ -122,6 +152,8 @@ Page({
           avatar: profile.avatar || "",
         },
       });
+      // 同步更新缓存（保证下次秒开看到的是最新头像/昵称）
+      cache.set("profile:info", this.data.profile);
     } catch (e) {
       console.error("[profile] saveProfile failed:", e);
     }
