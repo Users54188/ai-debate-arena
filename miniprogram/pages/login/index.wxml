@@ -1,7 +1,7 @@
 <view class="page">
   <star-field />
 
-  <view class="login-container">
+  <view class="login-container page-enter">
     <!-- Logo 区 -->
     <view class="logo-block">
       <view class="logo-emblem">

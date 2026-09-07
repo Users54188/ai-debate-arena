@@ -38,9 +38,9 @@ const TIERS = {
 // 内测白名单（测试期无限配额）。TODO-上线前清空：勿在此硬编码生产账号。
 const BETA_OPENIDS = [];
 
-// 测试期配额全放开：所有用户按 beta 档（999）计算并写回 users.classify，
-// 与 getQuota / sessionStore 的同名开关保持同步；⚠️ 上线前三处一并改回 false
-const QUOTA_BYPASS = true;
+// 配额旁路开关：测试期可置 true 让所有用户按 beta 档（999）计算并写回 users.classify；
+// ⚠️ 正式上线必须改回 false（与 getQuota / sessionStore 同步）
+const QUOTA_BYPASS = false;
 
 function computeClassify(stats) {
   if (QUOTA_BYPASS || stats.beta) return "beta";

@@ -109,9 +109,7 @@
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-4);
-  background: rgba(14, 8, 48, 0.85);
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
+  background: rgba(7, 4, 31, 0.96);
   border-bottom: 1rpx solid var(--glass-border);
 }
 
@@ -134,6 +132,38 @@
   color: var(--star-purple);
 }
 
+/* P0 主包体积优化：纯 CSS 实现圆形玻璃态关闭按钮（替代 exit-btn.jpeg 152KB） */
+.exit-btn {
+  width: 56rpx;
+  height: 56rpx;
+  flex-shrink: 0;
+  position: relative;
+  border-radius: 50%;
+  background: var(--glass-bg);
+  border: 1rpx solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--dur-instant) var(--ease-spring),
+              opacity var(--dur-instant) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out);
+}
+.exit-btn:active {
+  opacity: 0.7;
+  transform: scale(0.9);
+  border-color: var(--glass-border-strong);
+}
+.exit-btn-x {
+  position: absolute;
+  width: 24rpx;
+  height: 3rpx;
+  background: var(--text-2);
+  border-radius: 2rpx;
+  transform: rotate(45deg);
+}
+.exit-btn-x--rotate {
+  transform: rotate(-45deg);
+}
 .stream {
   flex: 1;
   min-height: 0;
@@ -268,9 +298,7 @@
 
 /* === 投票区 === */
 .dock {
-  background: rgba(14, 8, 48, 0.92);
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
+  background: rgba(7, 4, 31, 0.96);
   border-top: 1rpx solid var(--glass-border);
   padding: var(--sp-3) var(--sp-4);
 }
@@ -300,6 +328,13 @@
   font-weight: 600;
   letter-spacing: 1rpx;
   border: 1rpx solid;
+  transition: transform var(--dur-instant) var(--ease-spring),
+              opacity var(--dur-instant) var(--ease-out);
+}
+
+.vote-btn:active {
+  transform: scale(0.96);
+  opacity: 0.85;
 }
 
 .vote-aff {
@@ -314,12 +349,16 @@
   background: rgba(251, 113, 133, 0.1);
 }
 
-.btn-hover { opacity: 0.8; transform: scale(0.97); }
-
 .skip-link {
   font-size: var(--fs-caption);
   color: var(--text-3);
   margin-top: var(--sp-1);
+  padding: 8rpx 16rpx;
+  transition: opacity var(--dur-instant) var(--ease-out);
+}
+
+.skip-link:active {
+  opacity: 0.6;
 }
 
 .vote-continue {
@@ -336,7 +375,7 @@
 }
 
 .streaming-bar {
-  background: rgba(14, 8, 48, 0.92);
+  background: rgba(7, 4, 31, 0.96);
   border-top: 1rpx solid var(--glass-border);
   padding: var(--sp-3) var(--sp-4);
   text-align: center;

@@ -1,8 +1,8 @@
 <view class="page">
   <star-field />
 
-  <view wx:if="{{loading}}" class="state-wrap">
-    <empty-state mode="loading" title="报告生成中..." />
+  <view wx:if="{{loading}}" class="state-wrap page-enter">
+    <empty-state mode="loading" skeleton="doc" />
   </view>
 
   <view wx:elif="{{loadError}}" class="state-wrap">
@@ -15,7 +15,7 @@
     />
   </view>
 
-  <scroll-view wx:else scroll-y class="scaffold">
+  <scroll-view wx:else scroll-y class="scaffold content-reveal" enhanced bounces show-scrollbar="{{false}}" deceleration-rate="0.98">
     <view wx:if="{{isShareView}}" class="share-hint">分享视图：仅展示报告内容，对话原文仅分享者可见</view>
 
     <!-- 评分环 -->

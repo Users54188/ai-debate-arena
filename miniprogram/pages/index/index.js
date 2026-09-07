@@ -1,10 +1,12 @@
 const config = require("../../config");
+const { playTabEnter } = require("../../utils/pageMotion");
 const app = getApp();
 
 Page({
   data: {
     journey: { title: "思辨之旅", count: 0, best: 0, mode: "-" },
     showOnboarding: false,
+    tabAnim: "tab-enter tab-enter--idle",
   },
 
   async onLoad() {
@@ -23,6 +25,7 @@ Page({
   },
 
   onShow() {
+    playTabEnter(this, "/pages/index/index");
     this.loadJourney();
   },
 

@@ -1,11 +1,18 @@
 <view class="page">
   <star-field />
 
-  <view wx:if="{{loading}}" class="state-box">
-    <empty-state mode="loading" />
+  <!-- 加载骨架：复用与真实列表完全相同的容器/内边距，保证布局一致、顶部对齐 -->
+  <scroll-view wx:if="{{loading}}" scroll-y class="list {{tabAnim}}" enhanced bounces show-scrollbar="{{false}}">
+    <view class="list-inner">
+      <empty-state mode="loading" skeleton="list" />
+    </view>
+  </scroll-view>
+
+  <view wx:elif="{{loadError}}" class="state-box {{tabAnim}}">
+    <empty-state mode="error" title="{{loadError}}" cta="重新加载" bind:tap="loadHistory" />
   </view>
 
-  <view wx:elif="{{empty}}" class="state-box">
+  <view wx:elif="{{empty}}" class="state-box {{tabAnim}}">
     <empty-state
       mode="empty"
       title="还没有思辨记录"
@@ -15,10 +22,10 @@
     />
   </view>
 
-  <scroll-view wx:else class="list" scroll-y>
+  <scroll-view wx:else class="list {{tabAnim}}" scroll-y enhanced bounces show-scrollbar="{{false}}" deceleration-rate="0.98">
     <view class="list-inner">
     <view
-      class="session-card glass-card"
+      class="session-card glass-card stagger-item"
       wx:for="{{sessions}}"
       wx:key="id"
       data-id="{{item.id}}"
@@ -26,6 +33,7 @@
       bindlongpress="onDelete"
       hover-class="card-hover"
       hover-stay-time="80"
+      style="--i: {{index}}"
     >
       <view class="card-left">
         <view class="mode-tag tag-{{item.modeClass}}">{{item.mode}}</view>

@@ -1,12 +1,17 @@
 <view class="page">
   <star-field />
-  <scroll-view scroll-y class="scaffold">
+  <scroll-view scroll-y class="scaffold {{tabAnim}}" enhanced bounces show-scrollbar="{{false}}" deceleration-rate="0.98">
 
-  <view wx:if="{{loading}}" class="state-box">
-    <empty-state mode="loading" />
+  <!-- 加载骨架：顶部对齐，沿用 scaffold 的内边距，与真实内容位置一致 -->
+  <view wx:if="{{loading}}">
+    <empty-state mode="loading" skeleton="profile" />
   </view>
 
-  <block wx:else>
+  <view wx:elif="{{loadError}}" class="state-box page-enter">
+    <empty-state mode="error" title="{{loadError}}" cta="重新加载" bind:tap="loadProfile" />
+  </view>
+
+  <view class="profile-body content-reveal" wx:else>
     <!-- 段位卡片（含头像/昵称编辑入口） -->
     <view class="rank-card {{rankAnimClass}}">
       <button class="avatar-btn" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar">
@@ -101,7 +106,7 @@
       <text>AI 生成内容仅供参考，不构成专业建议</text>
       <text class="openid-line">账号标识：{{openid}}</text>
     </view>
-  </block>
+  </view>
 
   <view class="bottom-spacer"></view>
   </scroll-view>

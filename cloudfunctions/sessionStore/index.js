@@ -47,9 +47,9 @@ const APPEND_MAX_RETRIES = 3; // 乐观锁冲突重试上限
 // 服务端配额强校验开关：上线值（测试期临时放开已关闭）。
 const ENFORCE_QUOTA = true;
 
-// 测试期配额全放开：强制按 beta 档（999）计算，与 getQuota / userProfile 的
-// 同名开关保持同步；⚠️ 上线前三处一并改回 false 还原正式配额
-const QUOTA_BYPASS = true;
+// 配额旁路开关：测试期可置 true 强制按 beta 档（999）计算；
+// ⚠️ 正式上线必须改回 false 还原正式配额（与 getQuota / userProfile 同步）
+const QUOTA_BYPASS = false;
 
 // 段位分档（与 userProfile / getQuota 保持一致）
 const TIERS = {

@@ -167,12 +167,22 @@
   display: flex;
   align-items: stretch;
   padding: var(--sp-4);
-  transition: transform 120ms ease, border-color 200ms ease;
+  transition: transform var(--dur-instant) var(--ease-spring),
+              border-color var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
 }
 
 .card-hover {
   transform: scale(0.98);
   border-color: var(--glass-border-strong) !important;
+}
+
+/* iOS 标准触摸反馈：按下时缩小 + 边框高亮（替代 click 事件触发的 card-hover，
+ * 在触摸当下立即反馈，无需等 tap 事件触发） */
+.mode:active {
+  transform: scale(0.98);
+  border-color: var(--glass-border-strong);
+  box-shadow: 0 0 24rpx rgba(157, 107, 255, 0.25);
 }
 
 .mode-side {

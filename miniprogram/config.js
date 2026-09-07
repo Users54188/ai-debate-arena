@@ -7,11 +7,21 @@ module.exports = {
   // 云开发环境 ID（部署时替换）
   envId: "cloudbase-d3gvaqczs2298c253",
 
-  // ⚠️ 测试期配额旁路总开关（与云函数 getQuota/sessionStore/userProfile 的 QUOTA_BYPASS 联动）
-  // true  ：前端 checkQuota 直接视为可用；即使云端尚未部署新版云函数，
-  //         create 被 code:-2 拒绝时也降级为"不落库继续对话"，保证随时能聊
-  // false ：还原正式配额拦截（上线值）
-  quotaBypass: true,
+  // 小程序 appid（与 project.config.json 一致）：多端模式下 wx.cloud.init
+  // 必须显式传入 appid，普通小程序模式下传入无害
+  appid: "wxc158769af1e2ce0a",
+
+  // 配额旁路总开关（与云函数 getQuota/sessionStore/userProfile 的 QUOTA_BYPASS 联动）
+  // true  ：前端 checkQuota 直接视为可用；云端拒绝时降级为"不落库继续对话"
+  // false ：正式配额拦截（上线恒为 false；调试时本地修改勿提交）
+  // 正式上线版（2026-09-06 已还原；msgGuard fail-open 兼容个人主体后业务恢复）
+  quotaBypass: false,
+
+  // 是否强制微信官方手机号验证（getPhoneNumber）后才能进入。
+  // 该接口仅「非个人主体 + 已认证」小程序可用；个人主体必须保持 false，
+  // 此时登录以 openid 区分用户、手机号入口隐藏。升级为企业/个体户主体并开通
+  // 「手机号」接口、部署 userProfile 云函数后，再改为 true 开启一键手机号验证。
+  requirePhoneVerification: false,
 
   // 模型配置
   model: {
@@ -61,7 +71,7 @@ module.exports = {
   // 云函数名
   cloudFunctions: {
     sessionStore: "sessionStore",
-    securityCheck: "securityCheck",
+    securityCheck: "msgGuard",
     userProfile: "userProfile",
     getQuota: "getQuota",
     generateReport: "generateReport",
