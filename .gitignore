@@ -27,3 +27,7 @@ _unused-images-backup/
 *.local
 *.tmp
 
+# CloudBase Skills 包（开发者本地安装产物，不入库）
+.agents/
+skills-lock.json
+

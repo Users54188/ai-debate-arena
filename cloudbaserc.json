@@ -1,0 +1,79 @@
+{
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "envId": "cloudbase-d3gvaqczs2298c253",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    {
+      "name": "msgGuard",
+      "timeout": 30,
+      "memorySize": 256,
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "installDependency": true,
+      "permissions": {
+        "openapi": ["security.msgSecCheck"]
+      }
+    },
+    {
+      "name": "sessionStore",
+      "timeout": 30,
+      "memorySize": 256,
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "installDependency": true
+    },
+    {
+      "name": "userProfile",
+      "timeout": 30,
+      "memorySize": 256,
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "installDependency": true
+    },
+    {
+      "name": "getQuota",
+      "timeout": 30,
+      "memorySize": 256,
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "installDependency": true
+    },
+    {
+      "name": "topics",
+      "timeout": 30,
+      "memorySize": 256,
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "installDependency": true
+    },
+    {
+      "name": "generateReport",
+      "timeout": 60,
+      "memorySize": 512,
+      "runtime": "Nodejs16.13",
+      "handler": "index.main",
+      "installDependency": true
+    },
+    {
+      "name": "cleanupData",
+      "timeout": 30,
+      "memorySize": 256,
+      "runtime": "Nodejs16.13",
+      "handler": "index.main"
+    },
+    {
+      "name": "cleanupTestData",
+      "timeout": 30,
+      "memorySize": 256,
+      "runtime": "Nodejs16.13",
+      "handler": "index.main"
+    },
+    {
+      "name": "evalRunner",
+      "timeout": 60,
+      "memorySize": 512,
+      "runtime": "Nodejs16.13",
+      "handler": "index.main"
+    }
+  ]
+}

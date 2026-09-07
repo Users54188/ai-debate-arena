@@ -1,7 +1,7 @@
 <view class="page">
   <star-field />
 
-  <view class="body">
+  <view class="body page-enter">
     <chat-stream
       id="chat"
       messages="{{messages}}"
