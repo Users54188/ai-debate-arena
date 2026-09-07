@@ -20,9 +20,7 @@
 .dock {
   position: relative;
   z-index: 2;
-  background: rgba(14, 8, 48, 0.92);
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
+  background: rgba(7, 4, 31, 0.96);
   border-top: 1rpx solid var(--glass-border);
   padding: var(--sp-2) var(--sp-3);
 }
@@ -64,9 +62,14 @@
   line-height: 80rpx;
   border: none;
   box-shadow: 0 0 24rpx rgba(157, 107, 255, 0.4);
+  transition: transform var(--dur-instant) var(--ease-spring),
+              opacity var(--dur-instant) var(--ease-out);
 }
 
-.btn-hover { opacity: 0.85; transform: scale(0.97); }
+.dock-send:active:not([disabled]) {
+  transform: scale(var(--press-scale));
+  opacity: var(--press-opacity);
+}
 
 .dock-send[disabled] {
   background: var(--night-3);

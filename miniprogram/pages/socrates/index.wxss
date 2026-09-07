@@ -17,13 +17,13 @@
   overflow: hidden;
 }
 
-/* === 底部输入坞 === */
+/* === 底部输入坞 ===
+ * P0 性能优化（2026-09-05）：移除 backdrop-filter（持续吃 GPU），改成深色高透明度纯色
+ * （视觉接近、零合成开销；半透明足以让滚动内容隐约透出，无重算成本） */
 .dock {
   position: relative;
   z-index: 2;
-  background: rgba(14, 8, 48, 0.92);
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
+  background: rgba(7, 4, 31, 0.96);
   border-top: 1rpx solid var(--glass-border);
   padding: var(--sp-2) var(--sp-3);
 }
@@ -65,11 +65,13 @@
   line-height: 80rpx;
   border: none;
   box-shadow: 0 0 24rpx rgba(157, 107, 255, 0.4);
+  transition: transform var(--dur-instant) var(--ease-spring),
+              opacity var(--dur-instant) var(--ease-out);
 }
 
-.btn-hover {
-  opacity: 0.85;
-  transform: scale(0.97);
+.dock-send:active:not([disabled]) {
+  transform: scale(var(--press-scale));
+  opacity: var(--press-opacity);
 }
 
 .dock-send[disabled] {
@@ -122,6 +124,13 @@
   font-size: var(--fs-caption);
   border-radius: var(--r-pill);
   border: none;
+  transition: transform var(--dur-instant) var(--ease-spring),
+              opacity var(--dur-instant) var(--ease-out);
+}
+
+.ai-end-btn:active {
+  transform: scale(var(--press-scale));
+  opacity: var(--press-opacity);
 }
 
 /* 用户主动结束入口 */
@@ -135,4 +144,11 @@
   color: var(--text-3);
   text-decoration: underline;
   letter-spacing: 1rpx;
+  display: inline-block;
+  padding: 8rpx 16rpx;
+  transition: opacity var(--dur-instant) var(--ease-out);
+}
+
+.manual-end-link:active {
+  opacity: 0.6;
 }

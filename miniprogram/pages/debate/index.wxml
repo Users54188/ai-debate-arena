@@ -2,7 +2,7 @@
   <star-field />
 
   <!-- 阶段 1：命题输入 -->
-  <view wx:if="{{phase === 'input'}}" class="scaffold scaffold-input">
+  <view wx:if="{{phase === 'input'}}" class="scaffold scaffold-input page-enter">
     <view class="head">
       <text class="head-title">提出一个值得辩论的命题</text>
       <text class="head-sub">AI 将分别扮演正方、反方与裁判，你作为围观者投票</text>
@@ -46,13 +46,18 @@
   </view>
 
   <!-- 阶段 2：辩论进行中 -->
-  <view wx:if="{{phase !== 'input'}}" class="stage">
+  <view wx:if="{{phase !== 'input'}}" class="stage page-enter">
     <view class="topic-bar">
       <text class="tb-label">命题</text>
       <text class="tb-text">{{topic}}</text>
       <text wx:if="{{phase === 'finished'}}" class="tb-reset" bindtap="onResetTopic">换命题</text>
-      <!-- 退出按钮 -->
-      <image class="exit-btn" src="/images/exit-btn.jpeg" mode="aspectFit" bindtap="onExitDebate" aria-label="退出辩论" role="button" />
+      <!-- 退出按钮（P0 主包体积优化 2026-09-05：原 exit-btn.jpeg 152KB，
+           一个简单的圆形关闭按钮完全可以用纯 CSS + SVG 字符实现，
+           视觉一致且零资源开销，立即节省 152KB） -->
+      <view class="exit-btn" bindtap="onExitDebate" aria-label="退出辩论" role="button">
+        <view class="exit-btn-x"></view>
+        <view class="exit-btn-x exit-btn-x--rotate"></view>
+      </view>
     </view>
 
     <!-- P0 性能修复（2026-09-04）：原手写 wx:for 渲染 + selectComponent("#chat") 永远为 null，

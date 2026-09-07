@@ -27,18 +27,19 @@
   position: relative;
 }
 
-/* 每屏背景柔光晕（覆盖原 emoji 单色背景，营造星空感） */
+/* 每屏背景柔光晕（覆盖原 emoji 单色背景，营造星空感）
+ * P0 性能优化（2026-09-05）：移除 filter: blur(20rpx)，改用径向渐变自身的柔边过渡
+ * （多屏切换时 blur 重算导致切换卡顿；半透明渐变本身就有柔边效果） */
 .slide::before {
   content: "";
   position: absolute;
   top: 18%;
   left: 50%;
   transform: translateX(-50%);
-  width: 480rpx;
-  height: 480rpx;
+  width: 560rpx;
+  height: 560rpx;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(157, 107, 255, 0.32) 0%, transparent 65%);
-  filter: blur(20rpx);
+  background: radial-gradient(circle, rgba(157, 107, 255, 0.28) 0%, rgba(157, 107, 255, 0.08) 35%, transparent 70%);
   pointer-events: none;
 }
 
@@ -83,7 +84,9 @@
   height: 16rpx;
   border-radius: 8rpx;
   background: rgba(157, 107, 255, 0.3);
-  transition: all 0.3s ease;
+  transition: width var(--dur-base) var(--ease-out),
+              background var(--dur-base) var(--ease-out),
+              box-shadow var(--dur-base) var(--ease-out);
 }
 
 .dot-active {
@@ -143,7 +146,9 @@
   line-height: 1.6;
 }
 
-.agree-label checkbox {
+/* P0 修复（2026-09-06）：组件 wxss 不允许标签名选择器，
+ * 原 `.agree-label checkbox` 改为类选择器 `.agree-checkbox` */
+.agree-checkbox {
   transform: scale(0.8);
   margin-right: 8rpx;
 }
