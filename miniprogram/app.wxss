@@ -58,6 +58,21 @@ page {
   --sp-5: 48rpx;
   --sp-6: 64rpx;
 
+  /* —— iOS 标准动效系统（2026-09-05 UI 优化） —— */
+  /* 时长（苹果自定义曲线对应的最舒适时长） */
+  --dur-instant: 100ms;   /* 按下/释放即时反馈 */
+  --dur-fast: 180ms;      /* 小元素状态切换 */
+  --dur-base: 280ms;      /* 默认过渡（卡片、按钮） */
+  --dur-slow: 420ms;      /* 大区块进入/退出 */
+  /* 缓动（苹果系统曲线） */
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);      /* 默认出场：快进慢出 */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);           /* 收回：慢进快出 */
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);     /* 双向 */
+  --ease-spring: cubic-bezier(0.5, 1.6, 0.4, 1);   /* 弹簧（按下反馈） */
+  /* 触摸反馈 token */
+  --press-scale: 0.97;   /* 按下缩放比（iOS 标准） */
+  --press-opacity: 0.88; /* 按下透明度 */
+
   /* —— 阴影 / 光晕 —— */
   --shadow-card: 0 8rpx 32rpx rgba(0, 0, 0, 0.32);
   --shadow-float: 0 16rpx 48rpx rgba(0, 0, 0, 0.4);
@@ -84,13 +99,13 @@ page {
  * 通用工具类
  * ============================================================ */
 
-/* 玻璃态卡片 —— 全应用统一容器样式 */
+/* 玻璃态卡片 —— 全应用统一容器样式
+ * P0 性能优化（2026-09-05）：移除 backdrop-filter: blur(20rpx) —— 多卡片同时 blur
+ * 会持续吃 GPU 合成预算导致滚动卡顿。改成纯色半透明（视觉接近 + 零合成开销）。 */
 .glass-card {
   background: var(--glass-bg);
   border: 1rpx solid var(--glass-border);
   border-radius: var(--r-lg);
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
   box-shadow: var(--shadow-card);
 }
 
@@ -113,11 +128,20 @@ page {
   border: none;
   height: 96rpx;
   line-height: 96rpx;
+  transition: transform var(--dur-instant) var(--ease-spring),
+              opacity var(--dur-instant) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
 }
 .btn-primary[disabled] {
   background: var(--night-3);
   color: var(--text-3);
   box-shadow: none;
+}
+/* iOS 标准触摸反馈：按下 0.97 缩放 + 透明度，100ms 内反馈 */
+.btn-primary:active:not([disabled]) {
+  transform: scale(var(--press-scale));
+  opacity: var(--press-opacity);
+  box-shadow: 0 0 12rpx rgba(157, 107, 255, 0.5);
 }
 
 /* 次按钮 —— 玻璃描边 */
@@ -129,6 +153,12 @@ page {
   font-size: var(--fs-body);
   height: 88rpx;
   line-height: 88rpx;
+  transition: transform var(--dur-instant) var(--ease-spring),
+              opacity var(--dur-instant) var(--ease-out);
+}
+.btn-ghost:active {
+  transform: scale(var(--press-scale));
+  opacity: var(--press-opacity);
 }
 
 /* 角色徽章 */
@@ -175,4 +205,80 @@ page {
   box-shadow: 0 0 8rpx rgba(255, 255, 255, 0.8);
   opacity: 0.6;
   pointer-events: none;
+}
+
+/* ============================================================
+ * 页面/tab 切换过渡 —— iOS 风 280ms 淡入 + 小幅上移
+ * （2026-09-05）：tabBar 切换本身是系统动画，开发者无法控制；
+ * 这里给页面主体加进入动画，让用户感知"页面是从下方滑入"而非"硬切"
+ * 使用 GPU 加速的 transform + opacity，零重排
+ * ============================================================ */
+.page-enter {
+  animation: page-enter-anim var(--dur-base, 280ms) var(--ease-out, cubic-bezier(0.32, 0.72, 0, 1)) both;
+  will-change: transform, opacity;
+}
+
+@keyframes page-enter-anim {
+  0%   { opacity: 0; transform: translateY(16rpx); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+ * tabBar 方向感知切换（2026-09-05 iOS 化）
+ * switchTab 是系统级瞬时切换、无动画，故由各 tab 页在 onShow 时
+ * 重新挂载下列类来重放：向右切 tab 从右侧轻滑入，向左切从左侧入。
+ * 全程 translate3d 走 GPU 合成层，只动 transform/opacity，零重排。
+ * ============================================================ */
+.tab-enter {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+/* 重挂动画的过渡帧：先隐藏，避免"清空类→重加类"之间闪现一帧全亮画面 */
+.tab-enter--reset { opacity: 0; }
+.tab-enter--next { animation: tab-in-right 300ms var(--ease-out, cubic-bezier(0.32, 0.72, 0, 1)) both; }
+.tab-enter--prev { animation: tab-in-left 300ms var(--ease-out, cubic-bezier(0.32, 0.72, 0, 1)) both; }
+.tab-enter--idle { animation: page-enter-anim var(--dur-base, 280ms) var(--ease-out, cubic-bezier(0.32, 0.72, 0, 1)) both; }
+
+@keyframes tab-in-right {
+  from { opacity: 0; transform: translate3d(48rpx, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes tab-in-left {
+  from { opacity: 0; transform: translate3d(-48rpx, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* 骨架屏 → 真实内容 的柔和交接：首次加载数据回来时内容轻轻上浮淡入，
+ * 不再重复一次侧向滑动，避免"骨架硬切 + 内容再滑一遍"的僵硬感 */
+.content-reveal {
+  animation: content-reveal-anim 300ms var(--ease-out, cubic-bezier(0.32, 0.72, 0, 1)) both;
+  will-change: transform, opacity;
+}
+@keyframes content-reveal-anim {
+  from { opacity: 0; transform: translate3d(0, 14rpx, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* 尊重系统"减弱动态效果"：直接落到终态，避免眩晕 */
+@media (prefers-reduced-motion: reduce) {
+  .tab-enter--reset { opacity: 1 !important; }
+  .page-enter,
+  .tab-enter--next,
+  .tab-enter--prev,
+  .tab-enter--idle,
+  .content-reveal,
+  .stagger-item { animation-duration: 1ms !important; }
+}
+
+/* 单个 staggered 项 —— 按索引自我延时
+ * 用法：子项加 class="stagger-item" style="--i: {{index}}"
+ * （WXSS 不支持选择器列表里的 `*`，所以不使用 .parent > * 模式） */
+.stagger-item {
+  animation: page-enter-anim var(--dur-base, 280ms) var(--ease-out, cubic-bezier(0.32, 0.72, 0, 1)) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+
+/* 限制 stagger 总延时不超过 600ms（最多 15 项可见内可见延时） */
+.stagger-item:nth-child(n + 16) {
+  animation-delay: 0ms;
 }

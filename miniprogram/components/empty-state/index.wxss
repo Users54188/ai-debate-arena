@@ -1,4 +1,9 @@
-/* empty-state —— 夜空适配 */
+/* empty-state —— 夜空适配
+ *
+ * loading 模式为 iOS 风骨架屏：
+ * - 形状/间距与各页面真实组件 1:1，数据回来不跳动
+ * - 扫光用 ::after + transform 平移（GPU 合成），不用 background-position（持续重绘）
+ */
 
 .empty-state {
   display: flex;
@@ -43,8 +48,220 @@
   letter-spacing: 2rpx;
   box-shadow: 0 0 24rpx rgba(157, 107, 255, 0.4);
   border: none;
+  transition: transform var(--dur-instant, 100ms) var(--ease-spring, cubic-bezier(0.5, 1.6, 0.4, 1)),
+              opacity var(--dur-instant, 100ms) var(--ease-out, cubic-bezier(0.32, 0.72, 0, 1));
 }
 
 .empty-cta::after {
   border: none;
+}
+
+.empty-cta:active {
+  transform: scale(0.97);
+  opacity: 0.88;
+}
+
+/* ============================================================
+ * 骨架屏基础
+ * ============================================================ */
+.sk-wrap {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 形状基类：稳定底色；扫光是 ::after 平移的高光带（只动 transform） */
+.sk-sheen {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.055);
+  border-radius: 10rpx;
+}
+.sk-sheen::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: translateX(-130%);
+  background: linear-gradient(
+    100deg,
+    transparent 25%,
+    rgba(196, 161, 255, 0.16) 50%,
+    transparent 75%
+  );
+  animation: sk-sweep 1.5s linear infinite;
+}
+@keyframes sk-sweep {
+  to { transform: translateX(130%); }
+}
+
+/* 通用条 */
+.sk-bar { height: 26rpx; border-radius: 13rpx; }
+.sk-thin { height: 18rpx; border-radius: 9rpx; }
+.sk-w92 { width: 92%; } .sk-w88 { width: 88%; } .sk-w85 { width: 85%; }
+.sk-w78 { width: 78%; } .sk-w75 { width: 75%; } .sk-w60 { width: 60%; }
+.sk-w55 { width: 55%; } .sk-w50 { width: 50%; } .sk-w45 { width: 45%; }
+.sk-w40 { width: 40%; } .sk-w35 { width: 35%; } .sk-w30 { width: 30%; }
+.sk-w20 { width: 20%; }
+
+/* ============================================================
+ * 历史列表骨架 —— 对齐 .session-card（glass-card + 24/32 内边距 + 16 下间距）
+ * ============================================================ */
+.sk-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2, 16rpx);
+  padding: var(--sp-3, 24rpx) var(--sp-4, 32rpx);
+  margin-bottom: var(--sp-2, 16rpx);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.045));
+  border: 1rpx solid var(--glass-border, rgba(157, 107, 255, 0.22));
+  border-radius: var(--r-lg, 24rpx);
+  /* 逐卡错峰扫光，形成波浪，避免所有条一起闪 */
+  animation: sk-pop 320ms var(--ease-out, cubic-bezier(0.32, 0.72, 0, 1)) both;
+}
+.sk-card:nth-child(1) { animation-delay: 20ms; }
+.sk-card:nth-child(2) { animation-delay: 60ms; }
+.sk-card:nth-child(3) { animation-delay: 100ms; }
+.sk-card:nth-child(4) { animation-delay: 140ms; }
+.sk-card:nth-child(5) { animation-delay: 180ms; }
+.sk-card:nth-child(6) { animation-delay: 220ms; }
+@keyframes sk-pop {
+  from { opacity: 0; transform: translate3d(0, 10rpx, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+/* 左侧 72rpx 模式标签（对齐 .mode-tag） */
+.sk-tag {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: var(--r-md, 16rpx);
+  flex-shrink: 0;
+  background-color: rgba(157, 107, 255, 0.14);
+}
+.sk-mid {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+/* 右侧时间 */
+.sk-time {
+  width: 88rpx;
+  height: 18rpx;
+  border-radius: 9rpx;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+ * 我的页骨架 —— 对齐 rank-card / stats-grid / quota-list / menu-list
+ * ============================================================ */
+.sk-rank {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3, 24rpx);
+  padding: var(--sp-4, 32rpx);
+  margin-bottom: var(--sp-3, 24rpx);
+  background: linear-gradient(135deg, rgba(157, 107, 255, 0.14), rgba(99, 102, 241, 0.08));
+  border: 1rpx solid var(--glass-border-strong, rgba(157, 107, 255, 0.45));
+  border-radius: var(--r-lg, 24rpx);
+}
+.sk-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+.sk-rank-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+.sk-pill {
+  width: 96rpx;
+  height: 34rpx;
+  border-radius: 999rpx;
+  background-color: rgba(157, 107, 255, 0.22);
+}
+
+.sk-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2, 16rpx);
+  margin-bottom: var(--sp-4, 32rpx);
+}
+.sk-cell {
+  padding: var(--sp-3, 24rpx);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.045));
+  border: 1rpx solid var(--glass-border, rgba(157, 107, 255, 0.22));
+  border-radius: var(--r-md, 16rpx);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+.sk-num {
+  width: 60%;
+  height: 44rpx;
+  border-radius: 22rpx;
+}
+
+/* 区段标题占位（对齐 .section-title） */
+.sk-sect {
+  height: 22rpx;
+  width: 160rpx;
+  margin: var(--sp-3, 24rpx) 0 var(--sp-2, 16rpx);
+}
+
+/* 分组卡片（对齐 .quota-list / .menu-list） */
+.sk-group {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.045));
+  border: 1rpx solid var(--glass-border, rgba(157, 107, 255, 0.22));
+  border-radius: var(--r-md, 16rpx);
+  padding: 0 var(--sp-3, 24rpx);
+  margin-bottom: var(--sp-3, 24rpx);
+}
+.sk-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid rgba(157, 107, 255, 0.08);
+}
+.sk-row:last-child { border-bottom: none; }
+.sk-arrow {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================================
+ * 报告页骨架
+ * ============================================================ */
+.sk-doc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3, 24rpx);
+  padding: var(--sp-4, 32rpx);
+}
+.sk-doc-title {
+  height: 52rpx;
+  width: 70%;
+  border-radius: 26rpx;
+  align-self: center;
+}
+.sk-doc-section {
+  height: 34rpx;
+  width: 35%;
+  border-radius: 17rpx;
+}
+.sk-gap { margin-top: 16rpx; }
+
+/* 尊重系统"减弱动态效果"：关闭扫光与浮现 */
+@media (prefers-reduced-motion: reduce) {
+  .sk-sheen::after { animation: none; }
+  .sk-card { animation: none; }
 }
