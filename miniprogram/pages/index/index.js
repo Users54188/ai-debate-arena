@@ -1,4 +1,5 @@
 const config = require("../../config");
+const { playTabEnter } = require("../../utils/pageMotion");
 const app = getApp();
 
 // 段位映射（与 cloudfunctions/userProfile TIERS 同源）
@@ -46,6 +47,7 @@ Page({
       progress: 0,
     },
     showOnboarding: false,
+    tabAnim: "tab-enter tab-enter--idle",
   },
 
   async onLoad() {
@@ -64,6 +66,7 @@ Page({
   },
 
   onShow() {
+    playTabEnter(this, "/pages/index/index");
     this.loadJourney();
   },
 

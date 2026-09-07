@@ -1,4 +1,74 @@
-<view class="empty-state">
+<block wx:if="{{mode === 'loading'}}">
+  <!--
+    骨架屏 —— 严格对齐各页面真实布局，避免"占位与内容不符"的跳动
+    skeleton: "list"(history 默认) | "profile" | "doc"(report)
+  -->
+
+  <!-- 我的页：段位卡 → 2x2 统计 → 配额组 → 菜单组 -->
+  <view class="sk-wrap" wx:if="{{skeleton === 'profile'}}">
+    <view class="sk-rank">
+      <view class="sk-avatar sk-sheen"></view>
+      <view class="sk-rank-body">
+        <view class="sk-bar sk-w55 sk-sheen"></view>
+        <view class="sk-pill sk-sheen"></view>
+        <view class="sk-bar sk-w40 sk-sheen sk-thin"></view>
+      </view>
+    </view>
+
+    <view class="sk-grid">
+      <view class="sk-cell" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+        <view class="sk-num sk-sheen"></view>
+        <view class="sk-bar sk-w50 sk-sheen sk-thin"></view>
+      </view>
+    </view>
+
+    <view class="sk-sect sk-sheen"></view>
+    <view class="sk-group">
+      <view class="sk-row" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+        <view class="sk-bar sk-w30 sk-sheen sk-thin"></view>
+        <view class="sk-bar sk-w20 sk-sheen sk-thin"></view>
+      </view>
+    </view>
+
+    <view class="sk-sect sk-sheen"></view>
+    <view class="sk-group">
+      <view class="sk-row" wx:for="{{[1,2,3,4,5,6]}}" wx:key="*this">
+        <view class="sk-bar sk-w35 sk-sheen sk-thin"></view>
+        <view class="sk-arrow sk-sheen"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 报告页：文档式 -->
+  <view class="sk-wrap" wx:elif="{{skeleton === 'doc'}}">
+    <view class="sk-doc">
+      <view class="sk-doc-title sk-sheen"></view>
+      <view class="sk-doc-section sk-sheen"></view>
+      <view class="sk-bar sk-w92 sk-sheen sk-thin"></view>
+      <view class="sk-bar sk-w88 sk-sheen sk-thin"></view>
+      <view class="sk-bar sk-w95 sk-sheen sk-thin"></view>
+      <view class="sk-bar sk-w78 sk-sheen sk-thin"></view>
+      <view class="sk-doc-section sk-sheen sk-gap"></view>
+      <view class="sk-bar sk-w90 sk-sheen sk-thin"></view>
+      <view class="sk-bar sk-w85 sk-sheen sk-thin"></view>
+      <view class="sk-bar sk-w92 sk-sheen sk-thin"></view>
+    </view>
+  </view>
+
+  <!-- 历史列表（默认）：与 .session-card 几何一致 -->
+  <view class="sk-wrap" wx:else>
+    <view class="sk-card" wx:for="{{[1,2,3,4,5,6]}}" wx:key="*this">
+      <view class="sk-tag sk-sheen"></view>
+      <view class="sk-mid">
+        <view class="sk-bar sk-w75 sk-sheen"></view>
+        <view class="sk-bar sk-w45 sk-sheen sk-thin"></view>
+      </view>
+      <view class="sk-time sk-sheen"></view>
+    </view>
+  </view>
+</block>
+
+<view class="empty-state" wx:else>
   <view class="empty-emoji">{{defaultMeta[mode].emoji}}</view>
   <text class="empty-title">{{title || defaultMeta[mode].defaultTitle}}</text>
   <text wx:if="{{desc}}" class="empty-desc">{{desc}}</text>

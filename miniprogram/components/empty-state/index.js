@@ -15,6 +15,11 @@ Component({
     title: { type: String, value: "" },
     desc: { type: String, value: "" },
     cta: { type: String, value: "" },
+    // P0（2026-09-05）：loading 模式专用骨架屏类型
+    //   "list"    —— 列表骨架（history 默认）
+    //   "profile" —— 段位卡 + 统计格 + 菜单骨架
+    //   "doc"     —— 文档骨架（report）
+    skeleton: { type: String, value: "list" },
   },
 
   data: {

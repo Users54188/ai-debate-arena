@@ -1,7 +1,7 @@
 <view class="page">
   <star-field />
 
-  <scroll-view scroll-y class="scaffold">
+  <scroll-view scroll-y class="scaffold {{tabAnim}}" enhanced bounces show-scrollbar="{{false}}" deceleration-rate="0.98">
     <!-- Hero 区：星空主题装饰图 -->
     <view class="hero">
       <image class="hero-emblem" src="/images/header-logo.png" mode="widthFix" />
@@ -46,7 +46,7 @@
       <text class="section-title">选择思辨深度</text>
 
       <!-- L1 -->
-      <view class="mode glass-card" bindtap="goSocrates" hover-class="card-hover" hover-stay-time="80">
+      <view class="mode glass-card stagger-item" style="--i: 0" bindtap="goSocrates" hover-class="card-hover" hover-stay-time="80">
         <view class="mode-side">
           <image class="mode-mark mark-l1" src="/images/l1-badge.jpeg" mode="aspectFit" />
         </view>
@@ -61,7 +61,7 @@
       </view>
 
       <!-- L2 -->
-      <view class="mode glass-card" bindtap="goDual" hover-class="card-hover" hover-stay-time="80">
+      <view class="mode glass-card stagger-item" style="--i: 1" bindtap="goDual" hover-class="card-hover" hover-stay-time="80">
         <view class="mode-side">
           <image class="mode-mark mark-l2" src="/images/l2-badge.jpeg" mode="aspectFit" />
         </view>
@@ -76,7 +76,7 @@
       </view>
 
       <!-- L3 -->
-      <view class="mode glass-card" bindtap="goDebate" hover-class="card-hover" hover-stay-time="80">
+      <view class="mode glass-card stagger-item" style="--i: 2" bindtap="goDebate" hover-class="card-hover" hover-stay-time="80">
         <view class="mode-side">
           <image class="mode-mark mark-l3" src="/images/l3-badge.jpeg" mode="aspectFit" />
         </view>

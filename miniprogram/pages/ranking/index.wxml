@@ -1,6 +1,6 @@
 <view class="page">
   <star-field />
-  <scroll-view scroll-y class="scaffold">
+  <scroll-view scroll-y class="scaffold page-enter" enhanced bounces show-scrollbar="{{false}}" deceleration-rate="0.98">
 
   <view wx:if="{{loading}}" class="state-box">
     <empty-state mode="loading" />
@@ -20,7 +20,7 @@
     />
   </view>
 
-  <block wx:else>
+  <view class="rank-body content-reveal" wx:else>
     <!-- 段位卡 -->
     <view class="rank-card">
       <image class="rank-trophy" src="{{rank.image}}" mode="aspectFit" />
@@ -41,7 +41,7 @@
         <text class="row-time">{{item.time}}</text>
       </view>
     </view>
-  </block>
+  </view>
 
   <view class="bottom-spacer"></view>
   </scroll-view>
