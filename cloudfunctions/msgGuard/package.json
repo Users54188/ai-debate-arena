@@ -1,0 +1,14 @@
+{
+  "name": "msgGuard",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "^4.0.2"
+  },
+  "timeout": 30,
+  "memorySize": 256,
+  "permissions": {
+    "openapi": ["security.msgSecCheck"]
+  }
+}
+

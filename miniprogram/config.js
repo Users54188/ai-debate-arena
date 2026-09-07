@@ -14,7 +14,7 @@ module.exports = {
   // 配额旁路总开关（与云函数 getQuota/sessionStore/userProfile 的 QUOTA_BYPASS 联动）
   // true  ：前端 checkQuota 直接视为可用；云端拒绝时降级为"不落库继续对话"
   // false ：正式配额拦截（上线恒为 false；调试时本地修改勿提交）
-  // 正式上线版（2026-09-02 已还原）
+  // 正式上线版（2026-09-06 已还原；msgGuard fail-open 兼容个人主体后业务恢复）
   quotaBypass: false,
 
   // 是否强制微信官方手机号验证（getPhoneNumber）后才能进入。
@@ -72,7 +72,7 @@ module.exports = {
   // 云函数名
   cloudFunctions: {
     sessionStore: "sessionStore",
-    securityCheck: "securityCheck",
+    securityCheck: "msgGuard",
     userProfile: "userProfile",
     getQuota: "getQuota",
     generateReport: "generateReport",

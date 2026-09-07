@@ -1,8 +1,0 @@
-{
-  "name": "securityCheck",
-  "version": "1.0.0",
-  "main": "index.js",
-  "dependencies": {
-    "wx-server-sdk": "^4.0.2"
-  }
-}
