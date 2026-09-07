@@ -7,3 +7,7 @@ project.private.config.json
 pr-body.md
 pr-body-*.md
 
+# CloudBase Skills 包（开发者本地安装产物，不入库）
+.agents/
+skills-lock.json
+

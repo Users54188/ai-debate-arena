@@ -292,7 +292,6 @@ Page({
         messages: apiMessages,
         mode: "L3",
         onChunk: (delta) => {
-        onChunk: (delta) => {
           if (chat) {
             chat.appendChunk(delta);
           } else {
@@ -318,7 +317,6 @@ Page({
             resetMessages[msgIndex] = displayMsg(role, "", round);
             chat.buildRenderMessages(resetMessages);
           }
-        },
         },
         onStreamEnd: async ({ fullText, finishReason }) => {
           const safe = finishReason === "sensitive";

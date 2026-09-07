@@ -20,9 +20,9 @@ const _ = db.command;
 // 兜底默认值（用于 classify 缺失或异常情况）
 const DAILY_LIMITS = { L1: 3, L2: 2, L3: 1 };
 
-// 测试期配额全放开：强制按 beta 档（999）计算，与 sessionStore / userProfile 的
-// 同名开关保持同步；⚠️ 上线前三处一并改回 false 还原正式配额
-const QUOTA_BYPASS = true;
+// 配额旁路开关：测试期可置 true 强制按 beta 档（999）计算；
+// ⚠️ 正式上线必须改回 false 还原正式配额（与 sessionStore / userProfile 同步）
+const QUOTA_BYPASS = false;
 
 // 段位分档：与 userProfile / sessionStore 保持一致
 const TIERS = {
