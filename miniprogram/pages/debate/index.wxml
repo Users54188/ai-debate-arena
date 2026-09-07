@@ -2,7 +2,7 @@
   <star-field />
 
   <!-- 阶段 1：命题输入 -->
-  <view wx:if="{{phase === 'input'}}" class="scaffold scaffold-input">
+  <view wx:if="{{phase === 'input'}}" class="scaffold scaffold-input page-enter">
     <view class="head">
       <text class="head-title">提出一个值得辩论的命题</text>
       <text class="head-sub">AI 将分别扮演正方、反方与裁判，你作为围观者投票</text>
@@ -47,11 +47,15 @@
   </view>
 
   <!-- 阶段 2：辩论进行中 -->
-  <view wx:if="{{phase !== 'input'}}" class="stage">
+  <view wx:if="{{phase !== 'input'}}" class="stage page-enter">
     <view class="topic-bar">
       <text class="tb-label">命题</text>
       <text class="tb-text">{{topic}}</text>
       <text wx:if="{{phase === 'finished'}}" class="tb-reset" bindtap="onResetTopic">换命题</text>
+      <view class="exit-btn" bindtap="onExitDebate" aria-label="退出辩论" role="button">
+        <view class="exit-btn-x"></view>
+        <view class="exit-btn-x exit-btn-x--rotate"></view>
+      </view>
     </view>
 
     <scroll-view class="stream" scroll-y scroll-top="{{scrollTop}}" scroll-with-animation enhanced show-scrollbar="{{false}}">

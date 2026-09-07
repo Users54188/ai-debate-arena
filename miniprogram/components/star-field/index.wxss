@@ -1,4 +1,12 @@
-/* 星空背景层 —— 固定铺满父容器，z-index 极低 */
+/* 星空背景层 —— 固定铺满父容器，z-index 极低
+ *
+ * P0 性能优化（2026-09-05）：彻底重构
+ * - 移除 nebula-top 的 filter: blur(20rpx) —— 改用径向渐变本身的柔边过渡
+ *   （blur 是 GPU 合成杀手，每个页面都跑导致整体卡顿）
+ * - 移除远景星点 28 个 @keyframes star-twinkle 无限动画
+ *   （每帧重算 opacity+transform，持续吃 CPU；iOS 系统应用几乎不做持续动画）
+ * - 改为静态星空：一次性渲染，永久不变（视觉接近 + 零运行时开销）
+ */
 
 .star-field {
   position: absolute;
@@ -11,7 +19,8 @@
   z-index: 0;
 }
 
-/* 顶部紫色星云 —— 大半径径向渐变营造宇宙感 */
+/* 顶部紫色星云 —— 用多层径向渐变本身的柔边过渡模拟 blur 效果
+ * （半透明叠加 + 大半径 = 视觉接近 blur，但零合成开销） */
 .nebula-top {
   position: absolute;
   top: -30%;
@@ -20,10 +29,9 @@
   width: 140%;
   height: 70%;
   background:
-    radial-gradient(ellipse 50% 60% at 50% 50%, rgba(157, 107, 255, 0.28) 0%, transparent 65%),
-    radial-gradient(ellipse 35% 45% at 30% 30%, rgba(99, 102, 241, 0.22) 0%, transparent 70%),
-    radial-gradient(ellipse 30% 40% at 75% 40%, rgba(192, 132, 252, 0.18) 0%, transparent 70%);
-  filter: blur(20rpx);
+    radial-gradient(ellipse 70% 80% at 50% 50%, rgba(157, 107, 255, 0.22) 0%, rgba(157, 107, 255, 0.08) 30%, transparent 65%),
+    radial-gradient(ellipse 50% 60% at 30% 30%, rgba(99, 102, 241, 0.16) 0%, rgba(99, 102, 241, 0.05) 35%, transparent 70%),
+    radial-gradient(ellipse 45% 55% at 75% 40%, rgba(192, 132, 252, 0.14) 0%, rgba(192, 132, 252, 0.04) 35%, transparent 70%);
 }
 
 /* 底部柔光地平线 —— 紫光从底部上升 */
@@ -59,12 +67,11 @@
   background: #FFFFFF;
 }
 
-/* 远景星点 —— 小、慢闪烁 */
+/* 远景星点 —— 小、静态、随机透明度（替代无限闪烁） */
 .stars-far .star {
   width: 3rpx;
   height: 3rpx;
-  opacity: var(--o, 0.4);
-  animation: star-twinkle var(--d, 3s) ease-in-out infinite;
+  opacity: var(--o, 0.5);
 }
 
 /* 近景星点 —— 大、静止、带光晕 */
@@ -74,9 +81,4 @@
   opacity: 0.85;
   background: #F5F3FF;
   box-shadow: 0 0 8rpx rgba(255, 255, 255, 0.9), 0 0 16rpx rgba(157, 107, 255, 0.4);
-}
-
-@keyframes star-twinkle {
-  0%, 100% { opacity: 0.25; transform: scale(0.8); }
-  50% { opacity: 0.9; transform: scale(1.15); }
 }

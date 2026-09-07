@@ -17,7 +17,7 @@
   <view wx:if="{{current === slides.length - 1}}" class="agree-row">
     <checkbox-group bindchange="onAgreeChange">
       <label class="agree-label">
-        <checkbox value="1" color="#9D6BFF" />
+        <checkbox class="agree-checkbox" value="1" color="#9D6BFF" />
         <text class="agree-text">我确认已成年，已阅读并同意</text>
         <text class="agree-link" catchtap="onShowUserAgreement">《用户协议》</text>
         <text class="agree-text">与</text>
