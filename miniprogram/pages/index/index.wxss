@@ -94,6 +94,102 @@
   margin-bottom: var(--sp-5);
 }
 
+/* 段位横条 */
+.journey-rank-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+
+.journey-divider {
+  height: 1rpx;
+  background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+  margin: var(--sp-3) 0;
+}
+
+/* 段位徽章：胶囊渐变背景 + 段位对应配色 */
+.rank-badge {
+  flex-shrink: 0;
+  padding: 8rpx 24rpx;
+  border-radius: var(--r-pill);
+  background: linear-gradient(135deg, var(--star-purple), var(--star-indigo));
+  box-shadow: 0 0 16rpx rgba(157, 107, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96rpx;
+}
+
+.rank-tier {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: #FFFFFF;
+  letter-spacing: 2rpx;
+}
+
+/* 段位配色 —— 新手灰 / 青铜橙 / 白银青 / 黄金黄 / 铂金紫 / 钻石青 / 王者红 */
+.rank-new      { background: linear-gradient(135deg, #6B7280, #4B5563); box-shadow: 0 0 16rpx rgba(107, 114, 128, 0.4); }
+.rank-bronze   { background: linear-gradient(135deg, #B17554, #8B5A3C); box-shadow: 0 0 16rpx rgba(177, 117, 84, 0.45); }
+.rank-silver   { background: linear-gradient(135deg, #94A3B8, #64748B); box-shadow: 0 0 16rpx rgba(148, 163, 184, 0.45); }
+.rank-gold     { background: linear-gradient(135deg, #FBBF24, #F59E0B); box-shadow: 0 0 20rpx rgba(251, 191, 36, 0.5); }
+.rank-platinum { background: linear-gradient(135deg, #C0CAFF, #9B7CF0); box-shadow: 0 0 20rpx rgba(192, 132, 252, 0.5); }
+.rank-diamond  { background: linear-gradient(135deg, #67E8F9, #06B6D4); box-shadow: 0 0 20rpx rgba(103, 232, 249, 0.5); }
+.rank-king     { background: linear-gradient(135deg, #F87171, #DC2626); box-shadow: 0 0 24rpx rgba(248, 113, 113, 0.55); }
+
+/* 进度信息 + 进度条 */
+.rank-progress {
+  flex: 1;
+  min-width: 0;
+}
+
+.rank-progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6rpx;
+}
+
+.rank-progress-cur {
+  font-size: var(--fs-label);
+  color: var(--text-1);
+  font-weight: 600;
+  letter-spacing: 1rpx;
+}
+
+.rank-progress-next {
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  letter-spacing: 1rpx;
+}
+
+.rank-progress-max {
+  color: var(--star-purple);
+}
+
+.rank-progress-bar-bg {
+  height: 6rpx;
+  background: var(--glass-border);
+  border-radius: 3rpx;
+  overflow: hidden;
+}
+
+.rank-progress-bar {
+  height: 100%;
+  border-radius: 3rpx;
+  background: linear-gradient(90deg, var(--star-purple), var(--star-violet));
+  transition: width 600ms var(--ease-out);
+}
+
+/* 进度条配色与徽章一致 */
+.rank-bar-new      { background: linear-gradient(90deg, #6B7280, #4B5563); }
+.rank-bar-bronze   { background: linear-gradient(90deg, #B17554, #8B5A3C); }
+.rank-bar-silver   { background: linear-gradient(90deg, #94A3B8, #64748B); }
+.rank-bar-gold     { background: linear-gradient(90deg, #FBBF24, #F59E0B); }
+.rank-bar-platinum { background: linear-gradient(90deg, #C0CAFF, #9B7CF0); }
+.rank-bar-diamond  { background: linear-gradient(90deg, #67E8F9, #06B6D4); }
+.rank-bar-king     { background: linear-gradient(90deg, #F87171, #DC2626); }
+
 .journey-head {
   margin-bottom: var(--sp-3);
 }

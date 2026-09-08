@@ -2,9 +2,35 @@ const config = require("../../config");
 const { playTabEnter } = require("../../utils/pageMotion");
 const app = getApp();
 
+// 段位分档（与 userProfile 云函数保持一致）
+const RANK_ORDER = ["new", "bronze", "silver", "gold", "platinum", "diamond", "king"];
+const RANK_THRESHOLDS = { new: 0, bronze: 10, silver: 30, gold: 50, platinum: 80, diamond: 120, king: 200 };
+const RANK_NAMES = {
+  new: "新手", bronze: "青铜", silver: "白银", gold: "黄金",
+  platinum: "铂金", diamond: "钻石", king: "王者"
+};
+
+/** 根据当前累计轮次和段位，计算下一档信息（progress%、nextRank、roundsToNext） */
+function computeRankProgress(classify, totalRounds) {
+  const curIdx = RANK_ORDER.indexOf(classify);
+  if (curIdx < 0 || curIdx === RANK_ORDER.length - 1) {
+    // 已达最高段位
+    return { nextRank: "", roundsToNext: 0, rankProgress: 100 };
+  }
+  const nextClassify = RANK_ORDER[curIdx + 1];
+  const curThreshold = RANK_THRESHOLDS[classify] || 0;
+  const nextThreshold = RANK_THRESHOLDS[nextClassify] || curThreshold;
+  const span = nextThreshold - curThreshold;
+  const passed = totalRounds - curThreshold;
+  const progress = span > 0 ? Math.min(100, Math.max(0, Math.round((passed / span) * 100))) : 0;
+  const roundsToNext = Math.max(0, nextThreshold - totalRounds);
+  return { nextRank: RANK_NAMES[nextClassify] || nextClassify, roundsToNext, rankProgress: progress };
+}
+
 Page({
   data: {
-    journey: { title: "思辨之旅", count: 0, best: 0, mode: "-" },
+    journey: { count: 0, best: 0, mode: "-" },
+    profile: { classify: "new", rank: "新手", totalRounds: 0, nextRank: "", roundsToNext: 0, rankProgress: 0 },
     showOnboarding: false,
     tabAnim: "tab-enter tab-enter--idle",
   },
@@ -41,11 +67,36 @@ Page({
     this.setData({ showOnboarding: false });
   },
 
-  /** 聚合本人 reports：完成场次 / 最佳得分 / 最近模式（走云函数） */
+  /** 并行拉取段位（userProfile.get）和旅程统计（userProfile.listReports） */
   async loadJourney() {
+    // 段位
+    wx.cloud
+      .callFunction({
+        name: config.cloudFunctions.userProfile,
+        data: { action: "get" },
+      })
+      .then((res) => {
+        const result = res.result || {};
+        if (result.code !== 0 || !result.data) return;
+        const d = result.data;
+        const classify = d.classify || "new";
+        const totalRounds = d.totalRounds || 0;
+        const { nextRank, roundsToNext, rankProgress } = computeRankProgress(classify, totalRounds);
+        this.setData({
+          profile: {
+            classify,
+            rank: d.rank || RANK_NAMES[classify] || "新手",
+            totalRounds,
+            nextRank,
+            roundsToNext,
+            rankProgress,
+          },
+        });
+      })
+      .catch((e) => console.error("[index] load profile failed:", e));
+
+    // 旅程统计
     try {
-      // P0 修复（2026-08-27）：原 db.collection("reports").get() 前端直查在
-      // "仅创建者可读写"权限下读不到云函数写入的报告。改走 userProfile.listReports
       const res = await wx.cloud.callFunction({
         name: config.cloudFunctions.userProfile,
         data: { action: "listReports", limit: 50 },
@@ -65,7 +116,6 @@ Page({
       }
       this.setData({
         journey: {
-          title: reports.length ? `已完成 ${reports.length} 场思辨` : "开始你的思辨之旅",
           count: reports.length,
           best,
           mode: latestMode,
