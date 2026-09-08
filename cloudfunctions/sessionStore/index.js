@@ -317,11 +317,21 @@ exports.main = async (event) => {
           // P0 修复（IDOR）：归属校验，他人 sessionId 一律拒绝
           return { code: -1, msg: "session not found or not owned" };
         }
+        // Bug 修复（2026-09-08）：原实现用 `_.max(msg.round)` 想做并发安全的字段推进，
+        // 但微信云开发 db.command.max 在 update 中行为异常，会把字段值变成数组
+        // （如 round: 1 写两次后变 [1,1]），导致 userProfile 的 aggregate sum 失效。
+        // 改为读取当前 round（兼容历史数组数据），与 msg.round 取最大值后直接赋值。
+        // 并发安全性由「单用户单会话」业务前提保证（客户端不会并发 append 同一 sessionId）。
+        const curRoundRaw = s.round;
+        const curRound = Array.isArray(curRoundRaw)
+          ? curRoundRaw.reduce((m, v) => Math.max(m, Number(v) || 0), 0)
+          : (Number(curRoundRaw) || 0);
+        const nextRoundValue = Math.max(curRound, msg.round);
         await ref.update({
           data: {
             recent: _.push([msg]),
             transcript: _.push([msg]),
-            round: _.max(msg.round),
+            round: nextRoundValue,
             status: s.status === "finished" ? "finished" : sessionStatus,
             version: _.inc(1),
             updatedAt: db.serverDate(),

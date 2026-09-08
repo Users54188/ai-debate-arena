@@ -85,28 +85,64 @@ async function getProfile(OPENID) {
     user = { openid: OPENID, classify: "new", nickName: "", avatar: "" };
   }
 
+  // 完成场次数来自 sessions 表（status=finished 表示已结束的会话）
   const sessRes = await db.collection("sessions").where({ openid: OPENID }).count();
   const totalSessions = sessRes.total || 0;
 
+  // 累计轮次来自 sessions 表的 round 字段求和
+  // Bug 历史：round 字段曾被 _.max 错误写为数组（已修复但兼容旧数据）
   let totalRounds = 0;
-  let scoreSum = 0;
   try {
-    const agg = await db
+    const sessAgg = await db
       .collection("sessions")
+      .where({ openid: OPENID })
+      .aggregate()
+      .group({ _id: null, totalRounds: $.sum("$round") })
+      .end();
+    if (sessAgg.list && sessAgg.list[0]) {
+      const raw = sessAgg.list[0].totalRounds;
+      // 兼容历史数组残留：aggregate 对数组求和会得到非数字结果，兜底转 0
+      totalRounds = Number(raw) || 0;
+    }
+  } catch (e) {
+    console.error("[userProfile] sessions aggregate failed:", e);
+  }
+
+  // 平均得分 + 胜率来自 reports 表（sessions 表本身没有 score 字段）
+  // 胜率定义：得分 ≥ 60 的报告占比（思辨场景的"合格率"）
+  const _ = db.command;
+  let reportCount = 0;
+  let scoreSum = 0;
+  let winCount = 0;
+  let avgScore = 0;
+  let winRate = 0;
+  try {
+    const repAgg = await db
+      .collection("reports")
       .where({ openid: OPENID })
       .aggregate()
       .group({
         _id: null,
-        totalRounds: $.sum("$round"),
+        reportCount: $.sum(1),
         scoreSum: $.sum("$score"),
       })
       .end();
-    if (agg.list && agg.list[0]) {
-      totalRounds = agg.list[0].totalRounds || 0;
-      scoreSum = agg.list[0].scoreSum || 0;
+    if (repAgg.list && repAgg.list[0]) {
+      reportCount = repAgg.list[0].reportCount || 0;
+      scoreSum = repAgg.list[0].scoreSum || 0;
+    }
+    // 用简单 count 查询拿胜场（避免依赖 aggregate 高级语法 $.cond）
+    const winRes = await db
+      .collection("reports")
+      .where({ openid: OPENID, score: _.gte(60) })
+      .count();
+    winCount = winRes.total || 0;
+    if (reportCount > 0) {
+      avgScore = Math.round((scoreSum / reportCount) * 10) / 10;
+      winRate = Math.round((winCount / reportCount) * 100);
     }
   } catch (e) {
-    console.error("[userProfile] aggregate failed:", e);
+    console.error("[userProfile] reports aggregate failed:", e);
   }
 
   const beta = BETA_OPENIDS.includes(OPENID) || user.classify === "beta";
@@ -117,7 +153,6 @@ async function getProfile(OPENID) {
     .catch(() => {});
 
   const tier = TIERS[classify] || TIERS.new;
-  const avgScore = totalSessions ? Math.round((scoreSum / totalSessions) * 10) / 10 : 0;
 
   return {
     code: 0,
@@ -127,7 +162,8 @@ async function getProfile(OPENID) {
       totalSessions,
       totalRounds,
       avgScore,
-      winRate: 0, // 胜率需辩论/评分体系支撑，暂置 0
+      winRate,
+      reportCount,
       nickName: user.nickName || "",
       avatar: user.avatar || "",
       dailyLimit: tier.daily,

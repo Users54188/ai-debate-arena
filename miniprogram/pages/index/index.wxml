@@ -12,12 +12,27 @@
       <text class="hero-sub">在星辰之间，与 AI 共思考</text>
     </view>
 
-    <!-- 思辨之旅卡（玻璃态 + 数据） -->
+    <!-- 思辨段位 + 之旅（玻璃态卡：段位横条 + 统计三联） -->
     <view class="journey glass-card">
-      <view class="journey-head">
-        <text class="journey-title">{{journey.title}}</text>
-        <text class="journey-sub">完成更多思辨，点亮你的星空</text>
+      <!-- 段位横条 -->
+      <view class="journey-rank-row">
+        <view class="rank-badge rank-{{profile.classify}}">
+          <text class="rank-tier">{{profile.rank || '新手'}}</text>
+        </view>
+        <view class="rank-progress">
+          <view class="rank-progress-info">
+            <text class="rank-progress-cur">累计 {{profile.totalRounds || 0}} 轮</text>
+            <text class="rank-progress-next" wx:if="{{profile.nextRank}}">距{{profile.nextRank}} 还需 {{profile.roundsToNext}} 轮</text>
+            <text class="rank-progress-next rank-progress-max" wx:else">已达最高段位</text>
+          </view>
+          <view class="rank-progress-bar-bg">
+            <view class="rank-progress-bar rank-bar-{{profile.classify}}" style="width: {{profile.rankProgress}}%"></view>
+          </view>
+        </view>
       </view>
+
+      <view class="journey-divider"></view>
+
       <view class="journey-stats">
         <view class="stat">
           <text class="stat-value">{{journey.count}}</text>
