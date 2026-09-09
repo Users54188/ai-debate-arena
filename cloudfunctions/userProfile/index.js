@@ -23,14 +23,16 @@ const $ = db.command.aggregate;
  */
 
 // 段位分档：与 getQuota / sessionStore 保持一致
+// 配额调整（2026-09-09）：所有段位的单日上限统一上调至 L1 30 / L2 20 / L3 10
+// 原阶梯过于陡峭（新手 3/2/1 → 王者 50/30/20），用户反馈早期配额太紧挫败感强
 const TIERS = {
-  new:      { rank: "新手", daily: { L1: 3,  L2: 2,  L3: 1 },  maxRounds: 10 },
-  bronze:   { rank: "青铜", daily: { L1: 5,  L2: 3,  L3: 2 },  maxRounds: 12 },
-  silver:   { rank: "白银", daily: { L1: 8,  L2: 5,  L3: 3 },  maxRounds: 15 },
-  gold:     { rank: "黄金", daily: { L1: 12, L2: 8,  L3: 5 },  maxRounds: 20 },
-  platinum: { rank: "铂金", daily: { L1: 20, L2: 12, L3: 8 },  maxRounds: 30 },
-  diamond:  { rank: "钻石", daily: { L1: 30, L2: 20, L3: 12 }, maxRounds: 40 },
-  king:     { rank: "王者", daily: { L1: 50, L2: 30, L3: 20 }, maxRounds: 60 },
+  new:      { rank: "新手", daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  bronze:   { rank: "青铜", daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  silver:   { rank: "白银", daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  gold:     { rank: "黄金", daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  platinum: { rank: "铂金", daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  diamond:  { rank: "钻石", daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  king:     { rank: "王者", daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
   // 测试期放开档（TODO-上线前清空或收紧）：配合 ENFORCE_QUOTA=false 使用
   beta:     { rank: "内测", daily: { L1: 999, L2: 999, L3: 999 }, maxRounds: 999 },
 };
