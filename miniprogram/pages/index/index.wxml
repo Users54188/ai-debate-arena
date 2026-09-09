@@ -23,7 +23,7 @@
           <view class="rank-progress-info">
             <text class="rank-progress-cur">累计 {{profile.totalRounds || 0}} 轮</text>
             <text class="rank-progress-next" wx:if="{{profile.nextRank}}">距{{profile.nextRank}} 还需 {{profile.roundsToNext}} 轮</text>
-            <text class="rank-progress-next rank-progress-max" wx:else">已达最高段位</text>
+            <text class="rank-progress-next rank-progress-max" wx:else>已达最高段位</text>
           </view>
           <view class="rank-progress-bar-bg">
             <view class="rank-progress-bar rank-bar-{{profile.classify}}" style="width: {{profile.rankProgress}}%"></view>
