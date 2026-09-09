@@ -52,14 +52,15 @@ const ENFORCE_QUOTA = true;
 const QUOTA_BYPASS = false;
 
 // 段位分档（与 userProfile / getQuota 保持一致）
+// 配额调整（2026-09-09）：所有段位统一 L1 30 / L2 20 / L3 10（用户反馈原阶梯太陡）
 const TIERS = {
-  new:      { daily: { L1: 3,  L2: 2,  L3: 1 },  maxRounds: 10 },
-  bronze:   { daily: { L1: 5,  L2: 3,  L3: 2 },  maxRounds: 12 },
-  silver:   { daily: { L1: 8,  L2: 5,  L3: 3 },  maxRounds: 15 },
-  gold:     { daily: { L1: 12, L2: 8,  L3: 5 },  maxRounds: 20 },
-  platinum: { daily: { L1: 20, L2: 12, L3: 8 },  maxRounds: 30 },
-  diamond:  { daily: { L1: 30, L2: 20, L3: 12 }, maxRounds: 40 },
-  king:     { daily: { L1: 50, L2: 30, L3: 20 }, maxRounds: 60 },
+  new:      { daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  bronze:   { daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  silver:   { daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  gold:     { daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  platinum: { daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  diamond:  { daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
+  king:     { daily: { L1: 30, L2: 20, L3: 10 }, maxRounds: 60 },
   beta:     { daily: { L1: 999, L2: 999, L3: 999 }, maxRounds: 999 },
 };
 
