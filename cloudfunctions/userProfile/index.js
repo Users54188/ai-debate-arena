@@ -92,13 +92,15 @@ async function getProfile(OPENID) {
   const totalSessions = sessRes.total || 0;
 
   // 累计轮次来自 sessions 表的 round 字段求和
-  // Bug 历史：round 字段曾被 _.max 错误写为数组（已修复但兼容旧数据）
+  // Bug 修复（2026-09-09）：云函数 SDK 不支持 where().aggregate() 链式调用，
+  // 必须用 aggregate().match() pipeline 形式。原写法抛 "aggregate is not a function"
+  // 被 catch 吞掉，导致 totalRounds 永远是 0
   let totalRounds = 0;
   try {
     const sessAgg = await db
       .collection("sessions")
-      .where({ openid: OPENID })
       .aggregate()
+      .match({ openid: OPENID })
       .group({ _id: null, totalRounds: $.sum("$round") })
       .end();
     if (sessAgg.list && sessAgg.list[0]) {
@@ -119,10 +121,11 @@ async function getProfile(OPENID) {
   let avgScore = 0;
   let winRate = 0;
   try {
+    // Bug 修复（2026-09-09）：同样改成 aggregate().match() pipeline 形式
     const repAgg = await db
       .collection("reports")
-      .where({ openid: OPENID })
       .aggregate()
+      .match({ openid: OPENID })
       .group({
         _id: null,
         reportCount: $.sum(1),
