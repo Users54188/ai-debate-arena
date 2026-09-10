@@ -1,5 +1,6 @@
 const config = require("../../config");
 const { playTabEnter } = require("../../utils/pageMotion");
+const { rankBadge } = require("../../utils/rankBadge");
 const app = getApp();
 
 // 段位分档（与 userProfile 云函数保持一致）
@@ -85,6 +86,7 @@ Page({
         this.setData({
           profile: {
             classify,
+            rankBadge: rankBadge(classify),
             rank: d.rank || RANK_NAMES[classify] || "新手",
             totalRounds,
             nextRank,

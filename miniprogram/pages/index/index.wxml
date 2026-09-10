@@ -2,12 +2,9 @@
   <star-field />
 
   <scroll-view scroll-y class="scaffold {{tabAnim}}" enhanced bounces show-scrollbar="{{false}}" deceleration-rate="0.98">
-    <!-- Hero 区：星空主题装饰图 -->
+    <!-- Hero 区：透明品牌盾牌 logo -->
     <view class="hero">
-      <view class="hero-emblem">
-        <view class="emblem-ring"></view>
-        <view class="emblem-core">思</view>
-      </view>
+      <image class="hero-logo" src="/images/header-logo.png" mode="widthFix" />
       <text class="hero-title">思辨场</text>
       <text class="hero-sub">在星辰之间，与 AI 共思考</text>
     </view>
@@ -17,6 +14,7 @@
       <!-- 段位横条 -->
       <view class="journey-rank-row">
         <view class="rank-badge rank-{{profile.classify}}">
+          <image wx:if="{{profile.rankBadge}}" class="rank-badge-img" src="{{profile.rankBadge}}" mode="aspectFit" />
           <text class="rank-tier">{{profile.rank || '新手'}}</text>
         </view>
         <view class="rank-progress">
@@ -58,7 +56,7 @@
       <!-- L1 -->
       <view class="mode glass-card stagger-item" style="--i: 0" bindtap="goSocrates" hover-class="card-hover" hover-stay-time="80">
         <view class="mode-side">
-          <view class="mode-mark mark-l1">L1</view>
+          <image class="mode-icon" src="/images/level1-badge.png" mode="aspectFit" />
         </view>
         <view class="mode-main">
           <text class="mode-title">苏格拉底追问</text>
@@ -73,7 +71,7 @@
       <!-- L2 -->
       <view class="mode glass-card stagger-item" style="--i: 1" bindtap="goDual" hover-class="card-hover" hover-stay-time="80">
         <view class="mode-side">
-          <view class="mode-mark mark-l2">L2</view>
+          <image class="mode-icon" src="/images/level2-badge.png" mode="aspectFit" />
         </view>
         <view class="mode-main">
           <text class="mode-title">双人共修</text>
@@ -88,7 +86,7 @@
       <!-- L3 -->
       <view class="mode glass-card stagger-item" style="--i: 2" bindtap="goDebate" hover-class="card-hover" hover-stay-time="80">
         <view class="mode-side">
-          <view class="mode-mark mark-l3">L3</view>
+          <image class="mode-icon" src="/images/level3-badge.png" mode="aspectFit" />
         </view>
         <view class="mode-main">
           <text class="mode-title">三方辩论</text>

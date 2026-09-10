@@ -6,7 +6,7 @@
     <view class="logo-block">
       <view class="logo-emblem">
         <view class="emblem-ring"></view>
-        <view class="emblem-core">思</view>
+        <image class="emblem-core emblem-icon" src="/images/app-icon-new.png" mode="aspectFill" />
       </view>
       <text class="logo-title">思辨场</text>
       <text class="logo-sub">在星辰之间，与 AI 共思考</text>

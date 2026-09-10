@@ -1,113 +1,99 @@
 <view class="page">
   <star-field />
+
   <scroll-view scroll-y class="scaffold {{tabAnim}}" enhanced bounces show-scrollbar="{{false}}" deceleration-rate="0.98">
-
-  <!-- 加载骨架：顶部对齐，沿用 scaffold 的内边距，与真实内容位置一致 -->
-  <view wx:if="{{loading}}">
-    <empty-state mode="loading" skeleton="profile" />
-  </view>
-
-  <view wx:elif="{{loadError}}" class="state-box page-enter">
-    <empty-state mode="error" title="{{loadError}}" cta="重新加载" bind:tap="loadProfile" />
-  </view>
-
-  <view class="profile-body content-reveal" wx:else>
-    <!-- 段位卡片（含头像/昵称编辑入口） -->
-    <view class="rank-card {{rankAnimClass}}">
+    <!-- 段位卡：头像 + 昵称 + 段位 + 累计 -->
+    <view class="rank-card glass-card">
       <button class="avatar-btn" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar">
-        <image wx:if="{{profile.avatar}}" class="avatar" src="{{profile.avatar}}" mode="aspectFill" />
-        <view wx:else class="avatar-ph">头像</view>
+        <image class="avatar" src="{{profile.avatarUrl || '/images/app-icon-new.png'}}" mode="aspectFill" />
       </button>
       <view class="rank-info">
-        <input
-          class="nick-input"
-          type="nickname"
-          placeholder="点击设置昵称"
-          value="{{profile.nickName}}"
-          bindinput="onNickNameInput"
-          bindblur="onNickNameBlur"
-        />
+        <input class="nickname-input" type="nickname" value="{{profile.nickName}}" placeholder="点击设置昵称" bindblur="onNicknameBlur" />
         <text class="rank-name">{{profile.rank || '新手'}}</text>
-        <text class="rank-meta">累计 {{profile.totalRounds || 0}} 轮 · {{profile.totalSessions || 0}} 场</text>
+        <text class="rank-meta">累计 {{profile.totalRounds || 0}} 轮 · 最佳 {{profile.bestScore || 0}} 分</text>
       </view>
     </view>
 
-    <!-- 统计卡片 -->
-    <view class="stats-grid">
-      <view class="stat-cell">
-        <text class="stat-value">{{profile.totalSessions || 0}}</text>
-        <text class="stat-label">完成场次</text>
+    <!-- 今日配额 -->
+    <view class="quota-card glass-card">
+      <view class="quota-head">
+        <text class="quota-title">今日剩余配额</text>
+        <text class="quota-reset">每日 0 点重置</text>
       </view>
-      <view class="stat-cell">
-        <text class="stat-value">{{profile.totalRounds || 0}}</text>
-        <text class="stat-label">累计轮次</text>
-      </view>
-      <view class="stat-cell">
-        <text class="stat-value">{{profile.avgScore || 0}}</text>
-        <text class="stat-label">平均得分</text>
-      </view>
-      <view class="stat-cell">
-        <text class="stat-value">{{profile.winRate || 0}}%</text>
-        <text class="stat-label">胜率</text>
-      </view>
-    </view>
-
-    <!-- 今日配额分档（按段位） -->
-    <view class="section-title">今日配额（按段位分档）</view>
-    <view class="quota-list">
-      <view class="quota-row">
-        <text>单人思辨</text>
-        <text class="quota-val">{{(profile.dailyLimit && profile.dailyLimit.L1) || 0}} 次/日</text>
-      </view>
-      <view class="quota-row">
-        <text>双人共修</text>
-        <text class="quota-val">{{(profile.dailyLimit && profile.dailyLimit.L2) || 0}} 次/日</text>
-      </view>
-      <view class="quota-row">
-        <text>三方辩论</text>
-        <text class="quota-val">{{(profile.dailyLimit && profile.dailyLimit.L3) || 0}} 次/日</text>
-      </view>
-      <view class="quota-row">
-        <text>单日总轮次上限</text>
-        <text class="quota-val">{{profile.maxRounds || 0}}</text>
+      <view class="quota-list">
+        <view class="quota-item">
+          <text class="quota-label">L1 追问</text>
+          <view class="quota-bar-wrap">
+            <view class="quota-bar quota-bar-l1" style="width: {{quota.L1Percent}}%"></view>
+          </view>
+          <text class="quota-num">{{quota.L1Left}}/{{quota.L1Total}}</text>
+        </view>
+        <view class="quota-item">
+          <text class="quota-label">L2 共修</text>
+          <view class="quota-bar-wrap">
+            <view class="quota-bar quota-bar-l2" style="width: {{quota.L2Percent}}%"></view>
+          </view>
+          <text class="quota-num">{{quota.L2Left}}/{{quota.L2Total}}</text>
+        </view>
+        <view class="quota-item">
+          <text class="quota-label">L3 辩论</text>
+          <view class="quota-bar-wrap">
+            <view class="quota-bar quota-bar-l3" style="width: {{quota.L3Percent}}%"></view>
+          </view>
+          <text class="quota-num">{{quota.L3Left}}/{{quota.L3Total}}</text>
+        </view>
       </view>
     </view>
 
     <!-- 功能入口 -->
-    <view class="section-title">更多</view>
-    <view class="menu-list">
-      <view class="menu-item" bindtap="goHistory">
+    <view class="menu glass-card">
+      <view class="menu-item" bindtap="goHistory" hover-class="menu-hover">
+        <text class="menu-icon">📜</text>
         <text class="menu-label">思辨历史</text>
         <text class="menu-arrow">›</text>
       </view>
-      <view class="menu-item" bindtap="goRanking">
+      <view class="menu-item" bindtap="goRanking" hover-class="menu-hover">
+        <text class="menu-icon">🏆</text>
         <text class="menu-label">段位排行</text>
         <text class="menu-arrow">›</text>
       </view>
-      <view class="menu-item" bindtap="showUserAgreement">
+      <view class="menu-item" bindtap="toggleSettings" hover-class="menu-hover">
+        <text class="menu-icon">⚙️</text>
+        <text class="menu-label">设置</text>
+        <text class="menu-arrow">{{showSettings ? '▾' : '›'}}</text>
+      </view>
+      <view wx:if="{{showSettings}}" class="settings-panel">
+        <view class="setting-row">
+          <text class="setting-label">触感反馈</text>
+          <switch checked="{{haptics}}" bindchange="onHapticsChange" color="#9D6BFF" />
+        </view>
+        <view class="setting-row">
+          <text class="setting-label">减少动画</text>
+          <switch checked="{{reduceMotion}}" bindchange="onReduceMotionChange" color="#9D6BFF" />
+        </view>
+      </view>
+      <view class="menu-item" bindtap="showUserAgreement" hover-class="menu-hover">
+        <text class="menu-icon">📜</text>
         <text class="menu-label">用户协议</text>
         <text class="menu-arrow">›</text>
       </view>
-      <view class="menu-item" bindtap="showPrivacy">
+      <view class="menu-item" bindtap="showPrivacy" hover-class="menu-hover">
+        <text class="menu-icon">🔒</text>
         <text class="menu-label">隐私协议</text>
         <text class="menu-arrow">›</text>
       </view>
-      <view class="menu-item" bindtap="showAbout">
-        <text class="menu-label">关于与合规</text>
-        <text class="menu-arrow">›</text>
-      </view>
-      <view class="menu-item" bindtap="clearCache">
-        <text class="menu-label">清空本地缓存</text>
+      <view class="menu-item" bindtap="showAbout" hover-class="menu-hover">
+        <text class="menu-icon">ℹ️</text>
+        <text class="menu-label">关于思辨场</text>
         <text class="menu-arrow">›</text>
       </view>
     </view>
 
-    <view class="disclaimer">
-      <text>AI 生成内容仅供参考，不构成专业建议</text>
-      <text class="openid-line">账号标识：{{openid}}</text>
+    <view class="footnote">
+      <text class="footnote-dot">·</text>
+      <text class="footnote-text">AI 生成内容仅供参考</text>
+      <text class="footnote-dot">·</text>
     </view>
-  </view>
-
-  <view class="bottom-spacer"></view>
+    <view class="bottom-spacer"></view>
   </scroll-view>
 </view>

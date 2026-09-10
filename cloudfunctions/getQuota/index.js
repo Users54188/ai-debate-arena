@@ -49,6 +49,48 @@ async function getClassify(OPENID) {
 exports.main = async (event) => {
   const { mode = "L1" } = event;
   const { OPENID } = cloud.getWXContext();
+
+  // 新接口：action: "all" 一次性返回 L1/L2/L3 三个模式的今日用量
+  // 给「我的」页配额卡片用，避免前端调 3 次
+  if (event.action === "all") {
+    const classify = await getClassify(OPENID);
+    const tier = QUOTA_BYPASS ? TIERS.beta : (TIERS[classify] || TIERS.new);
+
+    const OFFSET = 8 * 3600 * 1000;
+    const bjDayStartUtc = Math.floor((Date.now() + OFFSET) / 86400000) * 86400000 - OFFSET;
+    const today = new Date(bjDayStartUtc);
+    const tomorrow = new Date(bjDayStartUtc + 86400000);
+
+    const modes = ["L1", "L2", "L3"];
+    const result = {};
+    for (const m of modes) {
+      try {
+        const r = await db
+          .collection("sessions")
+          .where({
+            openid: OPENID || "",
+            mode: m,
+            createdAt: _.gte(today).and(_.lt(tomorrow)),
+          })
+          .count();
+        const used = r.total || 0;
+        const limit = tier.daily[m] || 0;
+        result[m] = { used, limit, left: Math.max(0, limit - used) };
+      } catch (e) {
+        const limit = tier.daily[m] || 0;
+        result[m] = { used: 0, limit, left: limit };
+      }
+    }
+    return {
+      code: 0,
+      data: {
+        classify,
+        tierMaxRounds: tier.maxRounds,
+        quota: result,
+      },
+    };
+  }
+
   const classify = await getClassify(OPENID);
   const tier = QUOTA_BYPASS ? TIERS.beta : (TIERS[classify] || TIERS.new);
   const limit = tier.daily[mode] || DAILY_LIMITS[mode] || 3;

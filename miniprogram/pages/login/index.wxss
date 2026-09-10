@@ -58,6 +58,13 @@
   color: var(--text-1, #F5F3FF);
 }
 
+.emblem-icon {
+  width: 108rpx;
+  height: 108rpx;
+  border-radius: 50%;
+  box-shadow: 0 0 32rpx rgba(157, 107, 255, 0.45);
+}
+
 .logo-title {
   font-size: 52rpx;
   font-weight: 700;
