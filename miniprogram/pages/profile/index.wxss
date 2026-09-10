@@ -84,7 +84,8 @@
   min-width: 0;
 }
 
-.nick-input {
+.nick-input,
+.nickname-input {
   font-size: var(--fs-title);
   font-weight: 600;
   color: var(--text-1);
@@ -182,6 +183,72 @@
   font-weight: 500;
 }
 
+/* === 配额卡片（进度条样式） === */
+.quota-card {
+  padding: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.quota-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--sp-2);
+}
+
+.quota-title {
+  font-size: var(--fs-label);
+  color: var(--text-2);
+  letter-spacing: 2rpx;
+  font-weight: 500;
+}
+
+.quota-reset {
+  font-size: 20rpx;
+  color: var(--text-4);
+}
+
+.quota-item {
+  display: flex;
+  align-items: center;
+  padding: 14rpx 0;
+  gap: 16rpx;
+}
+
+.quota-label {
+  flex: 0 0 120rpx;
+  font-size: var(--fs-caption);
+  color: var(--text-2);
+  letter-spacing: 1rpx;
+}
+
+.quota-bar-wrap {
+  flex: 1;
+  height: 12rpx;
+  background: rgba(157, 107, 255, 0.1);
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.quota-bar {
+  height: 100%;
+  border-radius: 6rpx;
+  transition: width 0.6s ease;
+}
+
+.quota-bar-l1 { background: linear-gradient(90deg, #9D6BFF, #5DD5FF); }
+.quota-bar-l2 { background: linear-gradient(90deg, #5DD5FF, #5DFFB0); }
+.quota-bar-l3 { background: linear-gradient(90deg, #FFB85D, #FF6B9D); }
+
+.quota-num {
+  flex: 0 0 90rpx;
+  text-align: right;
+  font-size: var(--fs-caption);
+  color: var(--star-purple);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
 /* === 菜单 === */
 .menu-list {
   background: var(--glass-bg);
@@ -231,3 +298,51 @@
 }
 
 .bottom-spacer { height: 120rpx; }
+
+/* === 底部合规提示（低调柔和） === */
+.footnote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: var(--sp-3) 0 var(--sp-2);
+  opacity: 0.55;
+}
+
+.footnote-dot {
+  font-size: 20rpx;
+  color: var(--text-4);
+  opacity: 0.6;
+}
+
+.footnote-text {
+  font-size: 20rpx;
+  color: var(--text-3);
+  letter-spacing: 2rpx;
+}
+
+/* === 设置面板 === */
+.settings-panel {
+  background: rgba(157, 107, 255, 0.04);
+  border-top: 1rpx solid rgba(157, 107, 255, 0.08);
+  border-bottom: 1rpx solid rgba(157, 107, 255, 0.08);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx 0;
+}
+
+.setting-label {
+  font-size: var(--fs-body);
+  color: var(--text-2);
+  letter-spacing: 1rpx;
+}
+
+/* === 菜单点击反馈 === */
+.menu-hover {
+  background: rgba(157, 107, 255, 0.08);
+}

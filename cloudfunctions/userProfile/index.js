@@ -120,6 +120,7 @@ async function getProfile(OPENID) {
   let winCount = 0;
   let avgScore = 0;
   let winRate = 0;
+  let bestScore = 0;
   try {
     // Bug 修复（2026-09-09）：同样改成 aggregate().match() pipeline 形式
     const repAgg = await db
@@ -130,11 +131,13 @@ async function getProfile(OPENID) {
         _id: null,
         reportCount: $.sum(1),
         scoreSum: $.sum("$score"),
+        bestScore: $.max("$score"),
       })
       .end();
     if (repAgg.list && repAgg.list[0]) {
       reportCount = repAgg.list[0].reportCount || 0;
       scoreSum = repAgg.list[0].scoreSum || 0;
+      bestScore = Number(repAgg.list[0].bestScore) || 0;
     }
     // 用简单 count 查询拿胜场（避免依赖 aggregate 高级语法 $.cond）
     const winRes = await db
@@ -167,6 +170,7 @@ async function getProfile(OPENID) {
       totalSessions,
       totalRounds,
       avgScore,
+      bestScore,
       winRate,
       reportCount,
       nickName: user.nickName || "",

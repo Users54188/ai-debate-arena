@@ -17,11 +17,43 @@
 
 /* === Hero === */
 .hero {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 64rpx 0 48rpx;
   text-align: center;
+}
+
+/* 星空装饰图：置于 Hero 背景中央，柔和光晕，不抢文字 */
+.hero-decor {
+  position: absolute;
+  top: -32rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 560rpx;
+  height: 560rpx;
+  opacity: 0.22;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+}
+
+.hero-logo {
+  position: relative;
+  z-index: 1;
+  width: 220rpx;
+  height: auto;
+  margin-bottom: 20rpx;
+  filter: drop-shadow(0 0 32rpx rgba(157, 107, 255, 0.45));
+}
+
+.hero-emblem,
+.hero-title,
+.hero-sub {
+  position: relative;
+  z-index: 1;
 }
 
 .hero-emblem {
@@ -64,6 +96,13 @@
   font-size: 36rpx;
   font-weight: 700;
   color: #FFFFFF;
+  box-shadow: 0 0 40rpx rgba(157, 107, 255, 0.6);
+}
+
+.emblem-icon {
+  width: 108rpx;
+  height: 108rpx;
+  border-radius: 50%;
   box-shadow: 0 0 40rpx rgba(157, 107, 255, 0.6);
 }
 
@@ -118,7 +157,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8rpx;
   min-width: 96rpx;
+}
+
+.rank-badge-img {
+  width: 36rpx;
+  height: 36rpx;
 }
 
 .rank-tier {
@@ -286,6 +331,12 @@
   padding-right: var(--sp-3);
   display: flex;
   align-items: center;
+}
+
+.mode-icon {
+  width: 88rpx;
+  height: 88rpx;
+  filter: drop-shadow(0 0 16rpx rgba(157, 107, 255, 0.35));
 }
 
 .mode-mark {

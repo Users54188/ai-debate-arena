@@ -10,6 +10,7 @@
 
 const config = require("../../config");
 const cache = require("../../utils/cache");
+const { rankBadge } = require("../../utils/rankBadge");
 const { msgSecCheck } = require("../../utils/security");
 const { playTabEnter } = require("../../utils/pageMotion");
 const app = getApp();
@@ -24,6 +25,7 @@ Page({
     showSettings: false,
     rankAnimClass: "",
     tabAnim: "tab-enter tab-enter--idle",
+    quota: null,
   },
 
   onShow() {
@@ -45,6 +47,38 @@ Page({
       }
     }
     this.loadProfile();
+    this.loadQuota();
+  },
+
+  /** 加载今日配额（L1/L2/L3 一次拉取） */
+  async loadQuota() {
+    try {
+      const res = await wx.cloud.callFunction({
+        name: config.cloudFunctions.getQuota,
+        data: { action: "all" },
+      });
+      const q = (res.result && res.result.data && res.result.data.quota) || null;
+      if (!q) return;
+      const calc = (m) => {
+        const item = q[m] || { used: 0, limit: 0, left: 0 };
+        const pct = item.limit > 0 ? Math.round((item.left / item.limit) * 100) : 0;
+        return {
+          [`${m}Used`]: item.used,
+          [`${m}Left`]: item.left,
+          [`${m}Total`]: item.limit,
+          [`${m}Percent`]: pct,
+        };
+      };
+      const quota = Object.assign(
+        { L1Label: "追问", L2Label: "共修", L3Label: "辩论" },
+        calc("L1"),
+        calc("L2"),
+        calc("L3")
+      );
+      this.setData({ quota });
+    } catch (e) {
+      console.error("[profile] loadQuota failed:", e);
+    }
   },
 
   async loadProfile() {
@@ -75,7 +109,7 @@ Page({
       const rankAnimClass = newName && prevName && newName !== prevName ? "rank-up-anim" : "";
       // A 方案：写入缓存供下次秒开
       cache.set("profile:info", d);
-      this.setData({ profile: d, loading: false, loadError: "", rankAnimClass });
+      this.setData({ profile: d, rankBadge: rankBadge(d.classify), loading: false, loadError: "", rankAnimClass });
       if (rankAnimClass) {
         if (wx.vibrateShort) wx.vibrateShort({ type: "medium" });
         setTimeout(() => this.setData({ rankAnimClass: "" }), 1600);

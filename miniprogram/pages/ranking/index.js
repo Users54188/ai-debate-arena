@@ -10,6 +10,7 @@
  */
 
 const config = require("../../config");
+const { rankBadge } = require("../../utils/rankBadge");
 
 const MODE_LABEL = { L1: "苏格拉底追问", L2: "双人共修", L3: "辩论场" };
 
