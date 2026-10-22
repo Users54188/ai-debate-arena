@@ -1,0 +1,40 @@
+name: Quota Guard (上线护栏)
+
+# 目的：把"上线前必须关掉测试期配额旁路"从口头约定变成流水线强制。
+# 本工作流不跑任何实例，只检查「这次 PR 有没有动到那四个开关文件」——
+# 一旦动到，PR 描述里必须出现 [release-profile] 标记，否则阻断。
+#
+# 为什么不用 STRICT_LINT=1 直接卡：那样会让测试期所有正常 PR 全红（见 docs/ci-notes.md）。
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "cloudfunctions/getQuota/index.js"
+      - "cloudfunctions/sessionStore/index.js"
+      - "cloudfunctions/userProfile/index.js"
+      - "miniprogram/config.js"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  release-profile:
+    name: 触碰配额开关必须显式声明
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 检查 PR 描述标记
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          echo "PR touches a quota-switch file."
+          if echo "$BODY" | grep -qF "[release-profile]"; then
+            echo "✓ PR 描述含 [release-profile]，确认按上线流程同步修改四处开关 + dailyQuota"
+          else
+            echo "::error::此 PR 修改了配额开关文件，但描述中没有 [release-profile] 标记。"
+            echo "上线前必须同步：三处云函数 QUOTA_BYPASS + miniprogram/config.js quotaBypass + dailyQuota 档位。"
+            exit 1
+          fi

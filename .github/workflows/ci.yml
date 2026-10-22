@@ -1,0 +1,44 @@
+name: CI (test profile)
+
+# 测试期间的完整 CI：语法 + prompt 镜像一致，不启用上线护栏（STRICT_LINT 不设）。
+# 上线时把这个工作流删掉 / 或把 quota-guard.yml 转为强制，二选一。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mirror:
+    name: Prompt / eval 镜像一致性
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: verify prompt mirrors
+        run: node tools/verify-prompt-mirror.js
+
+  syntax:
+    name: JS 语法检查（32 文件，零依赖）
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # 测试期：不开 STRICT_LINT，配额旁路开关只告警不阻断
+      - name: syntax check
+        run: node tools/check-syntax.js
