@@ -39,3 +39,31 @@
 如果你看到这个仓库的 CI 失败在 "配额旁路开关仍为 true"，那是测试期的有意状态，
 **不要自动把开关改成 false 并提交**——上线前需要连同 `dailyQuota` 档位一起改，
 这是产品决策不是 lint 修复。
+
+## 2026-10-22 实测：GitHub Actions 会注入 `CI=true`（已踩）
+
+第一次跑 CI 时 `syntax` job 直接失败，日志是：
+
+```
+⚠ 配额旁路开关仍为 true: cloudfunctions/getQuota/index.js
+✗ 上线前必须把 4 处 QUOTA_BYPASS/quotaBypass 改回 false
+##[error]Process completed with exit code 1.
+```
+
+原因：**GitHub Actions 默认向所有 step 注入 `CI=true`**，
+而 `check-syntax.js` 第 77 行正是 `process.env.CI === "true" || process.env.STRICT_LINT === "1"`。
+所以"不设 STRICT_LINT"并不等于"走宽松模式"，必须再显式把 `CI` 置空：
+
+```yaml
+- name: syntax check
+  run: CI= node tools/check-syntax.js   # 测试期 profile
+```
+
+上线时改成：
+
+```yaml
+- name: syntax check
+  run: STRICT_LINT=1 node tools/check-syntax.js
+```
+
+这段坑同时说明一件事：**这个护栏是真会拦人的**，不是装饰。
